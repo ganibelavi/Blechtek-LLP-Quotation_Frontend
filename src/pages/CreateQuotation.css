@@ -3,7 +3,9 @@
   max-width: 1040px;
 }
 
-.create-quotation__intro { margin-bottom: 24px; }
+.create-quotation__intro {
+  margin-bottom: 24px;
+}
 
 .create-quotation__intro h2 {
   font-size: 24px;
@@ -22,6 +24,8 @@
   gap: 28px;
 }
 
+/* wragh46j75edynhrf
+ */
 .create-quotation__card {
   flex: 1;
   background: var(--surface);
@@ -35,6 +39,7 @@
   .create-quotation__layout {
     flex-direction: column;
   }
+
   .q-preview {
     position: static;
     width: 100%;
