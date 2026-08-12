@@ -1,0 +1,42 @@
+.create-quotation {
+  width: 100%;
+  max-width: 1040px;
+}
+
+.create-quotation__intro { margin-bottom: 24px; }
+
+.create-quotation__intro h2 {
+  font-size: 24px;
+  margin-bottom: 6px;
+}
+
+.create-quotation__intro p {
+  margin: 0;
+  color: var(--text-600);
+  font-size: 14px;
+}
+
+.create-quotation__layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 28px;
+}
+
+.create-quotation__card {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 28px 32px 32px;
+  box-shadow: var(--shadow-card);
+}
+
+@media (max-width: 860px) {
+  .create-quotation__layout {
+    flex-direction: column;
+  }
+  .q-preview {
+    position: static;
+    width: 100%;
+  }
+}

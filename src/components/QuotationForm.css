@@ -1,0 +1,82 @@
+.q-form__section + .q-form__section {
+  margin-top: 28px;
+  padding-top: 28px;
+  border-top: 1px solid var(--border);
+}
+
+.q-form__heading {
+  font-size: 15px;
+  letter-spacing: 0.01em;
+  margin-bottom: 4px;
+}
+
+.q-form__hint {
+  margin: 4px 0 16px;
+  font-size: 13px;
+  color: var(--text-400);
+}
+
+.q-form__row {
+  display: flex;
+  gap: 16px;
+}
+
+.q-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 16px;
+  flex: 1;
+}
+
+.q-field--narrow {
+  flex: 0 0 190px;
+}
+
+.q-field label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-600);
+}
+
+.q-field input,
+.q-field textarea {
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: 14px;
+  color: var(--text-900);
+  background: var(--surface);
+  resize: vertical;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.q-field input:focus,
+.q-field textarea:focus {
+  border-color: var(--primary-blue);
+  box-shadow: 0 0 0 3px var(--blue-100);
+  outline: none;
+}
+
+.q-field__error {
+  font-size: 12px;
+  color: var(--danger);
+}
+
+.q-submit {
+  margin-top: 32px;
+  width: 100%;
+  padding: 14px 20px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--primary-gradient);
+  color: #fff;
+  font-size: 14.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.05s ease;
+}
+
+.q-submit:hover:not(:disabled) { background: var(--primary-blue); }
+.q-submit:active:not(:disabled) { transform: translateY(1px); }
+.q-submit:disabled { background: var(--ash-gray); cursor: not-allowed; }

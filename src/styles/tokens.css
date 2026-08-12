@@ -1,0 +1,96 @@
+:root {
+  /* Primary Colors */
+  --primary-blue: #308aea;
+  --gradient-end-cyan: #48cae4;
+  --primary-gradient: linear-gradient(120deg, #308aea, #48cae4);
+
+  /* Secondary Colors */
+  --light-blue: #eef8f9;
+
+  /* Neutral Colors */
+  --white: #ffffff;
+  --light-gray: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-300: #d1d5db;
+  --ash-gray: #6b7280;
+  --dark-gray: #4b5563;
+  --border-gray: #e0e0e0;
+  --text-dark: #393231;
+  --text-gray-600: #4b5563;
+  --text-gray-700: #374151;
+
+  /* Status Colors */
+  --success-green: #16a34a;
+  --success-green-light: #22c55e;
+  --rejected-gray: #9ca3af;
+  --rejected-purple: #b07add;
+  --pending-yellow: #fbbf24;
+  --warning-yellow-light: #fef3c7;
+  --error-red: #dc2626;
+  --error-red-light: #ef4444;
+
+  /* UI Elements */
+  --table-header-blue: #65aadb;
+  --blue-50: #eff6ff;
+  --blue-100: #dbeafe;
+  --blue-500: #3b82f6;
+  --blue-600: #2563eb;
+  --blue-700: #1d4ed8;
+  --amber-50: #fffbeb;
+  --amber-100: #fef3c7;
+  --amber-200: #fde68a;
+  --orange-50: #fff7ed;
+
+  /* Type */
+  --font-display: "Sora", "Segoe UI", sans-serif;
+  --font-body: "Inter", "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  /* Shape */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --shadow-card: 0 1px 2px rgba(15, 23, 48, 0.04), 0 10px 30px -12px rgba(15, 23, 48, 0.12);
+
+  /* Legacy mappings for backward compatibility */
+  --navy-950: #393231;
+  --navy-900: #308aea;
+  --navy-700: #2563eb;
+  --navy-100: #dbeafe;
+  --teal-600: #308aea;
+  --teal-500: #308aea;
+  --teal-100: #dbeafe;
+  --amber-500: #fbbf24;
+  --bg: #eef8f9;
+  --surface: #ffffff;
+  --border: #e0e0e0;
+  --text-900: #393231;
+  --text-600: #4b5563;
+  --text-400: #6b7280;
+  --danger: #dc2626;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text-900);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 { font-family: var(--font-display); margin: 0; color: var(--navy-900); }
+
+button, input, select, textarea { font-family: inherit; }
+
+a { color: var(--teal-600); }
+
+::selection { background: var(--teal-100); }
+
+:focus-visible {
+  outline: 2px solid var(--teal-500);
+  outline-offset: 2px;
+}
