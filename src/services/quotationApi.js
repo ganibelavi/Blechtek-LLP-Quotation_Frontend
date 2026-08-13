@@ -5,10 +5,13 @@ const client = axios.create({
   headers: { "Content-Type": "application/json" }
 });
 
-/** GET /api/modules -> [{ pillar, module }] */
+/** GET /api/modules reads the database-backed Modules master table. */
 export async function fetchModules() {
   const { data } = await client.get("/api/modules");
-  return data;
+  return data.map((module) => ({
+    pillar: module.pillar ?? module.Pillar ?? "",
+    module: module.moduleName ?? module.ModuleName ?? module.module ?? module.Module ?? "",
+  }));
 }
 
 /**

@@ -53,8 +53,8 @@
 
 .app-main {
   flex: 1;
-  padding: 32px;
-  display: flex;
+  padding: 2rem;
+  /* display: flex; */
   justify-content: center;
 }
 

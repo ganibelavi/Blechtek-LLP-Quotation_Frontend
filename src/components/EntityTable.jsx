@@ -44,7 +44,6 @@ export default function EntityTable({ title, columns, rows }) {
       );
     }
     if (orderBy) {
-      const col = columns.find((c) => c.key === orderBy);
       list = [...list].sort((a, b) => {
         const va = defaultGetValue(a, orderBy);
         const vb = defaultGetValue(b, orderBy);

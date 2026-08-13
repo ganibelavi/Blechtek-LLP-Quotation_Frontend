@@ -1,78 +1,166 @@
-import React, { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import EntityTable from "../components/EntityTable";
-import IconButton from "@mui/material/IconButton";
-import EditIcon from "@mui/icons-material/Edit";
+import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
-import Box from "@mui/material/Box";
-import TextField from "@mui/material/TextField";
-import Button from "@mui/material/Button";
+import EditIcon from "@mui/icons-material/Edit";
+import {
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  TextField,
+  Typography,
+} from "@mui/material";
+
+const emptyModule = { pillar: "", moduleName: "", price: "" };
+
+const toTableModule = (module) => ({
+  Id: module.id ?? module.Id,
+  Pillar: module.pillar ?? module.Pillar ?? "",
+  ModuleName:
+    module.moduleName ??
+    module.ModuleName ??
+    module.module ??
+    module.Module ??
+    "",
+  Price: module.price ?? module.Price ?? null,
+});
 
 export default function ModulesPage() {
-  const [items, setItems] = useState([]);
-  const [pillar, setPillar] = useState("");
-  const [moduleName, setModuleName] = useState("");
+  const [modules, setModules] = useState([]);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingModuleId, setEditingModuleId] = useState(null);
+  const [form, setForm] = useState(emptyModule);
+  const [apiError, setApiError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
     axios
       .get("/api/modules")
-      .then((r) => {
-        if (!cancelled) setItems(r.data || []);
+      .then((response) => {
+        if (!cancelled) setModules((response.data || []).map(toTableModule));
       })
       .catch(() => {
-        try {
-          const raw = localStorage.getItem("modules_master");
-          if (raw) setItems(JSON.parse(raw));
-        } catch {}
+        if (!cancelled) setApiError("Could not load modules from the database.");
       });
     return () => {
       cancelled = true;
     };
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem("modules_master", JSON.stringify(items));
-  }, [items]);
-
-  const add = async () => {
-    if (!pillar || !moduleName)
-      return alert("Both pillar and module name required");
-    const newItem = { id: Date.now(), Pillar: pillar, Module: moduleName };
-    try {
-      await axios.post("/api/modules", newItem);
-    } catch (e) {
-      // ignore if endpoint missing
-    }
-    setItems((s) => [...s, newItem]);
-    setPillar("");
-    setModuleName("");
+  const openAddDialog = () => {
+    setApiError("");
+    setEditingModuleId(null);
+    setForm(emptyModule);
+    setIsDialogOpen(true);
   };
 
-  const remove = (id) => setItems((s) => s.filter((i) => i.id !== id));
-  const startEdit = (id) =>
-    setItems((s) => s.map((i) => ({ ...i, editing: i.id === id })));
-  const saveEdit = (id, newPillar, newModule) =>
-    setItems((s) =>
-      s.map((i) =>
-        i.id === id
-          ? { ...i, Pillar: newPillar, Module: newModule, editing: false }
-          : i,
-      ),
-    );
+  const openEditDialog = (module) => {
+    setApiError("");
+    setEditingModuleId(module.Id);
+    setForm({
+      pillar: module.Pillar,
+      moduleName: module.ModuleName,
+      price: module.Price ?? module.price ?? "",
+    });
+    setIsDialogOpen(true);
+  };
 
-  const columns = [
+  const closeDialog = () => {
+    setIsDialogOpen(false);
+    setEditingModuleId(null);
+    setForm(emptyModule);
+  };
+
+  const updateField = (event) => {
+    const { name, value } = event.target;
+    setForm((current) => ({ ...current, [name]: value }));
+  };
+
+  const saveModule = async (event) => {
+    event.preventDefault();
+    if (!form.pillar || !form.moduleName) return;
+    setApiError("");
+
+    const request = {
+      pillar: form.pillar,
+      moduleName: form.moduleName,
+      price: form.price === "" ? null : Number(form.price),
+    };
+
+    if (editingModuleId === null) {
+      try {
+        const { data } = await axios.post("/api/modules", request);
+        setModules((current) => [...current, toTableModule(data)]);
+      } catch (error) {
+        setApiError(
+          error.response?.data?.error ?? "Could not create the module in the database.",
+        );
+        return;
+      }
+    } else {
+      try {
+        const { data } = await axios.put(
+          `/api/modules/${editingModuleId}`,
+          request,
+        );
+        const updatedModule = toTableModule(data);
+        setModules((current) =>
+          current.map((currentModule) =>
+            currentModule.Id === editingModuleId
+              ? updatedModule
+              : currentModule,
+          ),
+        );
+      } catch (error) {
+        setApiError(
+          error.response?.data?.error ?? "Could not update the module in the database.",
+        );
+        return;
+      }
+    }
+    closeDialog();
+  };
+
+  const removeModule = async (id) => {
+    setApiError("");
+    try {
+      await axios.delete(`/api/modules/${id}`);
+    } catch (error) {
+      setApiError(
+        error.response?.data?.error ?? "Could not delete the module from the database.",
+      );
+      return;
+    }
+    setModules((current) => current.filter((module) => module.Id !== id));
+  };
+
+  const moduleColumns = [
+    { key: "Id", label: "Id", sortable: true },
     { key: "Pillar", label: "Pillar", sortable: true },
-    { key: "Module", label: "Module", sortable: true },
+    { key: "ModuleName", label: "Module Name", sortable: true },
+    { key: "Price", label: "Price", sortable: true },
     {
       key: "actions",
       label: "Actions",
-      render: (row) => (
-        <Box>
-          <IconButton size="small" onClick={() => startEdit(row.id)}>
+      render: (module) => (
+        <Box sx={{ whiteSpace: "nowrap" }}>
+          <IconButton
+            aria-label={`Edit ${module.ModuleName}`}
+            size="small"
+            onClick={() => openEditDialog(module)}
+          >
             <EditIcon fontSize="small" />
           </IconButton>
-          <IconButton size="small" onClick={() => remove(row.id)}>
+          <IconButton
+            aria-label={`Delete ${module.ModuleName}`}
+            size="small"
+            onClick={() => removeModule(module.Id)}
+          >
             <DeleteIcon fontSize="small" />
           </IconButton>
         </Box>
@@ -80,34 +168,86 @@ export default function ModulesPage() {
     },
   ];
 
-  const rows = items.map((i) => ({
-    id: i.id ?? `${i.Pillar}-${i.Module}`,
-    Pillar: i.Pillar,
-    Module: i.Module,
-  }));
-
   return (
-    <div style={{ padding: 20 }}>
-      <h2>Modules Master</h2>
-      <Box sx={{ display: "flex", gap: 1, mb: 2, alignItems: "center" }}>
-        <TextField
-          size="small"
-          placeholder="Pillar"
-          value={pillar}
-          onChange={(e) => setPillar(e.target.value)}
-        />
-        <TextField
-          size="small"
-          placeholder="Module"
-          value={moduleName}
-          onChange={(e) => setModuleName(e.target.value)}
-        />
-        <Button variant="contained" size="small" onClick={add}>
+    <Box sx={{ p: { xs: 2, md: 4 }, overflowY: "auto" }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 2,
+        }}
+      >
+        <Typography variant="h5" fontWeight={700}>
+          Modules Management
+        </Typography>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={openAddDialog}
+        >
           Add Module
         </Button>
       </Box>
 
-      <EntityTable title="Modules" columns={columns} rows={rows} />
-    </div>
+      <EntityTable title="" columns={moduleColumns} rows={modules} />
+
+      {apiError && (
+        <Typography color="error" sx={{ mt: 1 }}>
+          {apiError}
+        </Typography>
+      )}
+
+      <Dialog
+        open={isDialogOpen}
+        onClose={closeDialog}
+        fullWidth
+        maxWidth="sm"
+        PaperProps={{ component: "form", onSubmit: saveModule }}
+      >
+        <DialogTitle>
+          {editingModuleId === null ? "Add Module" : "Edit Module"}
+        </DialogTitle>
+        <DialogContent dividers>
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+              gap: 2,
+              pt: 1,
+            }}
+          >
+            <TextField
+              required
+              label="Pillar"
+              name="pillar"
+              value={form.pillar}
+              onChange={updateField}
+            />
+            <TextField
+              required
+              label="Module"
+              name="moduleName"
+              value={form.moduleName}
+              onChange={updateField}
+            />
+            <TextField
+              label="Price"
+              name="price"
+              type="number"
+              value={form.price}
+              onChange={updateField}
+              inputProps={{ min: 0, step: "0.01" }}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={closeDialog}>Cancel</Button>
+          <Button type="submit" variant="contained">
+            {editingModuleId === null ? "Create" : "Save Changes"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
   );
 }

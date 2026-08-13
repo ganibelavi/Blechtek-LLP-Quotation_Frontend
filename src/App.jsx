@@ -59,9 +59,9 @@ export default function App() {
               case "settings":
                 return <SettingsPage onNavigate={setView} />;
               case "users":
-                return <UsersPage />;
+                return <UsersPage onNavigate={setView} initialTab="users" />;
               case "modules":
-                return <ModulesPage />;
+                return <ModulesPage onNavigate={setView} initialTab="modules" />;
               case "create":
               default:
                 return <CreateQuotation />;

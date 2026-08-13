@@ -1,64 +1,150 @@
-import React, { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import EntityTable from "../components/EntityTable";
-import IconButton from "@mui/material/IconButton";
-import EditIcon from "@mui/icons-material/Edit";
+import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
-import Box from "@mui/material/Box";
-import TextField from "@mui/material/TextField";
-import Button from "@mui/material/Button";
+import EditIcon from "@mui/icons-material/Edit";
+import {
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControl,
+  IconButton,
+  InputLabel,
+  MenuItem,
+  Select,
+  TextField,
+  Typography,
+} from "@mui/material";
+
+const emptyUser = {
+  firstName: "",
+  lastName: "",
+  email: "",
+  password: "",
+  role: "User",
+  isActive: "Yes",
+};
 
 export default function UsersPage() {
   const [users, setUsers] = useState(() => {
     try {
-      const raw = localStorage.getItem("users_master");
-      return raw ? JSON.parse(raw) : [];
+      const savedUsers = localStorage.getItem("users_master");
+      return savedUsers ? JSON.parse(savedUsers) : [];
     } catch {
       return [];
     }
   });
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingUserId, setEditingUserId] = useState(null);
+  const [form, setForm] = useState(emptyUser);
 
   useEffect(() => {
     localStorage.setItem("users_master", JSON.stringify(users));
   }, [users]);
 
-  const createUser = async () => {
-    if (!email || !password) return alert("Email and password required");
-    try {
-      await axios.post("/api/auth/register", { email, password });
-    } catch (err) {
-      // ignore backend errors (endpoint may not exist)
-    }
-    setUsers((s) => [...s, { id: Date.now(), email }]);
-    setEmail("");
-    setPassword("");
+  const openAddDialog = () => {
+    setEditingUserId(null);
+    setForm(emptyUser);
+    setIsDialogOpen(true);
   };
 
-  const remove = (id) => setUsers((s) => s.filter((u) => u.id !== id));
+  const openEditDialog = (user) => {
+    setEditingUserId(user.id);
+    setForm({ ...emptyUser, ...user, password: "" });
+    setIsDialogOpen(true);
+  };
 
-  const startEdit = (id) =>
-    setUsers((s) => s.map((u) => ({ ...u, editing: u.id === id })));
+  const closeDialog = () => {
+    setIsDialogOpen(false);
+    setEditingUserId(null);
+    setForm(emptyUser);
+  };
 
-  const saveEdit = (id, newEmail) =>
-    setUsers((s) =>
-      s.map((u) =>
-        u.id === id ? { ...u, email: newEmail, editing: false } : u,
-      ),
-    );
+  const updateField = (event) => {
+    const { name, value } = event.target;
+    setForm((current) => ({ ...current, [name]: value }));
+  };
 
-  const columns = [
+  const saveUser = async (event) => {
+    event.preventDefault();
+    const isNewUser = editingUserId === null;
+
+    if (!form.firstName || !form.lastName || !form.email || (isNewUser && !form.password)) {
+      return;
+    }
+
+    const user = {
+      ...form,
+      id: editingUserId ?? Date.now(),
+      passwordHash: isNewUser ? "••••••••" : undefined,
+      createdAt: isNewUser ? new Date().toLocaleString() : undefined,
+      lastLoginAt: isNewUser ? "Never" : undefined,
+    };
+    if (isNewUser) {
+      try {
+        await axios.post("/api/auth/register", {
+          email: form.email,
+          password: form.password,
+        });
+      } catch {
+        // Keep the local user list available if the API is not configured.
+      }
+      setUsers((current) => [...current, user]);
+    } else {
+      setUsers((current) =>
+        current.map((currentUser) =>
+          currentUser.id === editingUserId
+            ? {
+                ...currentUser,
+                ...user,
+                password: currentUser.password,
+                passwordHash: form.password ? "••••••••" : currentUser.passwordHash,
+                createdAt: currentUser.createdAt,
+                lastLoginAt: currentUser.lastLoginAt,
+              }
+            : currentUser,
+        ),
+      );
+    }
+
+    closeDialog();
+  };
+
+  const removeUser = (id) => {
+    setUsers((current) => current.filter((user) => user.id !== id));
+  };
+
+  const userColumns = [
+    { key: "id", label: "Id", sortable: true },
+    { key: "firstName", label: "First Name", sortable: true },
+    { key: "lastName", label: "Last Name", sortable: true },
     { key: "email", label: "Email", sortable: true },
+    { key: "passwordHash", label: "PasswordHash" },
+    { key: "isActive", label: "IsActive", sortable: true },
+    { key: "createdAt", label: "CreatedAt", sortable: true },
+    { key: "lastLoginAt", label: "LastLoginAt", sortable: true },
+    { key: "role", label: "Role", sortable: true },
     {
       key: "actions",
       label: "Actions",
-      render: (row) => (
-        <Box>
-          <IconButton size="small" onClick={() => startEdit(row.id)}>
+      render: (user) => (
+        <Box sx={{ whiteSpace: "nowrap" }}>
+          <IconButton
+            aria-label={`Edit ${user.email}`}
+            size="small"
+            onClick={() => openEditDialog(user)}
+          >
             <EditIcon fontSize="small" />
           </IconButton>
-          <IconButton size="small" onClick={() => remove(row.id)}>
+          <IconButton
+            aria-label={`Delete ${user.email}`}
+            size="small"
+            onClick={() => removeUser(user.id)}
+          >
             <DeleteIcon fontSize="small" />
           </IconButton>
         </Box>
@@ -66,31 +152,71 @@ export default function UsersPage() {
     },
   ];
 
-  const rows = users.map((u) => ({ id: u.id, email: u.email }));
-
   return (
-    <div style={{ padding: 20 }}>
-      <h2>Users Master</h2>
-      <Box sx={{ display: "flex", gap: 1, mb: 2, alignItems: "center" }}>
-        <TextField
-          size="small"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <TextField
-          size="small"
-          placeholder="Password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <Button variant="contained" size="small" onClick={createUser}>
-          Create
+    <Box sx={{ p: { xs: 2, md: 4 }, overflowY: "auto" }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 2,
+        }}
+      >
+        <Typography variant="h5" fontWeight={700}>
+          User Management
+        </Typography>
+        <Button variant="contained" startIcon={<AddIcon />} onClick={openAddDialog}>
+          Add User
         </Button>
       </Box>
 
-      <EntityTable title="Users" columns={columns} rows={rows} />
-    </div>
+      <EntityTable title="" columns={userColumns} rows={users} />
+
+      <Dialog
+        open={isDialogOpen}
+        onClose={closeDialog}
+        fullWidth
+        maxWidth="sm"
+        PaperProps={{ component: "form", onSubmit: saveUser }}
+      >
+        <DialogTitle>{editingUserId === null ? "Add User" : "Edit User"}</DialogTitle>
+        <DialogContent dividers>
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+              gap: 2,
+              pt: 1,
+            }}
+          >
+            <TextField required label="First Name" name="firstName" value={form.firstName} onChange={updateField} />
+            <TextField required label="Last Name" name="lastName" value={form.lastName} onChange={updateField} />
+            <TextField required sx={{ gridColumn: { sm: "1 / -1" } }} label="Email" name="email" type="email" value={form.email} onChange={updateField} />
+            <TextField required={editingUserId === null} helperText={editingUserId === null ? "Minimum 6 characters" : "Leave blank to keep the current password"} sx={{ gridColumn: { sm: "1 / -1" } }} label="Password" name="password" type="password" value={form.password} onChange={updateField} inputProps={{ minLength: editingUserId === null ? 6 : undefined }} />
+            <FormControl>
+              <InputLabel id="user-role-label">Role</InputLabel>
+              <Select labelId="user-role-label" label="Role" name="role" value={form.role} onChange={updateField}>
+                <MenuItem value="User">User</MenuItem>
+                <MenuItem value="Admin">Admin</MenuItem>
+                <MenuItem value="Manager">Manager</MenuItem>
+              </Select>
+            </FormControl>
+            <FormControl>
+              <InputLabel id="user-status-label">Is Active</InputLabel>
+              <Select labelId="user-status-label" label="Is Active" name="isActive" value={form.isActive} onChange={updateField}>
+                <MenuItem value="Yes">Active</MenuItem>
+                <MenuItem value="No">Inactive</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={closeDialog}>Cancel</Button>
+          <Button type="submit" variant="contained">
+            {editingUserId === null ? "Create" : "Save Changes"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
   );
 }
