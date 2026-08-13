@@ -57,3 +57,29 @@
   display: flex;
   justify-content: center;
 }
+
+/* Login background and card styles used by LoginPage */
+.gradient-bg {
+  background: radial-gradient(ellipse at top left, rgba(15, 107, 95, 0.12), transparent 20%),
+    linear-gradient(135deg, rgba(70, 130, 180, 0.08), rgba(123, 104, 238, 0.06));
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(8px) saturate(120%);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(16, 24, 40, 0.08);
+}
+
+.animate-in {
+  transform: translateY(8px);
+  opacity: 0;
+  animation: enter 360ms ease-out forwards;
+}
+
+@keyframes enter {
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
