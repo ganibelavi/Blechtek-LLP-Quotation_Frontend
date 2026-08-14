@@ -8,9 +8,11 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 32px;
-  background: var(--primary-blue);
-  color: #fff;
+  padding: 8px 32px;
+  /* background: var(--primary-blue); */
+  /* color: #fff; */
+  /* box-shadow: yellowgreen; */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .app-topbar__brand {
@@ -19,16 +21,10 @@
   gap: 14px;
 }
 
-.app-topbar__mark {
-  width: 40px;
-  height: 40px;
+.app-topbar__logo {
+  height: 32px;
+  width: auto;
   border-radius: var(--radius-sm);
-  background: var(--primary-gradient);
-  display: grid;
-  place-items: center;
-  font-family: var(--font-display);
-  font-weight: 700;
-  letter-spacing: 0.02em;
 }
 
 .app-topbar__title {
@@ -49,6 +45,31 @@
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.25);
   color: rgba(255, 255, 255, 0.85);
+}
+
+.app-topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.app-topbar__icon-btn {
+  background: transparent;
+  border-radius: 8px;
+  transition: background 0.2s ease;
+}
+
+.app-topbar__icon-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.app-topbar__icon-btn .MuiSvgIcon-root {
+  color: #4fc3f7;
+  transition: color 0.2s ease;
+}
+
+.app-topbar__icon-btn:hover .MuiSvgIcon-root {
+  color: #81d4fa;
 }
 
 .app-main {

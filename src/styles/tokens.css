@@ -70,27 +70,130 @@
   --danger: #dc2626;
 }
 
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
 
-html, body, #root { height: 100%; }
+html,
+body,
+#root {
+  height: 100%;
+}
 
 body {
   margin: 0;
-  background: var(--bg);
+  /* background: var(--bg); */
   color: var(--text-900);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
+  /* background: radial-gradient(at 0% 0%, hsl(206.57deg 55.21% 65.63%) 0, transparent 50%), radial-gradient(at 50% 0%, hsla(222, 47%, 91%, 1) 0, transparent 50%), radial-gradient(at 100% 0%, hsla(34, 100%, 93%, 1) 0, transparent 50%); */
+  ;
 }
 
-h1, h2, h3, h4 { font-family: var(--font-display); margin: 0; color: var(--navy-900); }
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+  margin: 0;
+  color: var(--navy-900);
+}
 
-button, input, select, textarea { font-family: inherit; }
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
 
-a { color: var(--teal-600); }
+a {
+  color: var(--teal-600);
+}
 
-::selection { background: var(--teal-100); }
+::selection {
+  background: var(--teal-100);
+}
 
 :focus-visible {
   outline: 2px solid var(--teal-500);
   outline-offset: 2px;
+}
+
+.MuiButton-containedPrimary {
+  background: var(--primary-gradient) !important;
+  padding: 4px 8px !important;
+  border-radius: var(--radius-sm) !important;
+  text-transform: none !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 4px rgba(48, 138, 234, 0.3) !important;
+  transition: all 0.2s ease !important;
+}
+
+.MuiButton-containedPrimary:hover {
+  background: var(--primary-gradient) !important;
+  filter: brightness(1.05) !important;
+  box-shadow: 0 4px 8px rgba(48, 138, 234, 0.4) !important;
+  transform: translateY(-1px) !important;
+}
+
+.MuiButton-containedPrimary:active {
+  transform: translateY(0) !important;
+  box-shadow: 0 2px 4px rgba(48, 138, 234, 0.3) !important;
+}
+
+.MuiButton-containedPrimary.Mui-disabled {
+  background: #9ca3af !important;
+  color: #f3f4f6 !important;
+  box-shadow: none !important;
+  filter: none !important;
+  transform: none !important;
+}
+
+.MuiButton-containedSecondary {
+  background: #757575 !important;
+  padding: 4px 8px !important;
+  border-radius: var(--radius-sm) !important;
+  text-transform: none !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 4px rgba(117, 117, 117, 0.3) !important;
+  transition: all 0.2s ease !important;
+}
+
+.MuiButton-containedSecondary:hover {
+  background: #616161 !important;
+  box-shadow: 0 4px 8px rgba(117, 117, 117, 0.4) !important;
+  transform: translateY(-1px) !important;
+}
+
+.MuiButton-containedSecondary:active {
+  transform: translateY(0) !important;
+  box-shadow: 0 2px 4px rgba(117, 117, 117, 0.3) !important;
+}
+
+.MuiButton-containedSecondary.Mui-disabled {
+  background: #bdbdbd !important;
+  color: #f3f4f6 !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+/* Global form field font size */
+.MuiInputBase-root,
+.MuiInputLabel-root,
+.MuiFormLabel-root {
+  font-size: 13px !important;
+}
+
+.MuiTextField-root .MuiInputBase-input {
+  font-size: 13px !important;
+  padding: 10px 8px !important;
+}
+
+.MuiInputBase-input {
+  padding: 10px 18px !important;
+}
+
+/* Prevent horizontal scrollbar in Dialogs */
+.MuiDialog-paper {
+  overflow-x: hidden !important;
 }

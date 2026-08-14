@@ -4,6 +4,8 @@ import EntityTable from "../components/EntityTable";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import {
   Box,
   Button,
@@ -41,6 +43,7 @@ export default function UsersPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingUserId, setEditingUserId] = useState(null);
   const [form, setForm] = useState(emptyUser);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     localStorage.setItem("users_master", JSON.stringify(users));
@@ -49,12 +52,14 @@ export default function UsersPage() {
   const openAddDialog = () => {
     setEditingUserId(null);
     setForm(emptyUser);
+    setShowPassword(false);
     setIsDialogOpen(true);
   };
 
   const openEditDialog = (user) => {
     setEditingUserId(user.id);
     setForm({ ...emptyUser, ...user, password: "" });
+    setShowPassword(false);
     setIsDialogOpen(true);
   };
 
@@ -62,6 +67,7 @@ export default function UsersPage() {
     setIsDialogOpen(false);
     setEditingUserId(null);
     setForm(emptyUser);
+    setShowPassword(false);
   };
 
   const updateField = (event) => {
@@ -73,7 +79,12 @@ export default function UsersPage() {
     event.preventDefault();
     const isNewUser = editingUserId === null;
 
-    if (!form.firstName || !form.lastName || !form.email || (isNewUser && !form.password)) {
+    if (
+      !form.firstName ||
+      !form.lastName ||
+      !form.email ||
+      (isNewUser && !form.password)
+    ) {
       return;
     }
 
@@ -102,7 +113,9 @@ export default function UsersPage() {
                 ...currentUser,
                 ...user,
                 password: currentUser.password,
-                passwordHash: form.password ? "••••••••" : currentUser.passwordHash,
+                passwordHash: form.password
+                  ? "••••••••"
+                  : currentUser.passwordHash,
                 createdAt: currentUser.createdAt,
                 lastLoginAt: currentUser.lastLoginAt,
               }
@@ -153,7 +166,7 @@ export default function UsersPage() {
   ];
 
   return (
-    <Box sx={{ p: { xs: 2, md: 4 }, overflowY: "auto" }}>
+    <Box sx={{ overflowY: "auto" }}>
       <Box
         sx={{
           display: "flex",
@@ -165,7 +178,11 @@ export default function UsersPage() {
         <Typography variant="h5" fontWeight={700}>
           User Management
         </Typography>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={openAddDialog}>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={openAddDialog}
+        >
           Add User
         </Button>
       </Box>
@@ -179,7 +196,19 @@ export default function UsersPage() {
         maxWidth="sm"
         PaperProps={{ component: "form", onSubmit: saveUser }}
       >
-        <DialogTitle>{editingUserId === null ? "Add User" : "Edit User"}</DialogTitle>
+        <DialogTitle
+          sx={{
+            background: "var(--primary-gradient)",
+            color: "white",
+            px: 3,
+            py: 2,
+            mb: 2,
+            borderTopLeftRadius: "var(--radius-md)",
+            borderTopRightRadius: "var(--radius-md)",
+          }}
+        >
+          {editingUserId === null ? "Add User" : "Edit User"}
+        </DialogTitle>
         <DialogContent dividers>
           <Box
             sx={{
@@ -189,13 +218,65 @@ export default function UsersPage() {
               pt: 1,
             }}
           >
-            <TextField required label="First Name" name="firstName" value={form.firstName} onChange={updateField} />
-            <TextField required label="Last Name" name="lastName" value={form.lastName} onChange={updateField} />
-            <TextField required sx={{ gridColumn: { sm: "1 / -1" } }} label="Email" name="email" type="email" value={form.email} onChange={updateField} />
-            <TextField required={editingUserId === null} helperText={editingUserId === null ? "Minimum 6 characters" : "Leave blank to keep the current password"} sx={{ gridColumn: { sm: "1 / -1" } }} label="Password" name="password" type="password" value={form.password} onChange={updateField} inputProps={{ minLength: editingUserId === null ? 6 : undefined }} />
+            <TextField
+              required
+              label="First Name"
+              name="firstName"
+              value={form.firstName}
+              onChange={updateField}
+            />
+            <TextField
+              required
+              label="Last Name"
+              name="lastName"
+              value={form.lastName}
+              onChange={updateField}
+            />
+            <TextField
+              required
+              sx={{ gridColumn: { sm: "1 / -1" } }}
+              label="Email"
+              name="email"
+              type="email"
+              value={form.email}
+              onChange={updateField}
+            />
+            <TextField
+              required={editingUserId === null}
+              helperText={
+                editingUserId === null
+                  ? "Minimum 6 characters"
+                  : "Leave blank to keep the current password"
+              }
+              sx={{ gridColumn: { sm: "1 / -1" } }}
+              label="Password"
+              name="password"
+              type={showPassword ? "text" : "password"}
+              value={form.password}
+              onChange={updateField}
+              inputProps={{ minLength: editingUserId === null ? 6 : undefined }}
+              InputProps={{
+                endAdornment: (
+                  <IconButton
+                    onClick={() => setShowPassword(!showPassword)}
+                    edge="end"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    sx={{ color: "text.secondary" }}
+                  >
+                    {showPassword ? <VisibilityOffIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
+                  </IconButton>
+                ),
+              }}
+            />
             <FormControl>
               <InputLabel id="user-role-label">Role</InputLabel>
-              <Select labelId="user-role-label" label="Role" name="role" value={form.role} onChange={updateField}>
+              <Select
+                labelId="user-role-label"
+                label="Role"
+                name="role"
+                value={form.role}
+                onChange={updateField}
+              >
                 <MenuItem value="User">User</MenuItem>
                 <MenuItem value="Admin">Admin</MenuItem>
                 <MenuItem value="Manager">Manager</MenuItem>
@@ -203,7 +284,13 @@ export default function UsersPage() {
             </FormControl>
             <FormControl>
               <InputLabel id="user-status-label">Is Active</InputLabel>
-              <Select labelId="user-status-label" label="Is Active" name="isActive" value={form.isActive} onChange={updateField}>
+              <Select
+                labelId="user-status-label"
+                label="Is Active"
+                name="isActive"
+                value={form.isActive}
+                onChange={updateField}
+              >
                 <MenuItem value="Yes">Active</MenuItem>
                 <MenuItem value="No">Inactive</MenuItem>
               </Select>
@@ -211,7 +298,7 @@ export default function UsersPage() {
           </Box>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
-          <Button onClick={closeDialog}>Cancel</Button>
+          <Button variant="contained" color="secondary" onClick={closeDialog}>Cancel</Button>
           <Button type="submit" variant="contained">
             {editingUserId === null ? "Create" : "Save Changes"}
           </Button>

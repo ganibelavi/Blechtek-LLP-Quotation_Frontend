@@ -92,10 +92,33 @@ export default function EntityTable({ title, columns, rows }) {
           p: 1,
         }}
       >
-        <Typography variant="h6" sx={{ fontSize: 16 }}>
-          {title}
-        </Typography>
-        <Stack direction="row" spacing={1} alignItems="center">
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <Typography variant="body2" sx={{ fontSize: 13, color: "#666" }}>
+            Show
+          </Typography>
+          <Select
+            size="small"
+            value={rowsPerPage}
+            onChange={(e) => {
+              setRowsPerPage(Number(e.target.value));
+              setPage(0);
+            }}
+            sx={{ minWidth: 70, '& .MuiSelect-select': { padding: '4px 10px' } }}
+          >
+            {[5, 10, 25, 50].map((n) => (
+              <MenuItem key={n} value={n}>
+                {n}
+              </MenuItem>
+            ))}
+          </Select>
+          <Typography variant="body2" sx={{ fontSize: 13, color: "#666" }}>
+            entries
+          </Typography>
+        </Box>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <Typography variant="h6" sx={{ fontSize: 16 }}>
+            {title}
+          </Typography>
           <TextField
             size="small"
             placeholder="Search"
@@ -111,22 +134,9 @@ export default function EntityTable({ title, columns, rows }) {
                 </InputAdornment>
               ),
             }}
+            sx={{ minWidth: 200, '& .MuiInputBase-input': { padding: '4px 10px' } }}
           />
-          <Select
-            size="small"
-            value={rowsPerPage}
-            onChange={(e) => {
-              setRowsPerPage(Number(e.target.value));
-              setPage(0);
-            }}
-          >
-            {[5, 10, 25, 50].map((n) => (
-              <MenuItem key={n} value={n}>
-                {n}
-              </MenuItem>
-            ))}
-          </Select>
-        </Stack>
+        </Box>
       </Box>
 
       <Box sx={{ overflowX: "auto" }}>
@@ -184,7 +194,14 @@ export default function EntityTable({ title, columns, rows }) {
         </Table>
       </Box>
 
-      <Box sx={{     justifyContent: "space-between", p: 1 }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          p: 1,
+        }}
+      >
         <Typography
           sx={{ fontSize: 13 }}
         >{`Showing ${filtered.length} item(s)`}</Typography>

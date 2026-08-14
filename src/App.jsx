@@ -19,30 +19,36 @@ export default function App() {
     <div className="app-shell">
       <header className="app-topbar">
         <div className="app-topbar__brand">
-          <span className="app-topbar__mark">BT</span>
-          <div>
+          <img
+            src="/logo/logo.png"
+            alt="BlechTek Software Solutions LLP"
+            className="app-topbar__logo"
+          />
+          {/* <div>
             <h1 className="app-topbar__title">Quotation Studio</h1>
             <p className="app-topbar__subtitle">BlechTek Software Solutions LLP</p>
-          </div>
+          </div> */}
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span className="app-topbar__badge">Internal tool</span>
+        <div className="app-topbar__actions">
           {user && (
             <>
               <Tooltip title="Settings">
-                <IconButton color="inherit" onClick={() => setView("settings")}>
-                  <SettingsIcon style={{ color: "#fff" }} />
+                <IconButton
+                  className="app-topbar__icon-btn"
+                  onClick={() => setView("settings")}
+                >
+                  <SettingsIcon />
                 </IconButton>
               </Tooltip>
               <Tooltip title="Logout">
                 <IconButton
-                  color="inherit"
+                  className="app-topbar__icon-btn"
                   onClick={() => {
                     logout();
                     setView("login");
                   }}
                 >
-                  <LogoutIcon style={{ color: "#fff" }} />
+                  <LogoutIcon />
                 </IconButton>
               </Tooltip>
             </>
@@ -50,7 +56,7 @@ export default function App() {
         </div>
       </header>
 
-      <main className="app-main">
+      <main className="">
         {!user ? (
           <LoginPage />
         ) : (
@@ -61,7 +67,9 @@ export default function App() {
               case "users":
                 return <UsersPage onNavigate={setView} initialTab="users" />;
               case "modules":
-                return <ModulesPage onNavigate={setView} initialTab="modules" />;
+                return (
+                  <ModulesPage onNavigate={setView} initialTab="modules" />
+                );
               case "create":
               default:
                 return <CreateQuotation />;

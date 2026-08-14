@@ -169,7 +169,7 @@ export default function ModulesPage() {
   ];
 
   return (
-    <Box sx={{ p: { xs: 2, md: 4 }, overflowY: "auto" }}>
+    <Box sx={{overflowY: "auto" }}>
       <Box
         sx={{
           display: "flex",
@@ -205,7 +205,17 @@ export default function ModulesPage() {
         maxWidth="sm"
         PaperProps={{ component: "form", onSubmit: saveModule }}
       >
-        <DialogTitle>
+        <DialogTitle
+          sx={{
+            background: "var(--primary-gradient)",
+            color: "white",
+            px: 3,
+            py: 2,
+            mb: 2,
+            borderTopLeftRadius: "var(--radius-md)",
+            borderTopRightRadius: "var(--radius-md)",
+          }}
+        >
           {editingModuleId === null ? "Add Module" : "Edit Module"}
         </DialogTitle>
         <DialogContent dividers>
@@ -242,7 +252,7 @@ export default function ModulesPage() {
           </Box>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
-          <Button onClick={closeDialog}>Cancel</Button>
+          <Button variant="contained" color="secondary" onClick={closeDialog}>Cancel</Button>
           <Button type="submit" variant="contained">
             {editingModuleId === null ? "Create" : "Save Changes"}
           </Button>
