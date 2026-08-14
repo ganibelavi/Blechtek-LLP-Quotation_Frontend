@@ -103,7 +103,10 @@ export default function EntityTable({ title, columns, rows }) {
               setRowsPerPage(Number(e.target.value));
               setPage(0);
             }}
-            sx={{ minWidth: 70, '& .MuiSelect-select': { padding: '4px 10px' } }}
+            sx={{
+              minWidth: 70,
+              "& .MuiSelect-select": { padding: "4px 10px" },
+            }}
           >
             {[5, 10, 25, 50].map((n) => (
               <MenuItem key={n} value={n}>
@@ -134,7 +137,10 @@ export default function EntityTable({ title, columns, rows }) {
                 </InputAdornment>
               ),
             }}
-            sx={{ minWidth: 200, '& .MuiInputBase-input': { padding: '4px 10px' } }}
+            sx={{
+              minWidth: 200,
+              "& .MuiInputBase-input": { padding: "4px 10px" },
+            }}
           />
         </Box>
       </Box>
@@ -144,16 +150,18 @@ export default function EntityTable({ title, columns, rows }) {
           <TableHead>
             <TableRow sx={{ background: "#65aadb" }}>
               {columns.map((col) => (
-                <TableCell
-                  key={col.key}
-                  onClick={() => handleSort(col.key, col.sortable)}
-                  sx={{
-                    color: "#fff",
-                    fontWeight: 600,
-                    fontSize: 13,
-                    cursor: col.sortable ? "pointer" : "default",
-                  }}
-                >
+<TableCell
+                    key={col.key}
+                    onClick={() => handleSort(col.key, col.sortable)}
+                    sx={{
+                      color: "#fff",
+                      fontWeight: 600,
+                      fontSize: 13,
+                      cursor: col.sortable ? "pointer" : "default",
+                      whiteSpace: "nowrap",
+                      minWidth: col.minWidth,
+                    }}
+                  >
                   {col.label}
                   {orderBy === col.key ? (order === "asc" ? " ▲" : " ▼") : null}
                 </TableCell>
@@ -165,14 +173,16 @@ export default function EntityTable({ title, columns, rows }) {
             {display.map((row, idx) => (
               <TableRow key={`${row.id ?? ""}-${idx}`}>
                 {columns.map((col) => (
-                  <TableCell
-                    key={col.key}
-                    sx={{
-                      padding: "0.4rem",
-                      fontSize: 13,
-                      borderRight: "1px solid #eee",
-                    }}
-                  >
+<TableCell
+                      key={col.key}
+                      sx={{
+                        padding: "0.4rem",
+                        fontSize: 13,
+                        borderRight: "1px solid #eee",
+                        whiteSpace: "nowrap",
+                        minWidth: col.minWidth,
+                      }}
+                    >
                     {col.render
                       ? col.render(row)
                       : defaultGetValue(row, col.key)}

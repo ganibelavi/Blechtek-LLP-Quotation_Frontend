@@ -132,18 +132,19 @@ export default function UsersPage() {
   };
 
   const userColumns = [
-    { key: "id", label: "Id", sortable: true },
-    { key: "firstName", label: "First Name", sortable: true },
-    { key: "lastName", label: "Last Name", sortable: true },
-    { key: "email", label: "Email", sortable: true },
-    { key: "passwordHash", label: "PasswordHash" },
-    { key: "isActive", label: "IsActive", sortable: true },
-    { key: "createdAt", label: "CreatedAt", sortable: true },
-    { key: "lastLoginAt", label: "LastLoginAt", sortable: true },
-    { key: "role", label: "Role", sortable: true },
+    { key: "id", label: "Id", sortable: true, minWidth: 80 },
+    { key: "firstName", label: "First Name", sortable: true, minWidth: 140 },
+    { key: "lastName", label: "Last Name", sortable: true, minWidth: 140 },
+    { key: "email", label: "Email", sortable: true, minWidth: 220 },
+    { key: "passwordHash", label: "Password", minWidth: 120 },
+    { key: "isActive", label: "Status", sortable: true, minWidth: 100 },
+    { key: "createdAt", label: "Created At", sortable: true, minWidth: 160 },
+    { key: "lastLoginAt", label: "Last Login", sortable: true, minWidth: 160 },
+    { key: "role", label: "Role", sortable: true, minWidth: 100 },
     {
       key: "actions",
       label: "Actions",
+      minWidth: 100,
       render: (user) => (
         <Box sx={{ whiteSpace: "nowrap" }}>
           <IconButton
@@ -166,7 +167,7 @@ export default function UsersPage() {
   ];
 
   return (
-    <Box sx={{ overflowY: "auto" }}>
+    <Box>
       <Box
         sx={{
           display: "flex",

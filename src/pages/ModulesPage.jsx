@@ -140,13 +140,14 @@ export default function ModulesPage() {
   };
 
   const moduleColumns = [
-    { key: "Id", label: "Id", sortable: true },
-    { key: "Pillar", label: "Pillar", sortable: true },
-    { key: "ModuleName", label: "Module Name", sortable: true },
-    { key: "Price", label: "Price", sortable: true },
+    { key: "Id", label: "Id", sortable: true, minWidth: 80 },
+    { key: "Pillar", label: "Pillar", sortable: true, minWidth: 160 },
+    { key: "ModuleName", label: "Module Name", sortable: true, minWidth: 220 },
+    { key: "Price", label: "Price", sortable: true, minWidth: 120 },
     {
       key: "actions",
       label: "Actions",
+      minWidth: 100,
       render: (module) => (
         <Box sx={{ whiteSpace: "nowrap" }}>
           <IconButton
@@ -169,7 +170,7 @@ export default function ModulesPage() {
   ];
 
   return (
-    <Box sx={{overflowY: "auto" }}>
+    <Box>
       <Box
         sx={{
           display: "flex",

@@ -34,7 +34,7 @@ export default function SettingsPage({ onNavigate }) {
   };
 
   return (
-    <Box sx={{ display: "flex", minHeight: "calc(100vh - 160px)", gap: 3 }}>
+    <Box sx={{ display: "flex", height: "calc(100vh - 160px)", gap: 3 }}>
       {/* Sidebar Partition */}
       <Paper
         elevation={0}
@@ -46,6 +46,7 @@ export default function SettingsPage({ onNavigate }) {
           boxShadow: "0 4px 20px rgba(0, 0, 0, 0.15)",
           width: 280,
           flexShrink: 0,
+          height: "100%",
         }}
       >
         <Box sx={{ p: 2, pb: 1 }}>
@@ -113,14 +114,15 @@ export default function SettingsPage({ onNavigate }) {
       </Paper>
 
       {/* Main Content Area */}
-      <Box sx={{ flexGrow: 1 }}>
+      <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
         <Paper
           elevation={0}
           className="glass"
           sx={{
-            height: "100%",
+            flex: 1,
             p: { xs: 2, md: 4 },
             overflowY: "auto",
+            overflowX: "hidden",
             border: "1px solid #d8d2c6",
             boxShadow: "0 4px 20px rgba(0, 0, 0, 0.15)",
           }}
