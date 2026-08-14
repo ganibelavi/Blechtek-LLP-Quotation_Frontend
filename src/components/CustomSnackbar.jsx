@@ -19,7 +19,6 @@ export default function CustomSnackbar({
         autoHideDuration={autoHideDuration}
         onClose={onClose}
         anchorOrigin={anchorOrigin}
-        disablePortal={true}
         sx={{
           position: "fixed",
           zIndex: 16000,

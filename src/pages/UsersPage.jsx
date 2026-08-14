@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import { fetchUsers, createUser, updateUser, deleteUser } from "../services/userApi";
 import EntityTable from "../components/EntityTable";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
+import Snackbar from "@mui/material/Snackbar";
 import {
   Box,
   Button,
@@ -20,6 +21,7 @@ import {
   Select,
   TextField,
   Typography,
+  Alert,
 } from "@mui/material";
 
 const emptyUser = {
@@ -28,26 +30,44 @@ const emptyUser = {
   email: "",
   password: "",
   role: "User",
-  isActive: "Yes",
+  isActive: true,
 };
 
 export default function UsersPage() {
-  const [users, setUsers] = useState(() => {
-    try {
-      const savedUsers = localStorage.getItem("users_master");
-      return savedUsers ? JSON.parse(savedUsers) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [users, setUsers] = useState([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingUserId, setEditingUserId] = useState(null);
   const [form, setForm] = useState(emptyUser);
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
+
+  const loadUsers = async () => {
+    try {
+      setLoading(true);
+      const data = await fetchUsers();
+      setUsers(data);
+      setError(null);
+    } catch (err) {
+      setError("Failed to load users. Please check if the backend is running.");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    localStorage.setItem("users_master", JSON.stringify(users));
-  }, [users]);
+    loadUsers();
+  }, []);
+
+  const showSnackbar = (message, severity = "success") => {
+    setSnackbar({ open: true, message, severity });
+  };
+
+  const handleSnackbarClose = () => {
+    setSnackbar({ ...snackbar, open: false });
+  };
 
   const openAddDialog = () => {
     setEditingUserId(null);
@@ -58,7 +78,15 @@ export default function UsersPage() {
 
   const openEditDialog = (user) => {
     setEditingUserId(user.id);
-    setForm({ ...emptyUser, ...user, password: "" });
+    setForm({
+      ...emptyUser,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      role: user.role,
+      isActive: user.isActive,
+      password: "",
+    });
     setShowPassword(false);
     setIsDialogOpen(true);
   };
@@ -71,8 +99,12 @@ export default function UsersPage() {
   };
 
   const updateField = (event) => {
-    const { name, value } = event.target;
-    setForm((current) => ({ ...current, [name]: value }));
+    const { name, value, type } = event.target;
+    if (type === "checkbox") {
+      setForm((current) => ({ ...current, [name]: value === "true" }));
+    } else {
+      setForm((current) => ({ ...current, [name]: value }));
+    }
   };
 
   const saveUser = async (event) => {
@@ -88,47 +120,54 @@ export default function UsersPage() {
       return;
     }
 
-    const user = {
-      ...form,
-      id: editingUserId ?? Date.now(),
-      passwordHash: isNewUser ? "••••••••" : undefined,
-      createdAt: isNewUser ? new Date().toLocaleString() : undefined,
-      lastLoginAt: isNewUser ? "Never" : undefined,
-    };
-    if (isNewUser) {
-      try {
-        await axios.post("/api/auth/register", {
+    try {
+      setLoading(true);
+      if (isNewUser) {
+        await createUser({
           email: form.email,
           password: form.password,
+          firstName: form.firstName,
+          lastName: form.lastName,
+          role: form.role,
+          isActive: form.isActive,
         });
-      } catch {
-        // Keep the local user list available if the API is not configured.
+        showSnackbar("User created successfully");
+      } else {
+        await updateUser(editingUserId, {
+          email: form.email,
+          firstName: form.firstName,
+          lastName: form.lastName,
+          role: form.role,
+          isActive: form.isActive,
+          password: form.password || undefined,
+        });
+        showSnackbar("User updated successfully");
       }
-      setUsers((current) => [...current, user]);
-    } else {
-      setUsers((current) =>
-        current.map((currentUser) =>
-          currentUser.id === editingUserId
-            ? {
-                ...currentUser,
-                ...user,
-                password: currentUser.password,
-                passwordHash: form.password
-                  ? "••••••••"
-                  : currentUser.passwordHash,
-                createdAt: currentUser.createdAt,
-                lastLoginAt: currentUser.lastLoginAt,
-              }
-            : currentUser,
-        ),
-      );
+      await loadUsers();
+      closeDialog();
+    } catch (err) {
+      const message = err.response?.data?.error || "Failed to save user";
+      showSnackbar(message, "error");
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
-
-    closeDialog();
   };
 
-  const removeUser = (id) => {
-    setUsers((current) => current.filter((user) => user.id !== id));
+  const removeUser = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this user?")) return;
+    try {
+      setLoading(true);
+      await deleteUser(id);
+      await loadUsers();
+      showSnackbar("User deleted successfully");
+    } catch (err) {
+      const message = err.response?.data?.error || "Failed to delete user";
+      showSnackbar(message, "error");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const userColumns = [
@@ -137,7 +176,7 @@ export default function UsersPage() {
     { key: "lastName", label: "Last Name", sortable: true, minWidth: 140 },
     { key: "email", label: "Email", sortable: true, minWidth: 220 },
     { key: "passwordHash", label: "Password", minWidth: 120 },
-    { key: "isActive", label: "Status", sortable: true, minWidth: 100 },
+    { key: "isActive", label: "Status", sortable: true, minWidth: 100, render: (user) => user.isActive ? "Active" : "Inactive" },
     { key: "createdAt", label: "Created At", sortable: true, minWidth: 160 },
     { key: "lastLoginAt", label: "Last Login", sortable: true, minWidth: 160 },
     { key: "role", label: "Role", sortable: true, minWidth: 100 },
@@ -183,12 +222,25 @@ export default function UsersPage() {
           variant="contained"
           startIcon={<AddIcon />}
           onClick={openAddDialog}
+          disabled={loading}
         >
           Add User
         </Button>
       </Box>
 
-      <EntityTable title="" columns={userColumns} rows={users} />
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
+
+      {loading ? (
+        <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+          <Typography>Loading users...</Typography>
+        </Box>
+      ) : (
+        <EntityTable title="" columns={userColumns} rows={users} />
+      )}
 
       <Dialog
         open={isDialogOpen}
@@ -289,22 +341,28 @@ export default function UsersPage() {
                 labelId="user-status-label"
                 label="Is Active"
                 name="isActive"
-                value={form.isActive}
+                value={form.isActive.toString()}
                 onChange={updateField}
               >
-                <MenuItem value="Yes">Active</MenuItem>
-                <MenuItem value="No">Inactive</MenuItem>
+                <MenuItem value="true">Active</MenuItem>
+                <MenuItem value="false">Inactive</MenuItem>
               </Select>
             </FormControl>
           </Box>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
-          <Button variant="contained" color="secondary" onClick={closeDialog}>Cancel</Button>
-          <Button type="submit" variant="contained">
+          <Button variant="contained" color="secondary" onClick={closeDialog} disabled={loading}>Cancel</Button>
+          <Button type="submit" variant="contained" disabled={loading}>
             {editingUserId === null ? "Create" : "Save Changes"}
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={handleSnackbarClose}>
+        <Alert onClose={handleSnackbarClose} severity={snackbar.severity} sx={{ width: "100%" }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

@@ -80,9 +80,6 @@ export default function QuotationPdfView({ onBack }) {
     return (
       <div className="quotation-pdf-view">
         <div className="pdf-view__header">
-          <button className="pdf-view__back-btn" onClick={onBack}>
-            ← Back to Edit
-          </button>
           <h2>Quotation Preview</h2>
         </div>
         <div className="pdf-view__content">
@@ -99,28 +96,29 @@ export default function QuotationPdfView({ onBack }) {
     );
   }
 
-  return (
+return (
     <div className="quotation-pdf-view">
       <div className="pdf-view__header">
-        <button className="pdf-view__back-btn" onClick={onBack}>
-          ← Back to Edit
-        </button>
         <h2>Quotation Preview</h2>
         <div className="pdf-view__actions">
-          <button
-            className="pdf-view__btn pdf-view__btn--secondary"
-            onClick={handleNewQuotation}
-          >
-            New Quotation
-          </button>
         </div>
+        <button className="pdf-view__back-btn" onClick={onBack} aria-label="Back to edit">
+          <svg className="pdf-view__back-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+          </svg>
+          <span className="pdf-view__back-text"></span>
+        </button>
       </div>
 
       <div className="pdf-view__content">
         <div className="pdf-document">
           <div className="pdf-header">
             <div className="pdf-header__left">
-              BlechTek Software Solutions LLP
+              <img
+                src="/logo/logo.png"
+                alt="BlechTek Software Solutions LLP"
+                className="pdf-header__logo"
+              />
             </div>
             <div className="pdf-header__right">QUOTATION</div>
           </div>

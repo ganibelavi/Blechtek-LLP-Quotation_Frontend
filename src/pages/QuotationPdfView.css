@@ -15,19 +15,45 @@
 }
 
 .pdf-view__back-btn {
-  background: none;
+  background: #757575;
   border: none;
-  color: var(--primary-blue);
-  font-size: 14px;
-  font-weight: 500;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
-  padding: 8px 12px;
+  padding: 4px 8px;
   border-radius: var(--radius-sm);
-  transition: background-color 0.2s ease;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-transform: none;
+  box-shadow: 0 2px 4px rgba(117, 117, 117, 0.3);
 }
 
 .pdf-view__back-btn:hover {
-  background: var(--blue-50);
+  background: #616161;
+  box-shadow: 0 4px 8px rgba(117, 117, 117, 0.4);
+  transform: translateY(-1px);
+}
+
+.pdf-view__back-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(117, 117, 117, 0.3);
+}
+
+.pdf-view__back-icon {
+  flex-shrink: 0;
+}
+
+.pdf-view__back-text {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .pdf-view__back-text {
+    display: inline;
+  }
 }
 
 .pdf-view__header h2 {
@@ -127,6 +153,12 @@
   font-weight: 700;
   color: #1B2A4E;
   letter-spacing: 0.5px;
+}
+
+.pdf-header__logo {
+  height: 50px;
+  width: auto;
+  max-width: 200px;
 }
 
 .pdf-section {

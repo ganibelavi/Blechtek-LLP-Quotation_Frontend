@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import CreateQuotation from "./pages/CreateQuotation";
+import CreatedQuotation from "./pages/CreatedQuotation";
 import QuotationPdfView from "./pages/QuotationPdfView";
 import LoginPage from "./pages/LoginPage";
 import SettingsPage from "./pages/SettingsPage";
@@ -71,6 +72,8 @@ export default function App() {
                 return (
                   <ModulesPage onNavigate={setView} initialTab="modules" />
                 );
+              case "created-quotations":
+                return <CreatedQuotation onNavigate={setView} />;
               case "quotation":
                 return <QuotationPdfView onBack={() => setView("create")} />;
               case "create":

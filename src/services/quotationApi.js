@@ -24,6 +24,17 @@ export async function generateQuotation(payload) {
   return data;
 }
 
+/**
+ * GET /api/quotation/history
+ * returns: List of quotation history entries
+ */
+export async function fetchQuotations(page = 1, pageSize = 50) {
+  const { data } = await client.get("/api/quotation/history", {
+    params: { page, pageSize }
+  });
+  return data;
+}
+
 /** Resolves a relative download URL returned by the API into an absolute one. */
 export function resolveDownloadUrl(path) {
   return `${client.defaults.baseURL}${path}`;

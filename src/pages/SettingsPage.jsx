@@ -10,9 +10,11 @@ import {
 import { useState } from "react";
 import PeopleIcon from "@mui/icons-material/People";
 import AppsIcon from "@mui/icons-material/Apps";
+import DescriptionIcon from "@mui/icons-material/Description";
 
 import UsersPage from "./UsersPage";
 import ModulesPage from "./ModulesPage";
+import CreatedQuotation from "./CreatedQuotation";
 
 export default function SettingsPage({ onNavigate }) {
   const [activeTab, setActiveTab] = useState("users");
@@ -20,6 +22,7 @@ export default function SettingsPage({ onNavigate }) {
   const menuItems = [
     { id: "users", label: "Users", icon: <PeopleIcon /> },
     { id: "modules", label: "Modules", icon: <AppsIcon /> },
+    { id: "created-quotations", label: "Created Quotations", icon: <DescriptionIcon /> },
   ];
 
   const renderContent = () => {
@@ -28,6 +31,8 @@ export default function SettingsPage({ onNavigate }) {
         return <UsersPage onNavigate={onNavigate} showSidebar={false} />;
       case "modules":
         return <ModulesPage onNavigate={onNavigate} showSidebar={false} />;
+      case "created-quotations":
+        return <CreatedQuotation onNavigate={onNavigate} />;
       default:
         return <UsersPage onNavigate={onNavigate} showSidebar={false} />;
     }
