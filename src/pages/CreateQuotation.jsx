@@ -272,11 +272,11 @@ export default function CreateQuotation({ onNavigate }) {
             </div>
           )}
 
-          {result && (
+          {/* {result && (
             <button className="q-result__btn q-result__btn--secondary q-result__btn--full" onClick={handleNewQuotation}>
               New Quotation
             </button>
-          )}
+          )} */}
         </aside>
       </div>
     </div>

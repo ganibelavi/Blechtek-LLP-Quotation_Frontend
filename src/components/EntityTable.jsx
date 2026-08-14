@@ -14,6 +14,7 @@ import InputAdornment from "@mui/material/InputAdornment";
 import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
 import Stack from "@mui/material/Stack";
+import Chip from "@mui/material/Chip";
 import SearchIcon from "@mui/icons-material/Search";
 import ChevronLeft from "@mui/icons-material/ChevronLeft";
 import ChevronRight from "@mui/icons-material/ChevronRight";
@@ -24,6 +25,32 @@ function defaultGetValue(row, key) {
   return String(v);
 }
 
+function StatusText({ status }) {
+  const statusConfig = {
+    Valid: { color: "success" },
+    Pending: { color: "warning" },
+    Draft: { color: "info" },
+    Rejected: { color: "error" },
+    Expired: { color: "default" },
+  };
+
+  const config = statusConfig[status] || { color: "default" };
+
+  return (
+    <Chip
+      label={status}
+      size="small"
+      color={config.color}
+      variant="outlined"
+      sx={{
+        fontWeight: 600,
+        fontSize: "0.7rem",
+        height: 24,
+      }}
+    />
+  );
+}
+
 export default function EntityTable({ title, columns, rows }) {
   const [orderBy, setOrderBy] = useState(null);
   const [order, setOrder] = useState("asc");
@@ -31,9 +58,8 @@ export default function EntityTable({ title, columns, rows }) {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [search, setSearch] = useState("");
 
-  const searchableKeys = useMemo(() => columns.map((c) => c.key), [columns]);
-
   const filtered = useMemo(() => {
+    const searchableKeys = columns.map((c) => c.key);
     const q = search.trim().toLowerCase();
     let list = rows || [];
     if (q) {
@@ -47,7 +73,6 @@ export default function EntityTable({ title, columns, rows }) {
       list = [...list].sort((a, b) => {
         const va = defaultGetValue(a, orderBy);
         const vb = defaultGetValue(b, orderBy);
-        // numeric compare if both are numbers
         const na = Number(va);
         const nb = Number(vb);
         let cmp = 0;
@@ -57,7 +82,7 @@ export default function EntityTable({ title, columns, rows }) {
       });
     }
     return list;
-  }, [rows, search, orderBy, order, columns, searchableKeys]);
+  }, [rows, search, orderBy, order]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / rowsPerPage));
   const display = filtered.slice(
@@ -150,20 +175,20 @@ export default function EntityTable({ title, columns, rows }) {
           <TableHead>
             <TableRow sx={{ background: "#65aadb" }}>
               {columns.map((col) => (
-<TableCell
-                    key={col.key}
-                    onClick={() => handleSort(col.key, col.sortable)}
-                    sx={{
-                      color: "#fff",
-                      fontWeight: 600,
-                      fontSize: 13,
-                      cursor: col.sortable ? "pointer" : "default",
-                      whiteSpace: "nowrap",
-                      minWidth: col.minWidth,
-                    }}
-                  >
+                <TableCell
+                  key={col.key}
+                  onClick={() => handleSort(col.key, col.sortable)}
+                  sx={{
+                    color: "#fff",
+                    fontWeight: 600,
+                    fontSize: 13,
+                    cursor: col.sortable ? "pointer" : "default",
+                    whiteSpace: "nowrap",
+                    minWidth: col.minWidth,
+                  }}
+                >
                   {col.label}
-                  {orderBy === col.key ? (order === "asc" ? " ▲" : " ▼") : null}
+                  {orderBy === col.key ? (order === "asc" ? " ▲" : " ��") : null}
                 </TableCell>
               ))}
             </TableRow>
@@ -173,18 +198,18 @@ export default function EntityTable({ title, columns, rows }) {
             {display.map((row, idx) => (
               <TableRow key={`${row.id ?? ""}-${idx}`}>
                 {columns.map((col) => (
-<TableCell
-                      key={col.key}
-                      sx={{
-                        padding: "0.4rem",
-                        fontSize: 13,
-                        borderRight: "1px solid #eee",
-                        whiteSpace: "nowrap",
-                        minWidth: col.minWidth,
-                      }}
-                    >
+                  <TableCell
+                    key={col.key}
+                    sx={{
+                      padding: "0.4rem",
+                      fontSize: 13,
+                      borderRight: "1px solid #eee",
+                      whiteSpace: "nowrap",
+                      minWidth: col.minWidth,
+                    }}
+                  >
                     {col.render
-                      ? col.render(row)
+                      ? col.render({ row, index: idx, page, rowsPerPage, filteredLength: filtered.length })
                       : defaultGetValue(row, col.key)}
                   </TableCell>
                 ))}
@@ -244,3 +269,5 @@ EntityTable.propTypes = {
   columns: PropTypes.array.isRequired,
   rows: PropTypes.array.isRequired,
 };
+
+export { StatusText };

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import CreateQuotation from "./pages/CreateQuotation";
 import CreatedQuotation from "./pages/CreatedQuotation";
+import DashboardPage from "./pages/DashboardPage";
 import QuotationPdfView from "./pages/QuotationPdfView";
 import LoginPage from "./pages/LoginPage";
 import SettingsPage from "./pages/SettingsPage";
@@ -11,11 +12,12 @@ import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
 import SettingsIcon from "@mui/icons-material/Settings";
 import LogoutIcon from "@mui/icons-material/Logout";
+import DashboardIcon from "@mui/icons-material/Dashboard";
 import "./App.css";
 
 export default function App() {
   const { user, logout } = useAuth();
-  const [view, setView] = useState("create");
+  const [view, setView] = useState("dashboard");
 
   return (
     <div className="app-shell">
@@ -26,14 +28,18 @@ export default function App() {
             alt="BlechTek Software Solutions LLP"
             className="app-topbar__logo"
           />
-          {/* <div>
-            <h1 className="app-topbar__title">Quotation Studio</h1>
-            <p className="app-topbar__subtitle">BlechTek Software Solutions LLP</p>
-          </div> */}
         </div>
         <div className="app-topbar__actions">
           {user && (
             <>
+              <Tooltip title="Dashboard">
+                <IconButton
+                  className="app-topbar__icon-btn"
+                  onClick={() => setView("dashboard")}
+                >
+                  <DashboardIcon />
+                </IconButton>
+              </Tooltip>
               <Tooltip title="Settings">
                 <IconButton
                   className="app-topbar__icon-btn"
@@ -64,6 +70,8 @@ export default function App() {
         ) : (
           (() => {
             switch (view) {
+              case "dashboard":
+                return <DashboardPage onNavigate={setView} />;
               case "settings":
                 return <SettingsPage onNavigate={setView} />;
               case "users":

@@ -5,28 +5,38 @@ import {
   Box,
   Typography,
   Alert,
+  IconButton,
+  Tooltip,
+  Button,
 } from "@mui/material";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import AddIcon from "@mui/icons-material/Add";
 
 const toTableQuotation = (q) => ({
   QuotationId: q.quotationId,
   OrganizationName: q.organizationName,
-  ValidationDate: q.validationDate ? new Date(q.validationDate).toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }) : "",
+  ValidationDate: q.validationDate
+    ? new Date(q.validationDate).toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
+    : "",
   QuotationToName: q.quotationToName,
   QuotationToAddress: q.quotationToAddress,
   QuotationToContactNo: q.quotationToContactNo,
   QuotationToEmail: q.quotationToEmail,
   Modules: (q.modules || []).join(", "),
-  GeneratedAt: q.generatedAt ? new Date(q.generatedAt).toLocaleString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }) : "",
+  GeneratedAt: q.generatedAt
+    ? new Date(q.generatedAt).toLocaleString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "",
+  originalData: q,
 });
 
 export default function CreatedQuotation({ onNavigate }) {
@@ -41,7 +51,9 @@ export default function CreatedQuotation({ onNavigate }) {
       setQuotations((data || []).map(toTableQuotation));
       setError(null);
     } catch (err) {
-      setError("Failed to load quotations. Please check if the backend is running.");
+      setError(
+        "Failed to load quotations. Please check if the backend is running.",
+      );
       console.error(err);
     } finally {
       setLoading(false);
@@ -52,16 +64,98 @@ export default function CreatedQuotation({ onNavigate }) {
     loadQuotations();
   }, []);
 
+  const handleViewQuotation = (quotation) => {
+    sessionStorage.setItem(
+      "quotationData",
+      JSON.stringify({
+        quotationId: quotation.quotationId,
+        pdfDownloadUrl: quotation.pdfDownloadUrl,
+        wordDownloadUrl: quotation.wordDownloadUrl,
+      }),
+    );
+    sessionStorage.setItem(
+      "quotationFormValues",
+      JSON.stringify({
+        organizationName: quotation.organizationName,
+        validationDate: quotation.validationDate,
+        selectedModules: quotation.modules || [],
+        quotationTo: {
+          name: quotation.quotationToName,
+          address: quotation.quotationToAddress,
+          contactNo: quotation.quotationToContactNo,
+          email: quotation.quotationToEmail,
+        },
+      }),
+    );
+    onNavigate("quotation");
+  };
+
+  const handleNewQuotation = () => {
+    onNavigate("create");
+  };
+
   const quotationColumns = [
-    { key: "QuotationId", label: "Quotation ID", sortable: true, minWidth: 180 },
-    { key: "OrganizationName", label: "Organization", sortable: true, minWidth: 220 },
-    { key: "ValidationDate", label: "Valid Until", sortable: true, minWidth: 130 },
-    { key: "QuotationToName", label: "Contact Name", sortable: true, minWidth: 160 },
-    { key: "QuotationToAddress", label: "Address", sortable: true, minWidth: 250 },
-    { key: "QuotationToContactNo", label: "Contact No.", sortable: true, minWidth: 150 },
+    {
+      key: "srNo",
+      label: "Sr. No.",
+      sortable: false,
+      minWidth: 80,
+      render: ({ index, page, rowsPerPage }) => page * rowsPerPage + index + 1,
+    },
+    {
+      key: "OrganizationName",
+      label: "Organization",
+      sortable: true,
+      minWidth: 220,
+    },
+    {
+      key: "ValidationDate",
+      label: "Valid Until",
+      sortable: true,
+      minWidth: 130,
+    },
+    {
+      key: "QuotationToName",
+      label: "Contact Name",
+      sortable: true,
+      minWidth: 160,
+    },
+    {
+      key: "QuotationToAddress",
+      label: "Address",
+      sortable: true,
+      minWidth: 250,
+    },
+    {
+      key: "QuotationToContactNo",
+      label: "Contact No.",
+      sortable: true,
+      minWidth: 150,
+    },
     { key: "QuotationToEmail", label: "Email", sortable: true, minWidth: 200 },
     { key: "Modules", label: "Modules", sortable: true, minWidth: 300 },
-    { key: "GeneratedAt", label: "Generated At", sortable: true, minWidth: 180 },
+    {
+      key: "GeneratedAt",
+      label: "Generated At",
+      sortable: true,
+      minWidth: 180,
+    },
+    {
+      key: "actions",
+      label: "Actions",
+      sortable: false,
+      minWidth: 80,
+      render: ({ row }) => (
+        <Tooltip title="View Quotation">
+          <IconButton
+            size="small"
+            onClick={() => handleViewQuotation(row.originalData)}
+          >
+            <VisibilityIcon fontSize="small" color="primary" />
+          </IconButton>
+        </Tooltip>
+      ),
+    },
   ];
 
   return (
@@ -77,6 +171,14 @@ export default function CreatedQuotation({ onNavigate }) {
         <Typography variant="h5" fontWeight={700}>
           Created Quotations
         </Typography>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={handleNewQuotation}
+          sx={{ px: 3, py: 1 }}
+        >
+          New Quotation
+        </Button>
       </Box>
 
       {error && (

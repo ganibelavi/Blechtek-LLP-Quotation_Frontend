@@ -35,6 +35,15 @@ export async function fetchQuotations(page = 1, pageSize = 50) {
   return data;
 }
 
+/**
+ * GET /api/quotation/dashboard
+ * returns: Dashboard analytics data
+ */
+export async function fetchDashboardData() {
+  const { data } = await client.get("/api/quotation/dashboard");
+  return data;
+}
+
 /** Resolves a relative download URL returned by the API into an absolute one. */
 export function resolveDownloadUrl(path) {
   return `${client.defaults.baseURL}${path}`;
