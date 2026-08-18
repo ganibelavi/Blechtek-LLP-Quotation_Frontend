@@ -211,6 +211,34 @@
   font-size: 11pt;
 }
 
+.quotation-to-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.quotation-to-left p {
+  margin: 4px 0;
+}
+
+.quotation-to-right p {
+  margin: 4px 0;
+  font-size: 11pt;
+  text-align: right;
+}
+
+@media (max-width: 600px) {
+  .quotation-to-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .quotation-to-right p {
+    text-align: left;
+  }
+}
+
 .pdf-section--bullets {
   margin-bottom: 16px;
 }
@@ -228,7 +256,7 @@
 .pdf-section--note {
   font-style: italic;
   color: #333;
-  border-left: 3px solid #2E7D6B;
+  border-left: 3px solid #65aadb;
   padding-left: 12px;
   margin: 16px 0;
   background: #f8fbfa;

@@ -8,6 +8,8 @@ const initialValues = {
   validationDate: "",
   selectedModules: [],
   quotationTo: { name: "", address: "", contactNo: "", email: "" },
+  quotationNo: "",
+  date: "",
 };
 
 export default function QuotationPdfView({ onBack }) {
@@ -56,8 +58,21 @@ export default function QuotationPdfView({ onBack }) {
       .replace(/ /g, " ");
   }
 
-  const { organizationName, validationDate, selectedModules, quotationTo } =
+  const { organizationName, validationDate, selectedModules, quotationTo, quotationNo, date } =
     values;
+
+  // Format date for display, handling min date value
+  const formatDisplayDate = (dateStr) => {
+    if (!dateStr || dateStr.startsWith("0001-01-01")) return "";
+    return new Date(dateStr).toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  const displayQuotationNo = quotationNo || "{{QUOTATION_NO}}";
+  const displayDate = formatDisplayDate(date) || "{{DATE}}";
 
   const moduleList =
     selectedModules.length === 1
@@ -139,12 +154,20 @@ export default function QuotationPdfView({ onBack }) {
 
           <div className="pdf-section pdf-section--quotation-to">
             <h3>QUOTATION TO</h3>
-            <p>Name: {quotationTo.name || "{{CONTACT_NAME}}"}</p>
-            <p>Address: {quotationTo.address || "{{CONTACT_ADDRESS}"}</p>
-            <p>
-              Contact No.: {quotationTo.contactNo || "{{CONTACT_PHONE}"} |
-              Email: {quotationTo.email || "{{CONTACT_EMAIL}"}
-            </p>
+            <div className="quotation-to-grid">
+              <div className="quotation-to-left">
+                <p>Name: {quotationTo.name || "{{CONTACT_NAME}}"}</p>
+                <p>Address: {quotationTo.address || "{{CONTACT_ADDRESS}"}</p>
+                <p>
+                  Contact No.: {quotationTo.contactNo || "{{CONTACT_PHONE}"} |
+                  Email: {quotationTo.email || "{{CONTACT_EMAIL}"}
+                </p>
+              </div>
+              <div className="quotation-to-right">
+                <p>Quotation No.: {displayQuotationNo}</p>
+                <p>Date: {displayDate}</p>
+              </div>
+            </div>
           </div>
 
           <div className="pdf-section">

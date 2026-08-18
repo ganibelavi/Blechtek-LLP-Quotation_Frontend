@@ -15,6 +15,14 @@ import AddIcon from "@mui/icons-material/Add";
 const toTableQuotation = (q) => ({
   QuotationId: q.quotationId,
   OrganizationName: q.organizationName,
+  QuotationNo: q.quotationNo || "",
+  Date: q.date && !q.date.startsWith("0001-01-01")
+    ? new Date(q.date).toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
+    : "",
   ValidationDate: q.validationDate
     ? new Date(q.validationDate).toLocaleDateString("en-IN", {
         day: "2-digit",
@@ -78,6 +86,8 @@ export default function CreatedQuotation({ onNavigate }) {
       JSON.stringify({
         organizationName: quotation.organizationName,
         validationDate: quotation.validationDate,
+        quotationNo: quotation.quotationNo,
+        date: quotation.date,
         selectedModules: quotation.modules || [],
         quotationTo: {
           name: quotation.quotationToName,
@@ -107,6 +117,18 @@ export default function CreatedQuotation({ onNavigate }) {
       label: "Organization",
       sortable: true,
       minWidth: 220,
+    },
+    {
+      key: "QuotationNo",
+      label: "Quotation No.",
+      sortable: true,
+      minWidth: 150,
+    },
+    {
+      key: "Date",
+      label: "Date",
+      sortable: true,
+      minWidth: 130,
     },
     {
       key: "ValidationDate",

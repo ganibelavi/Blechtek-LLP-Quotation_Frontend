@@ -11,6 +11,8 @@ import "../components/QuotationPreview.css";
 const initialValues = {
   organizationName: "",
   validationDate: "",
+  quotationNo: "",
+  date: "",
   selectedModules: [],
   quotationTo: { name: "", address: "", contactNo: "", email: "" },
 };
@@ -67,6 +69,8 @@ export default function CreateQuotation({ onNavigate }) {
       const payload = {
         validationDate: values.validationDate,
         organizationName: values.organizationName,
+        quotationNo: values.quotationNo,
+        date: values.date,
         selectedModules: values.selectedModules,
         quotationTo: {
           name: values.quotationTo.name,
@@ -170,6 +174,41 @@ export default function CreateQuotation({ onNavigate }) {
                   {errors.validationDate && (
                     <span className="q-field__error">
                       {errors.validationDate}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="q-form__row">
+                <div className="q-field">
+                  <label htmlFor="quotationNo">Quotation No.</label>
+                  <input
+                    id="quotationNo"
+                    type="text"
+                    placeholder="e.g. Q-2026-001"
+                    value={values.quotationNo}
+                    onChange={(e) =>
+                      handleFieldChange("quotationNo", e.target.value)
+                    }
+                  />
+                  {errors.quotationNo && (
+                    <span className="q-field__error">
+                      {errors.quotationNo}
+                    </span>
+                  )}
+                </div>
+                <div className="q-field q-field--narrow">
+                  <label htmlFor="date">Date</label>
+                  <input
+                    id="date"
+                    type="date"
+                    value={values.date}
+                    onChange={(e) =>
+                      handleFieldChange("date", e.target.value)
+                    }
+                  />
+                  {errors.date && (
+                    <span className="q-field__error">
+                      {errors.date}
                     </span>
                   )}
                 </div>
@@ -422,6 +461,8 @@ function validate(values) {
   if (!values.organizationName.trim())
     errors.organizationName = "Organization name is required.";
   if (!values.validationDate) errors.validationDate = "Pick a validity date.";
+  if (!values.quotationNo.trim()) errors.quotationNo = "Quotation No. is required.";
+  if (!values.date) errors.date = "Date is required.";
   if (values.selectedModules.length === 0)
     errors.selectedModules = "Select at least one module.";
   if (!values.quotationTo.name.trim())
