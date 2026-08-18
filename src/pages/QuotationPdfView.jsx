@@ -11,6 +11,7 @@ const initialValues = {
 };
 
 export default function QuotationPdfView({ onBack }) {
+  const handleBack = () => onBack("settings");
   const [values, setValues] = useState(initialValues);
   const [result, setResult] = useState(null);
   const [allModules, setAllModules] = useState([]);
@@ -68,7 +69,7 @@ export default function QuotationPdfView({ onBack }) {
 
   // Get selected modules with their pillar info from the master module list
   const scopeModules = allModules.filter((m) =>
-    selectedModules.includes(m.module)
+    selectedModules.includes(m.module),
   );
 
   if (
@@ -96,15 +97,28 @@ export default function QuotationPdfView({ onBack }) {
     );
   }
 
-return (
+  return (
     <div className="quotation-pdf-view">
       <div className="pdf-view__header">
         <h2>Quotation Preview</h2>
-        <div className="pdf-view__actions">
-        </div>
-        <button className="pdf-view__back-btn" onClick={onBack} aria-label="Back to edit">
-          <svg className="pdf-view__back-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M19 12H5M12 19l-7-7 7-7"/>
+        <div className="pdf-view__actions"></div>
+        <button
+          className="pdf-view__back-btn"
+          onClick={handleBack}
+          aria-label="Back to quotations list"
+        >
+          <svg
+            className="pdf-view__back-icon"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M19 12H5M12 19l-7-7 7-7" />
           </svg>
           <span className="pdf-view__back-text"></span>
         </button>
@@ -412,7 +426,7 @@ return (
           </div>
         </div>
 
-        {result && (
+        {/* {result && (
           <div className="q-result q-result--bottom">
             <p className="q-result__title">Quotation generated</p>
             <p className="q-result__id">{result.quotationId}</p>
@@ -425,29 +439,25 @@ return (
               </button>
               <button
                 className="q-result__btn q-result__btn--primary"
-                onClick={() =>
-                  window.open(
-                    resolveDownloadUrl(result.pdfDownloadUrl),
-                    "_blank",
-                  )
-                }
+                onClick={() => {
+                  const url = resolveDownloadUrl(result.pdfDownloadUrl);
+                  if (url) window.open(url, "_blank");
+                }}
               >
                 Download PDF
               </button>
               <button
                 className="q-result__btn"
-                onClick={() =>
-                  window.open(
-                    resolveDownloadUrl(result.wordDownloadUrl),
-                    "_blank",
-                  )
-                }
+                onClick={() => {
+                  const url = resolveDownloadUrl(result.wordDownloadUrl);
+                  if (url) window.open(url, "_blank");
+                }}
               >
                 Download Word
               </button>
             </div>
           </div>
-        )}
+        )} */}
       </div>
     </div>
   );

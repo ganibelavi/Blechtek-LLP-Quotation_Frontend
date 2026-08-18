@@ -4,19 +4,68 @@
   padding: 1rem;
 }
 
-.create-quotation__intro {
+.create-quotation__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
 }
 
-.create-quotation__intro h2 {
+.create-quotation__title h2 {
   font-size: 24px;
-  margin-bottom: 6px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin: 0 0 6px;
 }
 
-.create-quotation__intro p {
+.create-quotation__title p {
   margin: 0;
   color: var(--text-600);
   font-size: 14px;
+}
+
+.create-quotation__back-btn {
+  background: #757575;
+  border: none;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-transform: none;
+  box-shadow: 0 2px 4px rgba(117, 117, 117, 0.3);
+}
+
+.create-quotation__back-btn:hover {
+  background: #616161;
+  box-shadow: 0 4px 8px rgba(117, 117, 117, 0.4);
+  transform: translateY(-1px);
+}
+
+.create-quotation__back-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(117, 117, 117, 0.3);
+}
+
+.create-quotation__back-icon {
+  flex-shrink: 0;
+}
+
+.create-quotation__back-text {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .create-quotation__back-text {
+    display: inline;
+  }
 }
 
 .create-quotation__layout {

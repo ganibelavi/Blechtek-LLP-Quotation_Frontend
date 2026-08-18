@@ -15,9 +15,10 @@ import DescriptionIcon from "@mui/icons-material/Description";
 import UsersPage from "./UsersPage";
 import ModulesPage from "./ModulesPage";
 import CreatedQuotation from "./CreatedQuotation";
+import QuotationPdfView from "./QuotationPdfView";
 
-export default function SettingsPage({ onNavigate }) {
-  const [activeTab, setActiveTab] = useState("users");
+export default function SettingsPage({ onNavigate, initialTab = "users", quotationDetail = null }) {
+  const [activeTab, setActiveTab] = useState(initialTab);
 
   const menuItems = [
     { id: "users", label: "Users", icon: <PeopleIcon /> },
@@ -30,6 +31,9 @@ export default function SettingsPage({ onNavigate }) {
   ];
 
   const renderContent = () => {
+    if (quotationDetail) {
+      return <QuotationPdfView onBack={() => onNavigate("settings", "created-quotations")} />;
+    }
     switch (activeTab) {
       case "users":
         return <UsersPage onNavigate={onNavigate} showSidebar={false} />;

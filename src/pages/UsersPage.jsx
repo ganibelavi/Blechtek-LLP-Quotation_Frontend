@@ -1,12 +1,16 @@
 import { useEffect, useState } from "react";
-import { fetchUsers, createUser, updateUser, deleteUser } from "../services/userApi";
+import {
+  fetchUsers,
+  createUser,
+  updateUser,
+  deleteUser,
+} from "../services/userApi";
 import EntityTable from "../components/EntityTable";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
-import Snackbar from "@mui/material/Snackbar";
 import {
   Box,
   Button,
@@ -22,6 +26,7 @@ import {
   TextField,
   Typography,
   Alert,
+  Snackbar,
 } from "@mui/material";
 
 const emptyUser = {
@@ -41,7 +46,13 @@ export default function UsersPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
 
   const loadUsers = async () => {
     try {
@@ -154,20 +165,35 @@ export default function UsersPage() {
     }
   };
 
-  const removeUser = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this user?")) return;
+  const handleRemoveUser = (user) => {
+    setUserToDelete(user);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmRemoveUser = async () => {
+    if (!userToDelete) return;
     try {
       setLoading(true);
-      await deleteUser(id);
+      await deleteUser(userToDelete.id);
       await loadUsers();
-      showSnackbar("User deleted successfully");
+      showSnackbar(
+        `User "${userToDelete.firstName} ${userToDelete.lastName}" deleted successfully!`,
+      );
+      setDeleteDialogOpen(false);
+      setUserToDelete(null);
     } catch (err) {
       const message = err.response?.data?.error || "Failed to delete user";
       showSnackbar(message, "error");
-      console.error(err);
+      setDeleteDialogOpen(false);
+      setUserToDelete(null);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCloseDeleteDialog = () => {
+    setDeleteDialogOpen(false);
+    setUserToDelete(null);
   };
 
   const userColumns = [
@@ -176,7 +202,13 @@ export default function UsersPage() {
     { key: "lastName", label: "Last Name", sortable: true, minWidth: 140 },
     { key: "email", label: "Email", sortable: true, minWidth: 220 },
     { key: "passwordHash", label: "Password", minWidth: 120 },
-    { key: "isActive", label: "Status", sortable: true, minWidth: 100, render: (user) => user.isActive ? "Active" : "Inactive" },
+    {
+      key: "isActive",
+      label: "Status",
+      sortable: true,
+      minWidth: 100,
+      render: (user) => (user.isActive ? "Active" : "Inactive"),
+    },
     { key: "createdAt", label: "Created At", sortable: true, minWidth: 160 },
     { key: "lastLoginAt", label: "Last Login", sortable: true, minWidth: 160 },
     { key: "role", label: "Role", sortable: true, minWidth: 100 },
@@ -196,7 +228,7 @@ export default function UsersPage() {
           <IconButton
             aria-label={`Delete ${user.email}`}
             size="small"
-            onClick={() => removeUser(user.id)}
+            onClick={() => handleRemoveUser(user)}
           >
             <DeleteIcon fontSize="small" />
           </IconButton>
@@ -313,10 +345,16 @@ export default function UsersPage() {
                   <IconButton
                     onClick={() => setShowPassword(!showPassword)}
                     edge="end"
-                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
+                    }
                     sx={{ color: "text.secondary" }}
                   >
-                    {showPassword ? <VisibilityOffIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
+                    {showPassword ? (
+                      <VisibilityOffIcon fontSize="small" />
+                    ) : (
+                      <VisibilityIcon fontSize="small" />
+                    )}
                   </IconButton>
                 ),
               }}
@@ -351,15 +389,82 @@ export default function UsersPage() {
           </Box>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
-          <Button variant="contained" color="secondary" onClick={closeDialog} disabled={loading}>Cancel</Button>
+          <Button
+            variant="contained"
+            color="secondary"
+            onClick={closeDialog}
+            disabled={loading}
+          >
+            Cancel
+          </Button>
           <Button type="submit" variant="contained" disabled={loading}>
             {editingUserId === null ? "Create" : "Save Changes"}
           </Button>
         </DialogActions>
       </Dialog>
 
-      <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={handleSnackbarClose}>
-        <Alert onClose={handleSnackbarClose} severity={snackbar.severity} sx={{ width: "100%" }}>
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleCloseDeleteDialog}
+        maxWidth="xs"
+        fullWidth
+        sx={{
+          "& .MuiDialog-container": {
+            alignItems: "flex-start",
+            paddingTop: "1vh",
+          },
+        }}
+        PaperProps={{ sx: { borderRadius: 1 } }}
+      >
+        <DialogTitle
+          sx={{
+            fontWeight: 800,
+            color: "white",
+            background: "linear-gradient(120deg, #308aea 0%, #48cae4 100%)",
+            py: 1.5,
+          }}
+        >
+          Confirm Delete User
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" sx={{ mt: 1 }}>
+            Are you sure you want to delete the user{" "}
+            <strong>
+              {userToDelete
+                ? `${userToDelete.firstName} ${userToDelete.lastName}`
+                : ""}
+            </strong>? This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ p: 3, pt: 0 }}>
+          <Button
+            onClick={handleCloseDeleteDialog}
+            sx={{
+              bgcolor: "#757575",
+              color: "white",
+              "&:hover": { bgcolor: "#757575" },
+              textTransform: "none",
+              borderRadius: 2,
+            }}
+          >
+            Cancel
+          </Button>
+          <Button onClick={handleConfirmRemoveUser} variant="contained">
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleSnackbarClose}
+      >
+        <Alert
+          onClose={handleSnackbarClose}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
+        >
           {snackbar.message}
         </Alert>
       </Snackbar>

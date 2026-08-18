@@ -46,6 +46,7 @@ export async function fetchDashboardData() {
 
 /** Resolves a relative download URL returned by the API into an absolute one. */
 export function resolveDownloadUrl(path) {
+  if (!path) return "";
   return `${client.defaults.baseURL}${path}`;
 }
 

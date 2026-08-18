@@ -4,6 +4,7 @@ import EntityTable from "../components/EntityTable";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
+import Snackbar from "@mui/material/Snackbar";
 import {
   Box,
   Button,
@@ -14,6 +15,7 @@ import {
   IconButton,
   TextField,
   Typography,
+  Alert,
 } from "@mui/material";
 
 const emptyModule = { pillar: "", moduleName: "", price: "" };
@@ -36,6 +38,8 @@ export default function ModulesPage() {
   const [editingModuleId, setEditingModuleId] = useState(null);
   const [form, setForm] = useState(emptyModule);
   const [apiError, setApiError] = useState("");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [moduleToDelete, setModuleToDelete] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -126,18 +130,41 @@ export default function ModulesPage() {
     closeDialog();
   };
 
-  const removeModule = async (id) => {
+  const handleRemoveModule = (module) => {
+    setModuleToDelete(module);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmRemoveModule = async () => {
+    if (!moduleToDelete) return;
     setApiError("");
     try {
-      await axios.delete(`/api/modules/${id}`);
+      await axios.delete(`/api/modules/${moduleToDelete.Id}`);
+      setModules((current) => current.filter((module) => module.Id !== moduleToDelete.Id));
+      setSnackbar({
+        open: true,
+        message: `Module "${moduleToDelete.ModuleName}" deleted successfully!`,
+        severity: "success",
+      });
+      setDeleteDialogOpen(false);
+      setModuleToDelete(null);
     } catch (error) {
-      setApiError(
-        error.response?.data?.error ?? "Could not delete the module from the database.",
-      );
-      return;
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.error ?? "Could not delete the module from the database.",
+        severity: "error",
+      });
+      setDeleteDialogOpen(false);
+      setModuleToDelete(null);
     }
-    setModules((current) => current.filter((module) => module.Id !== id));
   };
+
+  const handleCloseDeleteDialog = () => {
+    setDeleteDialogOpen(false);
+    setModuleToDelete(null);
+  };
+
+  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
 
   const moduleColumns = [
     { key: "Id", label: "Id", sortable: true, minWidth: 80 },
@@ -160,7 +187,7 @@ export default function ModulesPage() {
           <IconButton
             aria-label={`Delete ${module.ModuleName}`}
             size="small"
-            onClick={() => removeModule(module.Id)}
+            onClick={() => handleRemoveModule(module)}
           >
             <DeleteIcon fontSize="small" />
           </IconButton>
@@ -259,6 +286,61 @@ export default function ModulesPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleCloseDeleteDialog}
+        maxWidth="xs"
+        fullWidth
+        sx={{
+          "& .MuiDialog-container": {
+            alignItems: "flex-start",
+            paddingTop: "1vh",
+          },
+        }}
+        PaperProps={{ sx: { borderRadius: 1 } }}
+      >
+        <DialogTitle
+          sx={{
+            fontWeight: 800,
+            color: "white",
+            background: "linear-gradient(120deg, #308aea 0%, #48cae4 100%)",
+            py: 1.5,
+          }}
+        >
+          Confirm Delete Module
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" sx={{ mt: 1 }}>
+            Are you sure you want to delete the module{" "}
+            <strong>{moduleToDelete?.ModuleName}</strong>? This action cannot
+            be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ p: 3, pt: 0 }}>
+          <Button
+            onClick={handleCloseDeleteDialog}
+            sx={{
+              bgcolor: "#757575",
+              color: "white",
+              "&:hover": { bgcolor: "#757575" },
+              textTransform: "none",
+              borderRadius: 2,
+            }}
+          >
+            Cancel
+          </Button>
+          <Button onClick={handleConfirmRemoveModule} variant="contained">
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={() => setSnackbar({ ...snackbar, open: false })}>
+        <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity} sx={{ width: "100%" }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

@@ -18,6 +18,12 @@ import "./App.css";
 export default function App() {
   const { user, logout } = useAuth();
   const [view, setView] = useState("dashboard");
+  const [settingsInitialTab, setSettingsInitialTab] = useState("users");
+
+  const navigate = (newView, initialTab) => {
+    if (initialTab) setSettingsInitialTab(initialTab);
+    setView(newView);
+  };
 
   return (
     <div className="app-shell">
@@ -35,7 +41,7 @@ export default function App() {
               <Tooltip title="Dashboard">
                 <IconButton
                   className="app-topbar__icon-btn"
-                  onClick={() => setView("dashboard")}
+                  onClick={() => navigate("dashboard")}
                 >
                   <DashboardIcon />
                 </IconButton>
@@ -43,7 +49,7 @@ export default function App() {
               <Tooltip title="Settings">
                 <IconButton
                   className="app-topbar__icon-btn"
-                  onClick={() => setView("settings")}
+                  onClick={() => navigate("settings")}
                 >
                   <SettingsIcon />
                 </IconButton>
@@ -53,7 +59,7 @@ export default function App() {
                   className="app-topbar__icon-btn"
                   onClick={() => {
                     logout();
-                    setView("login");
+                    navigate("login");
                   }}
                 >
                   <LogoutIcon />
@@ -71,22 +77,24 @@ export default function App() {
           (() => {
             switch (view) {
               case "dashboard":
-                return <DashboardPage onNavigate={setView} />;
+                return <DashboardPage onNavigate={navigate} />;
               case "settings":
-                return <SettingsPage onNavigate={setView} />;
+                return <SettingsPage onNavigate={navigate} initialTab={settingsInitialTab} />;
+              case "quotation-detail":
+                return <SettingsPage onNavigate={navigate} initialTab="created-quotations" quotationDetail={true} />;
               case "users":
-                return <UsersPage onNavigate={setView} initialTab="users" />;
+                return <UsersPage onNavigate={navigate} initialTab="users" />;
               case "modules":
                 return (
-                  <ModulesPage onNavigate={setView} initialTab="modules" />
+                  <ModulesPage onNavigate={navigate} initialTab="modules" />
                 );
               case "created-quotations":
-                return <CreatedQuotation onNavigate={setView} />;
+                return <CreatedQuotation onNavigate={navigate} />;
               case "quotation":
-                return <QuotationPdfView onBack={() => setView("create")} />;
+                return <QuotationPdfView onBack={() => navigate("settings", "created-quotations")} />;
               case "create":
               default:
-                return <CreateQuotation onNavigate={setView} />;
+                return <CreateQuotation onNavigate={navigate} />;
             }
           })()
         )}

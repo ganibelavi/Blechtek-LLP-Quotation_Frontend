@@ -87,7 +87,7 @@ export default function CreatedQuotation({ onNavigate }) {
         },
       }),
     );
-    onNavigate("quotation");
+    onNavigate("quotation-detail");
   };
 
   const handleNewQuotation = () => {

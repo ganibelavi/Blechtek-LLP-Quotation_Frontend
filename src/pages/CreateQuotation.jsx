@@ -1,5 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { fetchModules, generateQuotation, resolveDownloadUrl } from "../services/quotationApi";
+import {
+  fetchModules,
+  generateQuotation,
+  resolveDownloadUrl,
+} from "../services/quotationApi";
 import "./CreateQuotation.css";
 import "../components/QuotationForm.css";
 import "../components/QuotationPreview.css";
@@ -8,7 +12,7 @@ const initialValues = {
   organizationName: "",
   validationDate: "",
   selectedModules: [],
-  quotationTo: { name: "", address: "", contactNo: "", email: "" }
+  quotationTo: { name: "", address: "", contactNo: "", email: "" },
 };
 
 export default function CreateQuotation({ onNavigate }) {
@@ -22,7 +26,9 @@ export default function CreateQuotation({ onNavigate }) {
   useEffect(() => {
     fetchModules()
       .then(setModules)
-      .catch(() => setApiError("Could not load the module list. Is the API running?"));
+      .catch(() =>
+        setApiError("Could not load the module list. Is the API running?"),
+      );
   }, []);
 
   const handleFieldChange = (field, value) => {
@@ -30,7 +36,10 @@ export default function CreateQuotation({ onNavigate }) {
   };
 
   const handleQuotationToChange = (field, value) => {
-    setValues((v) => ({ ...v, quotationTo: { ...v.quotationTo, [field]: value } }));
+    setValues((v) => ({
+      ...v,
+      quotationTo: { ...v.quotationTo, [field]: value },
+    }));
   };
 
   const handleToggleModule = (moduleName) => {
@@ -40,7 +49,7 @@ export default function CreateQuotation({ onNavigate }) {
         ...v,
         selectedModules: exists
           ? v.selectedModules.filter((m) => m !== moduleName)
-          : [...v.selectedModules, moduleName]
+          : [...v.selectedModules, moduleName],
       };
     });
   };
@@ -63,8 +72,8 @@ export default function CreateQuotation({ onNavigate }) {
           name: values.quotationTo.name,
           address: values.quotationTo.address,
           contactNo: values.quotationTo.contactNo,
-          email: values.quotationTo.email
-        }
+          email: values.quotationTo.email,
+        },
       };
       const data = await generateQuotation(payload);
       setResult(data);
@@ -72,7 +81,8 @@ export default function CreateQuotation({ onNavigate }) {
       sessionStorage.setItem("quotationFormValues", JSON.stringify(values));
     } catch (err) {
       setApiError(
-        err.response?.data?.error || "Something went wrong while generating the quotation."
+        err.response?.data?.error ||
+          "Something went wrong while generating the quotation.",
       );
     } finally {
       setSubmitting(false);
@@ -94,9 +104,34 @@ export default function CreateQuotation({ onNavigate }) {
 
   return (
     <div className="create-quotation">
-      <div className="create-quotation__intro">
-        <h2>New quotation</h2>
-        <p>Fill in the client details and pick the modules in scope — everything else follows the standard BlechTek format.</p>
+      <div className="create-quotation__header">
+        <div className="create-quotation__title">
+          <h2>New quotation</h2>
+          <p>
+            Fill in the client details and pick the modules in scope —
+            everything else follows the standard BlechTek format.
+          </p>
+        </div>
+        <button
+          className="create-quotation__back-btn"
+          onClick={() => onNavigate("settings", "created-quotations")}
+          aria-label="Back to quotations list"
+        >
+          <svg
+            className="create-quotation__back-icon"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M19 12H5M12 19l-7-7 7-7" />
+          </svg>
+          <span className="create-quotation__back-text"></span>
+        </button>
       </div>
 
       <div className="create-quotation__layout">
@@ -112,9 +147,15 @@ export default function CreateQuotation({ onNavigate }) {
                     type="text"
                     placeholder="e.g. Vantage Auto Components Pvt. Ltd."
                     value={values.organizationName}
-                    onChange={(e) => handleFieldChange("organizationName", e.target.value)}
+                    onChange={(e) =>
+                      handleFieldChange("organizationName", e.target.value)
+                    }
                   />
-                  {errors.organizationName && <span className="q-field__error">{errors.organizationName}</span>}
+                  {errors.organizationName && (
+                    <span className="q-field__error">
+                      {errors.organizationName}
+                    </span>
+                  )}
                 </div>
                 <div className="q-field q-field--narrow">
                   <label htmlFor="validationDate">Valid until</label>
@@ -122,9 +163,15 @@ export default function CreateQuotation({ onNavigate }) {
                     id="validationDate"
                     type="date"
                     value={values.validationDate}
-                    onChange={(e) => handleFieldChange("validationDate", e.target.value)}
+                    onChange={(e) =>
+                      handleFieldChange("validationDate", e.target.value)
+                    }
                   />
-                  {errors.validationDate && <span className="q-field__error">{errors.validationDate}</span>}
+                  {errors.validationDate && (
+                    <span className="q-field__error">
+                      {errors.validationDate}
+                    </span>
+                  )}
                 </div>
               </div>
             </section>
@@ -139,9 +186,13 @@ export default function CreateQuotation({ onNavigate }) {
                     type="text"
                     placeholder="e.g. Rakesh Sharma"
                     value={values.quotationTo.name}
-                    onChange={(e) => handleQuotationToChange("name", e.target.value)}
+                    onChange={(e) =>
+                      handleQuotationToChange("name", e.target.value)
+                    }
                   />
-                  {errors.contactName && <span className="q-field__error">{errors.contactName}</span>}
+                  {errors.contactName && (
+                    <span className="q-field__error">{errors.contactName}</span>
+                  )}
                 </div>
                 <div className="q-field">
                   <label htmlFor="contactNo">Contact number</label>
@@ -150,9 +201,13 @@ export default function CreateQuotation({ onNavigate }) {
                     type="tel"
                     placeholder="+91 98815 50000"
                     value={values.quotationTo.contactNo}
-                    onChange={(e) => handleQuotationToChange("contactNo", e.target.value)}
+                    onChange={(e) =>
+                      handleQuotationToChange("contactNo", e.target.value)
+                    }
                   />
-                  {errors.contactNo && <span className="q-field__error">{errors.contactNo}</span>}
+                  {errors.contactNo && (
+                    <span className="q-field__error">{errors.contactNo}</span>
+                  )}
                 </div>
               </div>
 
@@ -163,9 +218,15 @@ export default function CreateQuotation({ onNavigate }) {
                   rows={2}
                   placeholder="Full postal address"
                   value={values.quotationTo.address}
-                  onChange={(e) => handleQuotationToChange("address", e.target.value)}
+                  onChange={(e) =>
+                    handleQuotationToChange("address", e.target.value)
+                  }
                 />
-                {errors.contactAddress && <span className="q-field__error">{errors.contactAddress}</span>}
+                {errors.contactAddress && (
+                  <span className="q-field__error">
+                    {errors.contactAddress}
+                  </span>
+                )}
               </div>
 
               <div className="q-field">
@@ -175,16 +236,21 @@ export default function CreateQuotation({ onNavigate }) {
                   type="email"
                   placeholder="name@company.com"
                   value={values.quotationTo.email}
-                  onChange={(e) => handleQuotationToChange("email", e.target.value)}
+                  onChange={(e) =>
+                    handleQuotationToChange("email", e.target.value)
+                  }
                 />
-                {errors.email && <span className="q-field__error">{errors.email}</span>}
+                {errors.email && (
+                  <span className="q-field__error">{errors.email}</span>
+                )}
               </div>
             </section>
 
             <section className="q-form__section">
               <h3 className="q-form__heading">Scope & modules</h3>
               <p className="q-form__hint">
-                Only the modules checked here will appear in the generated quotation's Scope section.
+                Only the modules checked here will appear in the generated
+                quotation's Scope section.
               </p>
               <ModuleSelector
                 modules={modules}
@@ -209,16 +275,26 @@ export default function CreateQuotation({ onNavigate }) {
 
             <div className="q-ticket__body">
               <p className="q-ticket__label">Prepared for</p>
-              <p className="q-ticket__value">{values.organizationName || "Organization name"}</p>
+              <p className="q-ticket__value">
+                {values.organizationName || "Organization name"}
+              </p>
 
               <p className="q-ticket__label">Attention</p>
-              <p className="q-ticket__value">{values.quotationTo.name || "Contact name"}</p>
+              <p className="q-ticket__value">
+                {values.quotationTo.name || "Contact name"}
+              </p>
 
               <p className="q-ticket__label">Scope</p>
               <div className="q-ticket__modules">
-                {values.selectedModules.length === 0 && <span className="q-ticket__placeholder">No modules selected yet</span>}
+                {values.selectedModules.length === 0 && (
+                  <span className="q-ticket__placeholder">
+                    No modules selected yet
+                  </span>
+                )}
                 {values.selectedModules.map((m) => (
-                  <span className="q-ticket__module" key={m}>{m}</span>
+                  <span className="q-ticket__module" key={m}>
+                    {m}
+                  </span>
                 ))}
               </div>
             </div>
@@ -228,11 +304,15 @@ export default function CreateQuotation({ onNavigate }) {
             <div className="q-ticket__stub">
               <div>
                 <p className="q-ticket__label">Valid until</p>
-                <p className="q-ticket__mono">{formatDate(values.validationDate)}</p>
+                <p className="q-ticket__mono">
+                  {formatDate(values.validationDate)}
+                </p>
               </div>
               <div>
                 <p className="q-ticket__label">Modules</p>
-                <p className="q-ticket__mono">{String(values.selectedModules.length).padStart(2, "0")}</p>
+                <p className="q-ticket__mono">
+                  {String(values.selectedModules.length).padStart(2, "0")}
+                </p>
               </div>
             </div>
           </div>
@@ -252,13 +332,19 @@ export default function CreateQuotation({ onNavigate }) {
                 </button>
                 <button
                   className="q-result__btn q-result__btn--primary"
-                  onClick={() => window.open(resolveDownloadUrl(result.pdfDownloadUrl), "_blank")}
+                  onClick={() => {
+                    const url = resolveDownloadUrl(result.pdfDownloadUrl);
+                    if (url) window.open(url, "_blank");
+                  }}
                 >
                   Download PDF
                 </button>
                 <button
                   className="q-result__btn"
-                  onClick={() => window.open(resolveDownloadUrl(result.wordDownloadUrl), "_blank")}
+                  onClick={() => {
+                    const url = resolveDownloadUrl(result.wordDownloadUrl);
+                    if (url) window.open(url, "_blank");
+                  }}
                 >
                   Download Word
                 </button>
@@ -268,7 +354,10 @@ export default function CreateQuotation({ onNavigate }) {
 
           {!result && !apiError && (
             <div className="q-preview__hint">
-              <p>Complete the form and click "Generate quotation" to see download options.</p>
+              <p>
+                Complete the form and click "Generate quotation" to see download
+                options.
+              </p>
             </div>
           )}
 
@@ -318,20 +407,30 @@ function ModuleSelector({ modules, selected, onToggle, error }) {
 
 function formatDate(iso) {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  return new Date(iso).toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 }
 
 function validate(values) {
   const errors = {};
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const PHONE_RE = /^\+?[\d\s-]{7,15}$/;
-  
-  if (!values.organizationName.trim()) errors.organizationName = "Organization name is required.";
+
+  if (!values.organizationName.trim())
+    errors.organizationName = "Organization name is required.";
   if (!values.validationDate) errors.validationDate = "Pick a validity date.";
-  if (values.selectedModules.length === 0) errors.selectedModules = "Select at least one module.";
-  if (!values.quotationTo.name.trim()) errors.contactName = "Contact name is required.";
-  if (!values.quotationTo.address.trim()) errors.contactAddress = "Address is required.";
-  if (!PHONE_RE.test(values.quotationTo.contactNo.trim())) errors.contactNo = "Enter a valid phone number.";
-  if (!EMAIL_RE.test(values.quotationTo.email.trim())) errors.email = "Enter a valid email address.";
+  if (values.selectedModules.length === 0)
+    errors.selectedModules = "Select at least one module.";
+  if (!values.quotationTo.name.trim())
+    errors.contactName = "Contact name is required.";
+  if (!values.quotationTo.address.trim())
+    errors.contactAddress = "Address is required.";
+  if (!PHONE_RE.test(values.quotationTo.contactNo.trim()))
+    errors.contactNo = "Enter a valid phone number.";
+  if (!EMAIL_RE.test(values.quotationTo.email.trim()))
+    errors.email = "Enter a valid email address.";
   return errors;
 }
