@@ -341,7 +341,7 @@ export default function UsersPage() {
                 labelId="user-status-label"
                 label="Is Active"
                 name="isActive"
-                value={form.isActive.toString()}
+                value={form.isActive?.toString() ?? "true"}
                 onChange={updateField}
               >
                 <MenuItem value="true">Active</MenuItem>

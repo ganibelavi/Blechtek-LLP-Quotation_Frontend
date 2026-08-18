@@ -22,7 +22,11 @@ export default function SettingsPage({ onNavigate }) {
   const menuItems = [
     { id: "users", label: "Users", icon: <PeopleIcon /> },
     { id: "modules", label: "Modules", icon: <AppsIcon /> },
-    { id: "created-quotations", label: "Quotations", icon: <DescriptionIcon /> },
+    {
+      id: "created-quotations",
+      label: "Quotations",
+      icon: <DescriptionIcon />,
+    },
   ];
 
   const renderContent = () => {
@@ -119,7 +123,14 @@ export default function SettingsPage({ onNavigate }) {
       </Paper>
 
       {/* Main Content Area */}
-      <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+      <Box
+        sx={{
+          flexGrow: 1,
+          display: "flex",
+          flexDirection: "column",
+          minWidth: 0,
+        }}
+      >
         <Paper
           elevation={0}
           className="glass"

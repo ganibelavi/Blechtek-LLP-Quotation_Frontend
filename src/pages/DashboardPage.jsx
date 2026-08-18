@@ -228,7 +228,7 @@ export default function DashboardPage({ onNavigate }) {
           gridTemplateColumns: { xs: "1fr", md: "repeat(3, 1fr)" },
           gap: 3,
           alignItems: "stretch",
-          mb: 4,
+          // mb: 4,
         }}
       >
         <Paper {...chartContainerStyle}>

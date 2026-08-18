@@ -1,7 +1,7 @@
 .create-quotation {
   width: 100%;
-  max-width: 1040px;
-  padding: 2rem;
+  /* max-width: 1040px; */
+  padding: 1rem;
 }
 
 .create-quotation__intro {

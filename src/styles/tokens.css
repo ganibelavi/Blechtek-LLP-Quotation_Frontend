@@ -85,6 +85,7 @@ body {
   /* background: var(--bg); */
   color: var(--text-900);
   font-family: var(--font-body);
+  font-size: 13px;
   -webkit-font-smoothing: antialiased;
   /* background: radial-gradient(at 0% 0%, hsl(206.57deg 55.21% 65.63%) 0, transparent 50%), radial-gradient(at 50% 0%, hsla(222, 47%, 91%, 1) 0, transparent 50%), radial-gradient(at 100% 0%, hsla(34, 100%, 93%, 1) 0, transparent 50%); */
   ;
@@ -125,7 +126,7 @@ a {
   padding: 4px 8px !important;
   border-radius: var(--radius-sm) !important;
   text-transform: none !important;
-  font-weight: 600 !important;
+  font-weight: 400 !important;
   box-shadow: 0 2px 4px rgba(48, 138, 234, 0.3) !important;
   transition: all 0.2s ease !important;
 }
@@ -148,6 +149,19 @@ a {
   box-shadow: none !important;
   filter: none !important;
   transform: none !important;
+}
+
+.MuiButton-root {
+  letter-spacing: normal !important;
+}
+
+/* Global IconButton small size override */
+.MuiIconButton-sizeSmall {
+  padding: 6px !important;
+}
+
+.MuiIconButton-sizeSmall .MuiSvgIcon-root {
+  font-size: 15px !important;
 }
 
 .MuiButton-containedSecondary {

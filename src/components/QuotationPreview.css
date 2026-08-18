@@ -37,7 +37,9 @@
   border-radius: 999px;
 }
 
-.q-ticket__body { padding: 18px 22px 22px; }
+.q-ticket__body {
+  padding: 18px 22px 22px;
+}
 
 .q-ticket__label {
   margin: 14px 0 3px;
@@ -46,7 +48,10 @@
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.45);
 }
-.q-ticket__label:first-child { margin-top: 0; }
+
+.q-ticket__label:first-child {
+  margin-top: 0;
+}
 
 .q-ticket__value {
   margin: 0;
@@ -92,8 +97,14 @@
   background: var(--light-blue);
   border-radius: 50%;
 }
-.q-ticket__perforation::before { left: -10px; }
-.q-ticket__perforation::after { right: -10px; }
+
+.q-ticket__perforation::before {
+  left: -10px;
+}
+
+.q-ticket__perforation::after {
+  right: -10px;
+}
 
 .q-ticket__stub {
   display: flex;
