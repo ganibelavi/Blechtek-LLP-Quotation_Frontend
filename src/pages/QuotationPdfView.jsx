@@ -58,8 +58,14 @@ export default function QuotationPdfView({ onBack }) {
       .replace(/ /g, " ");
   }
 
-  const { organizationName, validationDate, selectedModules, quotationTo, quotationNo, date } =
-    values;
+  const {
+    organizationName,
+    validationDate,
+    selectedModules,
+    quotationTo,
+    quotationNo,
+    date,
+  } = values;
 
   // Format date for display, handling min date value
   const formatDisplayDate = (dateStr) => {
@@ -284,49 +290,119 @@ export default function QuotationPdfView({ onBack }) {
             <table className="pdf-table pdf-table--pricing">
               <thead>
                 <tr>
-                  <th style={{ width: "65%" }}>Particulars</th>
-                  <th style={{ width: "35%" }}>Price (INR)</th>
+                  <th style={{ width: "8%" }}>Sr. No.</th>
+                  <th style={{ width: "72%" }}>Particulars</th>
+                  <th style={{ width: "20%" }}>Price in INR</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
+                  <td>1</td>
                   <td>
-                    Product License - {moduleList || "{{MODULE_LIST}"} (single
-                    installation). Scope as listed above.
+                    <strong>
+                      {moduleList || "CQUAL Module Name"} - Product License
+                    </strong>{" "}
+                    applicable for single installation.
+                    <br />
+                    <span style={{ fontSize: "9pt", color: "#333" }}>
+                      Scope – As mentioned above
+                    </span>
                   </td>
                   <td>TBD</td>
                 </tr>
                 <tr className="pdf-table__row--alt">
+                  <td>2</td>
                   <td>
-                    Customization - any additional development beyond scope,
-                    charged at INR 7,000 / man-day.
+                    <strong>Customization</strong>
+                    <br />
+                    <span style={{ fontSize: "9pt", color: "#333" }}>
+                      In case of any additional development required which will
+                      be consider 7000 per man day additional to above proposal.
+                    </span>
                   </td>
                   <td>TBD</td>
                 </tr>
                 <tr>
+                  <td>3</td>
                   <td>
-                    Annual License Renewal - covers upgrades, bug fixes &
-                    statutory changes. Includes 7 man-days; excess is
-                    chargeable.
+                    <strong>Annual License Renewal</strong>
+                    <br />
+                    <span style={{ fontSize: "9pt", color: "#333" }}>
+                      The License renewal would be required to be done every
+                      Year. These renewal fees will facilitate to have the
+                      Product Upgrades, which would cover improvements, bug
+                      fixes, and changes in statutory compliances. Included 7
+                      Man days only and above will be chargeable.
+                    </span>
                   </td>
                   <td>TBD</td>
                 </tr>
                 <tr className="pdf-table__row--alt">
-                  <td>Support Services - commence 1 month after Go-Live.</td>
+                  <td>4</td>
+                  <td>
+                    <strong>Support Services</strong>
+                    <br />
+                    <span style={{ fontSize: "9pt", color: "#333" }}>
+                      These Services start after 1 Month from start of Go Live.
+                    </span>
+                  </td>
                   <td>TBD</td>
+                </tr>
+                <tr>
+                  <td>5</td>
+                  <td>
+                    <strong>Payment Terms</strong>
+                    <br />
+                    <span style={{ fontSize: "9pt", color: "#333" }}>
+                      70% in Advance along with Purchase Order
+                      <br />
+                      20% on Implementation
+                      <br />
+                      10% GO LIVE
+                    </span>
+                  </td>
+                  <td>On Chargeable</td>
+                </tr>
+                <tr className="pdf-table__row--alt">
+                  <td>6</td>
+                  <td>
+                    <strong>Support Level</strong>
+                    <br />
+                    <span style={{ fontSize: "9pt", color: "#333" }}>
+                      <strong>L1: Telephone Support -</strong> Queries, To
+                      understand a feature, Problem solving etc. On Chargeable
+                      <br />
+                      <strong>L2: Bugs -</strong> Bugs identified by you or by
+                      BlechTek Software Solutions LLP Free, Under License Fee
+                      Renewal
+                      <br />
+                      <strong>L3: Customer Specific Enhancements -</strong>{" "}
+                      New/Change in Document Printing format, New/Changes in
+                      Reports, New/Change in Reports On Chargeable
+                      <br />
+                      <strong>L4: Product Upgrade -</strong> Product Upgrade as
+                      done by BlechTek Software Solutions LLP on their own Free,
+                      Under License Fee Renewal
+                      <br />
+                      <strong>L5: Implementation -</strong> Master updation, new
+                      feature implementation On Chargeable
+                    </span>
+                  </td>
+                  <td>Free, Under License Fee Renewal</td>
+                </tr>
+                <tr>
+                  <td>7</td>
+                  <td>
+                    <strong>Taxes</strong>
+                    <br />
+                    <span style={{ fontSize: "9pt", color: "#333" }}>
+                      As Applicable
+                    </span>
+                  </td>
+                  <td>As Applicable</td>
                 </tr>
               </tbody>
             </table>
-          </div>
-
-          <div className="pdf-section pdf-section--payment-terms">
-            <p>
-              <strong>Payment Terms -</strong> 70% advance with PO, 20% on
-              implementation, 10% on Go-Live.
-            </p>
-            <p>
-              <strong>Taxes -</strong> as applicable.
-            </p>
           </div>
 
           <div className="pdf-section pdf-section--heading">
