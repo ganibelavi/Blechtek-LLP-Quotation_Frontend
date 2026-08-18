@@ -88,6 +88,7 @@ body {
   -webkit-font-smoothing: antialiased;
   /* background: radial-gradient(at 0% 0%, hsl(206.57deg 55.21% 65.63%) 0, transparent 50%), radial-gradient(at 50% 0%, hsla(222, 47%, 91%, 1) 0, transparent 50%), radial-gradient(at 100% 0%, hsla(34, 100%, 93%, 1) 0, transparent 50%); */
   ;
+  overflow-x: hidden;
 }
 
 h1,
@@ -189,9 +190,9 @@ a {
   padding: 10px 8px !important;
 }
 
-.MuiInputBase-input {
+/* .MuiInputBase-input {
   padding: 10px 18px !important;
-}
+} */
 
 /* Prevent horizontal scrollbar in Dialogs */
 .MuiDialog-paper {

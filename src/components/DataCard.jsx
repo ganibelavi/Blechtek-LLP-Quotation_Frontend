@@ -24,6 +24,8 @@ export default function DataCard({ label, value, icon, color = "primary", border
         border: "1px solid",
         borderColor: "divider",
         background: gradientBackground,
+        position: "relative",
+        overflow: "hidden",
         transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
         "&:hover": {
           transform: "translateY(-6px)",

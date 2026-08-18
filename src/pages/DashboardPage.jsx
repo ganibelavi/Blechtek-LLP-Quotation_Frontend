@@ -145,20 +145,22 @@ export default function DashboardPage({ onNavigate }) {
 
   const chartContainerStyle = {
     elevation: 0,
-    p: { xs: 2, md: 3 },
-    borderRadius: 1,
-    border: "1px solid",
-    borderColor: "divider",
-    overflow: "hidden",
-    boxShadow: "0 4px 20px rgba(0, 0, 0, 0.15)",
-    height: "100%",
-    display: "flex",
-    flexDirection: "column",
-    minHeight: 350,
+    sx: {
+      p: { xs: 2, md: 3 },
+      borderRadius: 1,
+      border: "1px solid",
+      borderColor: "divider",
+      overflow: "hidden",
+      boxShadow: "0 4px 20px rgba(0, 0, 0, 0.15)",
+      height: "100%",
+      display: "flex",
+      flexDirection: "column",
+      minHeight: 350,
+    },
   };
 
   return (
-    <Box sx={{ p: { xs: 3, md: 5 }, fontSize: "13px" }}>
+    <Box sx={{ p: 0, fontSize: "13px", overflow: "hidden" }}>
       <Box
         sx={{
           display: "flex",

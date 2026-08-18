@@ -64,7 +64,7 @@ export default function App() {
         </div>
       </header>
 
-      <main className="">
+      <main className="app-main">
         {!user ? (
           <LoginPage />
         ) : (

@@ -188,7 +188,11 @@ export default function EntityTable({ title, columns, rows }) {
                   }}
                 >
                   {col.label}
-                  {orderBy === col.key ? (order === "asc" ? " ▲" : " ��") : null}
+                  {orderBy === col.key
+                    ? order === "asc"
+                      ? " ▲"
+                      : " ��"
+                    : null}
                 </TableCell>
               ))}
             </TableRow>
@@ -209,7 +213,13 @@ export default function EntityTable({ title, columns, rows }) {
                     }}
                   >
                     {col.render
-                      ? col.render({ row, index: idx, page, rowsPerPage, filteredLength: filtered.length })
+                      ? col.render({
+                          row,
+                          index: idx,
+                          page,
+                          rowsPerPage,
+                          filteredLength: filtered.length,
+                        })
                       : defaultGetValue(row, col.key)}
                   </TableCell>
                 ))}

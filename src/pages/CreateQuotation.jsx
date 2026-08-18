@@ -93,7 +93,7 @@ export default function CreateQuotation({ onNavigate }) {
   };
 
   return (
-    <div className="app-main">
+    <div className="create-quotation">
       <div className="create-quotation__intro">
         <h2>New quotation</h2>
         <p>Fill in the client details and pick the modules in scope — everything else follows the standard BlechTek format.</p>
