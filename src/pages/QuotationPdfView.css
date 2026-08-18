@@ -136,7 +136,7 @@
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  border-bottom: 2px solid #1B2A4E;
+  border-bottom: 2px solid #65aadb;
   padding-bottom: 12px;
   margin-bottom: 24px;
 }
@@ -144,14 +144,14 @@
 .pdf-header__left {
   font-size: 16pt;
   font-weight: 600;
-  color: #1B2A4E;
+  color: #65aadb;
   font-family: "Calibri", sans-serif;
 }
 
 .pdf-header__right {
   font-size: 18pt;
   font-weight: 700;
-  color: #1B2A4E;
+  color: #65aadb;
   letter-spacing: 0.5px;
 }
 
@@ -173,11 +173,11 @@
 .pdf-section--heading h3 {
   font-size: 13pt;
   font-weight: 700;
-  color: #1B2A4E;
+  color: #65aadb;
   margin: 0;
   text-transform: uppercase;
   letter-spacing: 0.3px;
-  border-bottom: 1px solid #1B2A4E;
+  border-bottom: 1px solid #65aadb;
   padding-bottom: 4px;
 }
 
@@ -201,7 +201,7 @@
 .pdf-section--quotation-to h3 {
   font-size: 11pt;
   font-weight: 700;
-  color: #1B2A4E;
+  color: #65aadb;
   margin: 0 0 8px;
   text-transform: uppercase;
 }
@@ -248,12 +248,12 @@
 }
 
 .pdf-table th {
-  background: #1B2A4E;
+  background: #65aadb;
   color: #fff;
   font-weight: 700;
   padding: 10px 12px;
   text-align: left;
-  border: 1px solid #1B2A4E;
+  border: 1px solid #65aadb;
   font-size: 10pt;
 }
 
@@ -279,7 +279,7 @@
 }
 
 .pdf-table--pricing th {
-  background: #1B2A4E;
+  background: #65aadb;
   color: #fff;
 }
 
@@ -318,7 +318,7 @@
   display: block;
   margin-bottom: 4px;
   font-weight: 700;
-  color: #1B2A4E;
+  color: #65aadb;
 }
 
 .pdf-section--terms li p {
@@ -339,14 +339,14 @@
 
 .pdf-signature {
   font-weight: 700;
-  color: #1B2A4E;
+  color: #65aadb;
   margin-top: 16px !important;
 }
 
 .pdf-footer {
   margin-top: 36px;
   padding-top: 16px;
-  border-top: 1px solid #1B2A4E;
+  border-top: 1px solid #65aadb;
   font-size: 9pt;
   color: #555;
   text-align: center;
@@ -359,7 +359,7 @@
 
 .pdf-footer p:first-child {
   font-weight: 700;
-  color: #1B2A4E;
+  color: #65aadb;
   font-size: 10pt;
 }
 

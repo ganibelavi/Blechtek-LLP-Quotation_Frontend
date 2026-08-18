@@ -160,7 +160,7 @@ export default function DashboardPage({ onNavigate }) {
   };
 
   return (
-    <Box sx={{ p: 0, fontSize: "13px", overflow: "hidden" }}>
+    <Box sx={{ p: 0, fontSize: "13px", overflow: "hidden", height: "100%", display: "flex", flexDirection: "column" }}>
       <Box
         sx={{
           display: "flex",

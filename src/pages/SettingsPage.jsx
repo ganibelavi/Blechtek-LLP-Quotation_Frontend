@@ -22,7 +22,7 @@ export default function SettingsPage({ onNavigate }) {
   const menuItems = [
     { id: "users", label: "Users", icon: <PeopleIcon /> },
     { id: "modules", label: "Modules", icon: <AppsIcon /> },
-    { id: "created-quotations", label: "Created Quotations", icon: <DescriptionIcon /> },
+    { id: "created-quotations", label: "Quotations", icon: <DescriptionIcon /> },
   ];
 
   const renderContent = () => {
@@ -39,7 +39,7 @@ export default function SettingsPage({ onNavigate }) {
   };
 
   return (
-    <Box sx={{ display: "flex", height: "calc(100vh - 160px)", gap: 3 }}>
+    <Box sx={{ display: "flex", height: "100%", gap: 3, overflow: "hidden" }}>
       {/* Sidebar Partition */}
       <Paper
         elevation={0}

@@ -1,5 +1,5 @@
 .app-shell {
-  min-height: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
 }
@@ -76,7 +76,7 @@
   flex: 1;
   padding: 1rem;
   /* display: flex; */
-  justify-content: center;
+  align-items: stretch;
 }
 
 /* Login background and card styles used by LoginPage */

@@ -169,7 +169,7 @@ export default function CreatedQuotation({ onNavigate }) {
         }}
       >
         <Typography variant="h5" fontWeight={700}>
-          Created Quotations
+          Quotations
         </Typography>
         <Button
           variant="contained"
