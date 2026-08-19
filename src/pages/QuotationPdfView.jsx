@@ -320,7 +320,7 @@ export default function QuotationPdfView({ onBack }) {
                     <span style={{ fontSize: "9pt", color: "#333" }}>
                       Scope – As mentioned above
                     </span>
-                    {discountPct > 0 && modulePrice !== null && (
+                    {/* {discountPct > 0 && modulePrice !== null && (
                       <>
                         <br />
                         <span style={{ fontSize: "9pt", color: "#666" }}>
@@ -331,7 +331,7 @@ export default function QuotationPdfView({ onBack }) {
                           <strong>Net Price: ₹{finalPrice.toLocaleString()}</strong>
                         </span>
                       </>
-                    )}
+                    )} */}
                   </td>
                   <td>
                     {modulePrice !== null && modulePrice > 0

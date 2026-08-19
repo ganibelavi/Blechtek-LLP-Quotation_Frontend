@@ -95,6 +95,7 @@ export default function CreatedQuotation({ onNavigate }) {
           contactNo: quotation.quotationToContactNo,
           email: quotation.quotationToEmail,
         },
+        discountPercentage: quotation.discountPercentage || 0,
       }),
     );
     onNavigate("quotation-detail");
