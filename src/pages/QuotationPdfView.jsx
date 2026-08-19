@@ -367,30 +367,61 @@ export default function QuotationPdfView({ onBack }) {
                   <td>6</td>
                   <td>
                     <strong>Support Level</strong>
-                    <br />
+                  </td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td></td>
+                  <td style={{ paddingLeft: "24px" }}>
                     <span style={{ fontSize: "9pt", color: "#333" }}>
                       <strong>L1: Telephone Support -</strong> Queries, To
-                      understand a feature, Problem solving etc. On Chargeable
-                      <br />
+                      understand a feature, Problem solving etc.
+                    </span>
+                  </td>
+                  <td>On Chargeable</td>
+                </tr>
+                <tr className="pdf-table__row--alt">
+                  <td></td>
+                  <td style={{ paddingLeft: "24px" }}>
+                    <span style={{ fontSize: "9pt", color: "#333" }}>
                       <strong>L2: Bugs -</strong> Bugs identified by you or by
-                      BlechTek Software Solutions LLP Free, Under License Fee
-                      Renewal
-                      <br />
-                      <strong>L3: Customer Specific Enhancements -</strong>{" "}
-                      New/Change in Document Printing format, New/Changes in
-                      Reports, New/Change in Reports On Chargeable
-                      <br />
-                      <strong>L4: Product Upgrade -</strong> Product Upgrade as
-                      done by BlechTek Software Solutions LLP on their own Free,
-                      Under License Fee Renewal
-                      <br />
-                      <strong>L5: Implementation -</strong> Master updation, new
-                      feature implementation On Chargeable
+                      BlechTek Software Solutions LLP
                     </span>
                   </td>
                   <td>Free, Under License Fee Renewal</td>
                 </tr>
                 <tr>
+                  <td></td>
+                  <td style={{ paddingLeft: "24px" }}>
+                    <span style={{ fontSize: "9pt", color: "#333" }}>
+                      <strong>L3: Customer Specific Enhancements -</strong>{" "}
+                      New/Change in Document Printing format, New/Changes in
+                      Reports, New/Change in Reports
+                    </span>
+                  </td>
+                  <td>On Chargeable</td>
+                </tr>
+                <tr className="pdf-table__row--alt">
+                  <td></td>
+                  <td style={{ paddingLeft: "24px" }}>
+                    <span style={{ fontSize: "9pt", color: "#333" }}>
+                      <strong>L4: Product Upgrade -</strong> Product Upgrade as
+                      done by BlechTek Software Solutions LLP on their own
+                    </span>
+                  </td>
+                  <td>Free, Under License Fee Renewal</td>
+                </tr>
+                <tr>
+                  <td></td>
+                  <td style={{ paddingLeft: "24px" }}>
+                    <span style={{ fontSize: "9pt", color: "#333" }}>
+                      <strong>L5: Implementation -</strong> Master updation, new
+                      feature implementation
+                    </span>
+                  </td>
+                  <td>On Chargeable</td>
+                </tr>
+                <tr className="pdf-table__row--alt">
                   <td>7</td>
                   <td>
                     <strong>Taxes</strong>
