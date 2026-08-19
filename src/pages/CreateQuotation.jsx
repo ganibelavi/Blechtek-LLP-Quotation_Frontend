@@ -15,6 +15,7 @@ const initialValues = {
   date: "",
   selectedModules: [],
   quotationTo: { name: "", address: "", contactNo: "", email: "" },
+  discountPercentage: 0,
 };
 
 export default function CreateQuotation({ onNavigate }) {
@@ -78,6 +79,7 @@ export default function CreateQuotation({ onNavigate }) {
           contactNo: values.quotationTo.contactNo,
           email: values.quotationTo.email,
         },
+        discountPercentage: values.discountPercentage,
       };
       const data = await generateQuotation(payload);
       setResult(data);
@@ -209,6 +211,28 @@ export default function CreateQuotation({ onNavigate }) {
                   {errors.date && (
                     <span className="q-field__error">
                       {errors.date}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="q-form__row">
+                <div className="q-field q-field--narrow">
+                  <label htmlFor="discountPercentage">Discount %</label>
+                  <input
+                    id="discountPercentage"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    placeholder="e.g. 10"
+                    value={values.discountPercentage}
+                    onChange={(e) =>
+                      handleFieldChange("discountPercentage", parseFloat(e.target.value) || 0)
+                    }
+                  />
+                  {errors.discountPercentage && (
+                    <span className="q-field__error">
+                      {errors.discountPercentage}
                     </span>
                   )}
                 </div>
@@ -463,6 +487,8 @@ function validate(values) {
   if (!values.validationDate) errors.validationDate = "Pick a validity date.";
   if (!values.quotationNo.trim()) errors.quotationNo = "Quotation No. is required.";
   if (!values.date) errors.date = "Date is required.";
+  if (values.discountPercentage < 0 || values.discountPercentage > 100)
+    errors.discountPercentage = "Discount must be between 0 and 100.";
   if (values.selectedModules.length === 0)
     errors.selectedModules = "Select at least one module.";
   if (!values.quotationTo.name.trim())

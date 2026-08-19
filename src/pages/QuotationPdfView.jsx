@@ -10,6 +10,7 @@ const initialValues = {
   quotationTo: { name: "", address: "", contactNo: "", email: "" },
   quotationNo: "",
   date: "",
+  discountPercentage: 0,
 };
 
 export default function QuotationPdfView({ onBack }) {
@@ -65,6 +66,7 @@ export default function QuotationPdfView({ onBack }) {
     quotationTo,
     quotationNo,
     date,
+    discountPercentage,
   } = values;
 
   // Format date for display, handling min date value
@@ -94,9 +96,15 @@ export default function QuotationPdfView({ onBack }) {
   );
 
   // Get price from the first selected module (or sum if multiple)
-  const modulePrice = scopeModules.length > 0
-    ? scopeModules.reduce((sum, m) => sum + (m.price || 0), 0)
-    : null;
+  const modulePrice =
+    scopeModules.length > 0
+      ? scopeModules.reduce((sum, m) => sum + (m.price || 0), 0)
+      : null;
+
+  // Calculate discounted price
+  const discountPct = discountPercentage || 0;
+  const discountAmount = modulePrice !== null ? (modulePrice * discountPct / 100) : 0;
+  const finalPrice = modulePrice !== null ? (modulePrice - discountAmount) : null;
 
   if (
     !result &&
@@ -312,8 +320,26 @@ export default function QuotationPdfView({ onBack }) {
                     <span style={{ fontSize: "9pt", color: "#333" }}>
                       Scope – As mentioned above
                     </span>
+                    {discountPct > 0 && modulePrice !== null && (
+                      <>
+                        <br />
+                        <span style={{ fontSize: "9pt", color: "#666" }}>
+                          Module Price: ₹{modulePrice.toLocaleString()}
+                          <br />
+                          Discount ({discountPct}%): -₹{discountAmount.toLocaleString()}
+                          <br />
+                          <strong>Net Price: ₹{finalPrice.toLocaleString()}</strong>
+                        </span>
+                      </>
+                    )}
                   </td>
-                  <td>{modulePrice !== null && modulePrice > 0 ? `₹${modulePrice.toLocaleString()}` : "TBD"}</td>
+                  <td>
+                    {modulePrice !== null && modulePrice > 0
+                      ? (discountPct > 0
+                          ? `₹${finalPrice.toLocaleString()}`
+                          : `₹${modulePrice.toLocaleString()}`)
+                      : "TBD"}
+                  </td>
                 </tr>
                 <tr className="pdf-table__row--alt">
                   <td>2</td>
