@@ -93,6 +93,11 @@ export default function QuotationPdfView({ onBack }) {
     selectedModules.includes(m.module),
   );
 
+  // Get price from the first selected module (or sum if multiple)
+  const modulePrice = scopeModules.length > 0
+    ? scopeModules.reduce((sum, m) => sum + (m.price || 0), 0)
+    : null;
+
   if (
     !result &&
     !organizationName &&
@@ -308,7 +313,7 @@ export default function QuotationPdfView({ onBack }) {
                       Scope – As mentioned above
                     </span>
                   </td>
-                  <td>TBD</td>
+                  <td>{modulePrice !== null && modulePrice > 0 ? `₹${modulePrice.toLocaleString()}` : "TBD"}</td>
                 </tr>
                 <tr className="pdf-table__row--alt">
                   <td>2</td>

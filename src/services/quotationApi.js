@@ -11,6 +11,7 @@ export async function fetchModules() {
   return data.map((module) => ({
     pillar: module.pillar ?? module.Pillar ?? "",
     module: module.moduleName ?? module.ModuleName ?? module.module ?? module.Module ?? "",
+    price: module.price ?? module.Price ?? null,
   }));
 }
 
