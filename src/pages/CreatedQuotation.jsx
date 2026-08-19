@@ -10,7 +10,13 @@ import {
   Button,
 } from "@mui/material";
 import VisibilityIcon from "@mui/icons-material/Visibility";
+import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
+import DescriptionIcon from "@mui/icons-material/Description";
 import AddIcon from "@mui/icons-material/Add";
+
+const API_BASE = process.env.REACT_APP_API_BASE_URL || "https://localhost:5001";
+const buildDownloadUrl = (quotationId, format) =>
+  `${API_BASE}/api/quotation/${quotationId}/download/${format}`;
 
 const toTableQuotation = (q) => ({
   QuotationId: q.quotationId,
@@ -45,6 +51,8 @@ const toTableQuotation = (q) => ({
       })
     : "",
   originalData: q,
+  pdfDownloadUrl: buildDownloadUrl(q.quotationId, "pdf"),
+  wordDownloadUrl: buildDownloadUrl(q.quotationId, "word"),
 });
 
 export default function CreatedQuotation({ onNavigate }) {
@@ -167,16 +175,44 @@ export default function CreatedQuotation({ onNavigate }) {
       key: "actions",
       label: "Actions",
       sortable: false,
-      minWidth: 80,
+      minWidth: 120,
       render: ({ row }) => (
-        <Tooltip title="View Quotation">
-          <IconButton
-            size="small"
-            onClick={() => handleViewQuotation(row.originalData)}
-          >
-            <VisibilityIcon fontSize="small" color="primary" />
-          </IconButton>
-        </Tooltip>
+        <Box sx={{ display: "flex", gap: 0.5 }}>
+          <Tooltip title="View Quotation">
+            <IconButton
+              size="small"
+              onClick={() => handleViewQuotation(row.originalData)}
+            >
+              <VisibilityIcon fontSize="small" color="primary" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Download PDF">
+            <span>
+              <IconButton
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (row.pdfDownloadUrl) window.open(row.pdfDownloadUrl, "_blank");
+                }}
+              >
+                <PictureAsPdfIcon fontSize="small" color="error" />
+              </IconButton>
+            </span>
+          </Tooltip>
+          <Tooltip title="Download Word">
+            <span>
+              <IconButton
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (row.wordDownloadUrl) window.open(row.wordDownloadUrl, "_blank");
+                }}
+              >
+                <DescriptionIcon fontSize="small" color="success" />
+              </IconButton>
+            </span>
+          </Tooltip>
+        </Box>
       ),
     },
   ];
