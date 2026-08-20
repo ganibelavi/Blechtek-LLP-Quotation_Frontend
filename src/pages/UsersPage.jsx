@@ -207,7 +207,7 @@ export default function UsersPage() {
       label: "Status",
       sortable: true,
       minWidth: 100,
-      render: (user) => (user.isActive ? "Active" : "Inactive"),
+      render: ({ row: user }) => (user.isActive ? "Active" : "Inactive"),
     },
     { key: "createdAt", label: "Created At", sortable: true, minWidth: 160 },
     { key: "lastLoginAt", label: "Last Login", sortable: true, minWidth: 160 },
@@ -216,7 +216,7 @@ export default function UsersPage() {
       key: "actions",
       label: "Actions",
       minWidth: 100,
-      render: (user) => (
+      render: ({ row: user }) => (
         <Box sx={{ whiteSpace: "nowrap" }}>
           <IconButton
             aria-label={`Edit ${user.email}`}

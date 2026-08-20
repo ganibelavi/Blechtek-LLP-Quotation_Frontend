@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import CreateQuotation from "./pages/CreateQuotation";
 import CreatedQuotation from "./pages/CreatedQuotation";
 import DashboardPage from "./pages/DashboardPage";
@@ -19,6 +19,12 @@ export default function App() {
   const { user, logout } = useAuth();
   const [view, setView] = useState("dashboard");
   const [settingsInitialTab, setSettingsInitialTab] = useState("users");
+
+  useEffect(() => {
+    if (user) {
+      setView("dashboard");
+    }
+  }, [user]);
 
   const navigate = (newView, initialTab) => {
     if (initialTab) setSettingsInitialTab(initialTab);
