@@ -187,12 +187,12 @@ export default function EntityTable({ title, columns, rows }) {
                     minWidth: col.minWidth,
                   }}
                 >
-                  {col.label}
+                 {col.label}
                   {orderBy === col.key
-                    ? order === "asc"
-                      ? " ▲"
-                      : " ��"
-                    : null}
+                  ? order === "asc"
+                  ? " ▲"
+                  : " ▼"
+                  : null}
                 </TableCell>
               ))}
             </TableRow>

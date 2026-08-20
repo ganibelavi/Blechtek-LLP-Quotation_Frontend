@@ -52,7 +52,7 @@ export default function TrendChart({ data }) {
           fontSize={12}
           tickLine={false}
           axisLine={false}
-          tickFormatter={(value) => `��${(value / 100000).toFixed(1)}L`}
+          tickFormatter={(value) => `${(value / 100000).toFixed(1)}L`}
         />
         <YAxis
           yAxisId="right"
@@ -72,7 +72,7 @@ export default function TrendChart({ data }) {
           }}
           labelStyle={{ color: "#1e293b", fontWeight: 600 }}
           formatter={(value, name) => [
-            name === "revenue" ? `��${value.toLocaleString("en-IN")}` : value,
+            name === "revenue" ? `${value.toLocaleString("en-IN")}` : value,
             name === "revenue" ? "Revenue" : "Quotes",
           ]}
         />

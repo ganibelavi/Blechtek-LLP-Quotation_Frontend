@@ -36,8 +36,8 @@ function formatDateTime(dateStr) {
 }
 
 function formatCurrency(value) {
-  if (!value) return "��0";
-  return `��${Number(value).toLocaleString("en-IN")}`;
+  if (!value) return "0";
+  return `${Number(value).toLocaleString("en-IN")}`;
 }
 
 export default function DashboardPage({ onNavigate }) {
@@ -135,7 +135,8 @@ export default function DashboardPage({ onNavigate }) {
     )},
     { key: "generatedAt", label: "Date", sortable: true, minWidth: 160, render: ({ row }) => formatDateTime(row.generatedAt) },
     { key: "status", label: "Status", sortable: true, minWidth: 120, render: ({ row }) => <StatusText status={row.status} /> },
-    { key: "valuation", label: "Valuation", sortable: true, minWidth: 140, render: ({ row }) => formatCurrency(row.valuation || row.totalQuotedAmount) },
+    { key: "valuation", label: "Valuation", sortable: true, minWidth: 140, render: ({ row }) => formatCurrency(row.valuation) },
+    { key: "totalQuotedAmount", label: "Quotation Value", sortable: true, minWidth: 140, render: ({ row }) => formatCurrency(row.totalQuotedAmount) },
   ];
 
   const recentRows = (data.recentQuotations || []).map((q) => ({
@@ -144,7 +145,8 @@ export default function DashboardPage({ onNavigate }) {
     modules: q.modules?.join(", ") || "—",
     generatedAt: q.generatedAt,
     status: q.status || "Draft",
-    valuation: q.valuation || q.totalAmount || 0,
+    valuation: q.valuation || 0,
+    totalQuotedAmount: q.totalQuotedAmount || 0,
   }));
 
   const chartContainerStyle = {
