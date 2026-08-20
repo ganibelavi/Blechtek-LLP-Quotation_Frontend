@@ -388,7 +388,7 @@ export default function CreateQuotation({ onNavigate }) {
               <p className="q-result__id">{result.quotationId}</p>
               <div className="q-result__actions">
                 <button
-                  className="q-result__btn q-result__btn--view"
+                  className="q-result__btn q-result__btn--primary"
                   onClick={handleViewDetails}
                 >
                   View Details
@@ -403,7 +403,7 @@ export default function CreateQuotation({ onNavigate }) {
                   Download PDF
                 </button>
                 <button
-                  className="q-result__btn"
+                  className="q-result__btn q-result__btn--primary"
                   onClick={() => {
                     const url = resolveDownloadUrl(result.wordDownloadUrl);
                     if (url) window.open(url, "_blank");
