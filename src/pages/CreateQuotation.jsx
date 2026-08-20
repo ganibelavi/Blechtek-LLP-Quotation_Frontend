@@ -214,8 +214,6 @@ export default function CreateQuotation({ onNavigate }) {
                     </span>
                   )}
                 </div>
-              </div>
-              <div className="q-form__row">
                 <div className="q-field q-field--narrow">
                   <label htmlFor="discountPercentage">Discount %</label>
                   <input
@@ -274,38 +272,39 @@ export default function CreateQuotation({ onNavigate }) {
                 </div>
               </div>
 
-              <div className="q-field">
-                <label htmlFor="address">Address</label>
-                <textarea
-                  id="address"
-                  rows={2}
-                  placeholder="Full postal address"
-                  value={values.quotationTo.address}
-                  onChange={(e) =>
-                    handleQuotationToChange("address", e.target.value)
-                  }
-                />
-                {errors.contactAddress && (
-                  <span className="q-field__error">
-                    {errors.contactAddress}
-                  </span>
-                )}
-              </div>
-
-              <div className="q-field">
-                <label htmlFor="email">Email</label>
-                <input
-                  id="email"
-                  type="email"
-                  placeholder="name@company.com"
-                  value={values.quotationTo.email}
-                  onChange={(e) =>
-                    handleQuotationToChange("email", e.target.value)
-                  }
-                />
-                {errors.email && (
-                  <span className="q-field__error">{errors.email}</span>
-                )}
+              <div className="q-form__row">
+                <div className="q-field">
+                  <label htmlFor="address">Address</label>
+                  <textarea
+                    id="address"
+                    rows={2}
+                    placeholder="Full postal address"
+                    value={values.quotationTo.address}
+                    onChange={(e) =>
+                      handleQuotationToChange("address", e.target.value)
+                    }
+                  />
+                  {errors.contactAddress && (
+                    <span className="q-field__error">
+                      {errors.contactAddress}
+                    </span>
+                  )}
+                </div>
+                <div className="q-field">
+                  <label htmlFor="email">Email</label>
+                  <input
+                    id="email"
+                    type="email"
+                    placeholder="name@company.com"
+                    value={values.quotationTo.email}
+                    onChange={(e) =>
+                      handleQuotationToChange("email", e.target.value)
+                    }
+                  />
+                  {errors.email && (
+                    <span className="q-field__error">{errors.email}</span>
+                  )}
+                </div>
               </div>
             </section>
 
@@ -323,9 +322,11 @@ export default function CreateQuotation({ onNavigate }) {
               />
             </section>
 
-            <button type="submit" className="q-submit" disabled={submitting}>
-              {submitting ? "Generating quotation…" : "Generate quotation"}
-            </button>
+            <div className="q-form__row" style={{ justifyContent: 'flex-end' }}>
+              <button type="submit" className="q-submit" disabled={submitting}>
+                {submitting ? "Generating quotation…" : "Generate quotation"}
+              </button>
+            </div>
           </form>
         </div>
 
