@@ -122,22 +122,26 @@ export default function DashboardPage({ onNavigate }) {
 
   const recentColumns = [
     { key: "srNo", label: "Sr. No.", sortable: false, minWidth: 70, render: ({ index, page, rowsPerPage }) => page * rowsPerPage + index + 1 },
-    { key: "quotationId", label: "Quotation ID", sortable: true, minWidth: 180, render: ({ row }) => (
+    { key: "quotationNo", label: "Quotation No.", sortable: true, minWidth: 180, render: ({ row }) => (
       <Typography variant="body2" fontWeight={600} sx={{ fontFamily: "monospace", fontSize: 12 }}>
-        {row.quotationId}
+        {row.quotationNo}
       </Typography>
     )},
     { key: "organizationName", label: "Customer", sortable: true, minWidth: 200 },
-    { key: "projectName", label: "Project Name", sortable: true, minWidth: 200 },
+    { key: "modules", label: "Modules", sortable: false, minWidth: 250, render: ({ row }) => (
+      <Typography variant="body2" sx={{ maxWidth: 300, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        {row.modules}
+      </Typography>
+    )},
     { key: "generatedAt", label: "Date", sortable: true, minWidth: 160, render: ({ row }) => formatDateTime(row.generatedAt) },
     { key: "status", label: "Status", sortable: true, minWidth: 120, render: ({ row }) => <StatusText status={row.status} /> },
     { key: "valuation", label: "Valuation", sortable: true, minWidth: 140, render: ({ row }) => formatCurrency(row.valuation || row.totalQuotedAmount) },
   ];
 
   const recentRows = (data.recentQuotations || []).map((q) => ({
-    quotationId: q.quotationId,
+    quotationNo: q.quotationNo || q.quotationId,
     organizationName: q.organizationName,
-    projectName: q.projectName || q.modules?.join(", ") || "—",
+    modules: q.modules?.join(", ") || "—",
     generatedAt: q.generatedAt,
     status: q.status || "Draft",
     valuation: q.valuation || q.totalAmount || 0,
