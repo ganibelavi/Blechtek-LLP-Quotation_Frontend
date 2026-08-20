@@ -127,7 +127,7 @@ export default function DashboardPage({ onNavigate }) {
         {row.quotationNo}
       </Typography>
     )},
-    { key: "organizationName", label: "Customer", sortable: true, minWidth: 200 },
+    { key: "organizationName", label: "Customer Name", sortable: true, minWidth: 200 },
     { key: "modules", label: "Modules", sortable: false, minWidth: 250, render: ({ row }) => (
       <Typography variant="body2" sx={{ maxWidth: 300, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
         {row.modules}

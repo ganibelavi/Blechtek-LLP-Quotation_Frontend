@@ -49,7 +49,8 @@ export default function ModulesPage() {
         if (!cancelled) setModules((response.data || []).map(toTableModule));
       })
       .catch(() => {
-        if (!cancelled) setApiError("Could not load modules from the database.");
+        if (!cancelled)
+          setApiError("Could not load modules from the database.");
       });
     return () => {
       cancelled = true;
@@ -102,7 +103,8 @@ export default function ModulesPage() {
         setModules((current) => [...current, toTableModule(data)]);
       } catch (error) {
         setApiError(
-          error.response?.data?.error ?? "Could not create the module in the database.",
+          error.response?.data?.error ??
+            "Could not create the module in the database.",
         );
         return;
       }
@@ -122,7 +124,8 @@ export default function ModulesPage() {
         );
       } catch (error) {
         setApiError(
-          error.response?.data?.error ?? "Could not update the module in the database.",
+          error.response?.data?.error ??
+            "Could not update the module in the database.",
         );
         return;
       }
@@ -140,7 +143,9 @@ export default function ModulesPage() {
     setApiError("");
     try {
       await axios.delete(`/api/modules/${moduleToDelete.Id}`);
-      setModules((current) => current.filter((module) => module.Id !== moduleToDelete.Id));
+      setModules((current) =>
+        current.filter((module) => module.Id !== moduleToDelete.Id),
+      );
       setSnackbar({
         open: true,
         message: `Module "${moduleToDelete.ModuleName}" deleted successfully!`,
@@ -151,7 +156,9 @@ export default function ModulesPage() {
     } catch (error) {
       setSnackbar({
         open: true,
-        message: error.response?.data?.error ?? "Could not delete the module from the database.",
+        message:
+          error.response?.data?.error ??
+          "Could not delete the module from the database.",
         severity: "error",
       });
       setDeleteDialogOpen(false);
@@ -164,7 +171,11 @@ export default function ModulesPage() {
     setModuleToDelete(null);
   };
 
-  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
 
   const moduleColumns = [
     { key: "Id", label: "Id", sortable: true, minWidth: 80 },
@@ -175,7 +186,7 @@ export default function ModulesPage() {
       key: "actions",
       label: "Actions",
       minWidth: 100,
-      render: (module) => (
+      render: ({ row: module }) => (
         <Box sx={{ whiteSpace: "nowrap" }}>
           <IconButton
             aria-label={`Edit ${module.ModuleName}`}
@@ -280,7 +291,9 @@ export default function ModulesPage() {
           </Box>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
-          <Button variant="contained" color="secondary" onClick={closeDialog}>Cancel</Button>
+          <Button variant="contained" color="secondary" onClick={closeDialog}>
+            Cancel
+          </Button>
           <Button type="submit" variant="contained">
             {editingModuleId === null ? "Create" : "Save Changes"}
           </Button>
@@ -313,8 +326,8 @@ export default function ModulesPage() {
         <DialogContent>
           <Typography variant="body1" sx={{ mt: 1 }}>
             Are you sure you want to delete the module{" "}
-            <strong>{moduleToDelete?.ModuleName}</strong>? This action cannot
-            be undone.
+            <strong>{moduleToDelete?.ModuleName}</strong>? This action cannot be
+            undone.
           </Typography>
         </DialogContent>
         <DialogActions sx={{ p: 3, pt: 0 }}>
@@ -336,8 +349,16 @@ export default function ModulesPage() {
         </DialogActions>
       </Dialog>
 
-      <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={() => setSnackbar({ ...snackbar, open: false })}>
-        <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity} sx={{ width: "100%" }}>
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
+        >
           {snackbar.message}
         </Alert>
       </Snackbar>
