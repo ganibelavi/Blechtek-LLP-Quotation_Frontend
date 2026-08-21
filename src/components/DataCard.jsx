@@ -47,27 +47,27 @@ export default function DataCard({ label, value, icon, color = "primary", border
         }}
       >
         <Box>
-          <Typography
-            variant="caption"
-            fontWeight={700}
-            color="text.secondary"
-            sx={{
-              textTransform: "uppercase",
-              letterSpacing: "0.1em",
-              mb: 0.5,
-            }}
-          >
-            {label}
-          </Typography>
-          <Typography
-            variant="h4"
-            fontWeight={900}
-            color="text.primary"
-            sx={{ letterSpacing: "-0.02em" }}
-          >
-            {value}
-          </Typography>
-        </Box>
+            <Typography
+              variant="caption"
+              fontWeight={700}
+              color="text.secondary"
+              sx={{
+                textTransform: "uppercase",
+                letterSpacing: "0.1em",
+                mb: 0.5,
+              }}
+            >
+              {label}
+            </Typography>
+            <Typography
+              variant="h4"
+              fontWeight={900}
+              color="text.primary"
+              sx={{ letterSpacing: "-0.02em", fontSize: "16px !important", lineHeight: 1.2 }}
+            >
+              {value}
+            </Typography>
+          </Box>
         {icon && (
           <Box
             className="iconBox"
