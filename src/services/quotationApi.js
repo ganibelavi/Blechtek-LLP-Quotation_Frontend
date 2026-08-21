@@ -51,4 +51,14 @@ export function resolveDownloadUrl(path) {
   return `${client.defaults.baseURL}${path}`;
 }
 
+/**
+ * PUT /api/quotation/{quotationId}/discount
+ * payload: { discountPercentage }
+ * returns: { quotationId, organizationName, generatedAt, wordDownloadUrl, pdfDownloadUrl }
+ */
+export async function updateDiscount(quotationId, discountPercentage) {
+  const { data } = await client.put(`/api/quotation/${quotationId}/discount`, { discountPercentage });
+  return data;
+}
+
 export default client;

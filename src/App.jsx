@@ -7,6 +7,7 @@ import LoginPage from "./pages/LoginPage";
 import SettingsPage from "./pages/SettingsPage";
 import UsersPage from "./pages/UsersPage";
 import ModulesPage from "./pages/ModulesPage";
+import EditQuotation from "./pages/EditQuotation";
 import { useAuth } from "./context/AuthContext";
 import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
@@ -19,6 +20,7 @@ export default function App() {
   const { user, logout } = useAuth();
   const [view, setView] = useState("dashboard");
   const [settingsInitialTab, setSettingsInitialTab] = useState("users");
+  const [editQuotationId, setEditQuotationId] = useState(null);
 
   useEffect(() => {
     if (user) {
@@ -26,8 +28,9 @@ export default function App() {
     }
   }, [user]);
 
-  const navigate = (newView, initialTab) => {
+  const navigate = (newView, initialTab, quotationId) => {
     if (initialTab) setSettingsInitialTab(initialTab);
+    if (quotationId) setEditQuotationId(quotationId);
     setView(newView);
   };
 
@@ -96,6 +99,8 @@ export default function App() {
                 );
               case "created-quotations":
                 return <CreatedQuotation onNavigate={navigate} />;
+              case "edit-quotation":
+                return <EditQuotation onNavigate={navigate} quotationId={editQuotationId} />;
               case "quotation":
                 return <QuotationPdfView onBack={() => navigate("settings", "created-quotations")} />;
               case "create":

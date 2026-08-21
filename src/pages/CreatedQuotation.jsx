@@ -13,6 +13,7 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
 import DescriptionIcon from "@mui/icons-material/Description";
 import AddIcon from "@mui/icons-material/Add";
+import EditIcon from "@mui/icons-material/Edit";
 
 const API_BASE = process.env.REACT_APP_API_BASE_URL || "https://localhost:5001";
 const buildDownloadUrl = (quotationId, format) =>
@@ -109,6 +110,35 @@ export default function CreatedQuotation({ onNavigate }) {
     onNavigate("quotation-detail");
   };
 
+  const handleEditQuotation = (quotation) => {
+    sessionStorage.setItem(
+      "quotationData",
+      JSON.stringify({
+        quotationId: quotation.quotationId,
+        pdfDownloadUrl: quotation.pdfDownloadUrl,
+        wordDownloadUrl: quotation.wordDownloadUrl,
+      }),
+    );
+    sessionStorage.setItem(
+      "quotationFormValues",
+      JSON.stringify({
+        organizationName: quotation.organizationName,
+        validationDate: quotation.validationDate,
+        quotationNo: quotation.quotationNo,
+        date: quotation.date,
+        selectedModules: quotation.modules || [],
+        quotationTo: {
+          name: quotation.quotationToName,
+          address: quotation.quotationToAddress,
+          contactNo: quotation.quotationToContactNo,
+          email: quotation.quotationToEmail,
+        },
+        discountPercentage: quotation.discountPercentage || 0,
+      }),
+    );
+    onNavigate("edit-quotation", quotation.quotationId);
+  };
+
   const handleNewQuotation = () => {
     onNavigate("create");
   };
@@ -175,9 +205,20 @@ export default function CreatedQuotation({ onNavigate }) {
       key: "actions",
       label: "Actions",
       sortable: false,
-      minWidth: 120,
+      minWidth: 160,
       render: ({ row }) => (
         <Box sx={{ display: "flex", gap: 0.5 }}>
+          <Tooltip title="Edit Discount">
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleEditQuotation(row.originalData);
+              }}
+            >
+              <EditIcon fontSize="small" color="warning" />
+            </IconButton>
+          </Tooltip>
           <Tooltip title="View Quotation">
             <IconButton
               size="small"
