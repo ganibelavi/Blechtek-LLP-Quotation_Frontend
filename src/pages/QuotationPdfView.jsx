@@ -462,9 +462,9 @@ export default function QuotationPdfView({ onBack }) {
                   <td>
                     <strong>Taxes</strong>
                     <br />
-                    <span style={{ fontSize: "9pt", color: "#333" }}>
+                    {/* <span style={{ fontSize: "9pt", color: "#333" }}>
                       As Applicable
-                    </span>
+                    </span> */}
                   </td>
                   <td>As Applicable</td>
                 </tr>
