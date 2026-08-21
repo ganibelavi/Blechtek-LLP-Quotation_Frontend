@@ -366,7 +366,7 @@ export default function EditQuotation({ onNavigate, quotationId }) {
                   size="large"
                   onClick={handleConfirmDiscount}
                   disabled={submitting}
-                  // style={{ minWidth: '200px' }}
+                  style={{ fontSize:'13px' }}
                 >
                   {submitting ? "Applying…" : "Apply Discount"}
                 </Button>
@@ -381,7 +381,7 @@ export default function EditQuotation({ onNavigate, quotationId }) {
                   size="large"
                   onClick={() => handleFieldChange("discountPercentage", values.discountPercentage)}
                   disabled={submitting}
-                  style={{ minWidth: '200px' }}
+                  style={{ fontSize:'13px' }}
                 >
                   Edit Discount
                 </Button>
