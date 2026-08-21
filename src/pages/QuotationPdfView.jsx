@@ -172,7 +172,7 @@ export default function QuotationPdfView({ onBack }) {
           </div>
 
           <div className="pdf-section pdf-section--quotation-to">
-            <h3>QUOTATION TO</h3>
+            <h3>{organizationName ? `QUOTATION TO - ${organizationName}` : "QUOTATION TO"}</h3>
             <div className="quotation-to-grid">
               <div className="quotation-to-left">
                 <p>Name: {quotationTo.name || "{{CONTACT_NAME}}"}</p>
