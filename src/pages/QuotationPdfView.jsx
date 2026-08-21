@@ -175,12 +175,10 @@ export default function QuotationPdfView({ onBack }) {
             <h3>{organizationName ? `QUOTATION TO - ${organizationName}` : "QUOTATION TO"}</h3>
             <div className="quotation-to-grid">
               <div className="quotation-to-left">
-                <p>Name: {quotationTo.name || "{{CONTACT_NAME}}"}</p>
+                <p>Name: {quotationTo.name || "{{CONTACT_NAME}"}</p>
                 <p>Address: {quotationTo.address || "{{CONTACT_ADDRESS}"}</p>
-                <p>
-                  Contact No.: {quotationTo.contactNo || "{{CONTACT_PHONE}"} |
-                  Email: {quotationTo.email || "{{CONTACT_EMAIL}"}
-                </p>
+                <p>Contact No.: {quotationTo.contactNo || "{{CONTACT_PHONE}"}</p>
+                <p>Email: {quotationTo.email || "{{CONTACT_EMAIL}"}</p>
               </div>
               <div className="quotation-to-right">
                 <p>Quotation No.: {displayQuotationNo}</p>
@@ -212,8 +210,7 @@ export default function QuotationPdfView({ onBack }) {
               the presentation of CQUAL.
             </p>
             <p>
-              Based on the challenges and solutions discussed, please find below
-              a preliminary business proposal for the required changeover at{" "}
+              We discussed the current challenges and solutions CQUAL can provide, based on our brief discussions, please find attached a Preliminary Business Proposal for the required changeover at{" "}
               {organizationName || "{{ORG_NAME}"}.
             </p>
           </div>
@@ -224,15 +221,12 @@ export default function QuotationPdfView({ onBack }) {
 
           <div className="pdf-section">
             <p>
-              Our experts will be involved in redefining the operations setup
+              IT & Operations: Our experts will be involved in redefining the operations setup
               for sustainable growth and required digitalization at{" "}
               {organizationName || "{{ORG_NAME}"}.
             </p>
             <p>
-              Digitization of {moduleList || "{{MODULE_LIST}"} replaces manual
-              documentation, accelerates the approval process through
-              centralized data management, and improves traceability while
-              reducing administrative overhead.
+              Digitization of {moduleList || "{{MODULE_LIST}"} replaces manual documentation, significantly accelerates approval process with centralized data management and improved traceability, reduced and lower administrative interfaces.
             </p>
           </div>
 
@@ -257,6 +251,17 @@ export default function QuotationPdfView({ onBack }) {
               Deliverables do not include the source code. Use of the solution
               is under license from BlechTek Software Solutions LLP.
             </p>
+          </div>
+
+          <div className="pdf-section pdf-section--closing">
+            <p>
+              We hope that this Document along with the enclosed Business Proposal
+              is in line with your requirements. In case of any query, please feel
+              free to call us.
+            </p>
+            <p>Sincerely,</p>
+            <p>For BlechTek Software Solutions LLP.</p>
+            <p>Sushama Inamdar</p>
           </div>
 
           <div className="pdf-section pdf-section--heading">
@@ -476,88 +481,76 @@ export default function QuotationPdfView({ onBack }) {
               <li>
                 <strong>Confidentiality</strong>
                 <p>
-                  BlechTek Software Solutions LLP agrees to maintain the
-                  confidentiality of all insights gained into your organization.
+                  We agree to maintain the secrecy of insight into your organization.
                 </p>
               </li>
               <li>
                 <strong>License</strong>
                 <p>
-                  You are responsible for holding valid licenses for any
-                  Operating System software required.
+                  You should hold Licenses of any Operating System Software required.
                 </p>
               </li>
               <li>
                 <strong>Ownership of Source Code</strong>
                 <p>
-                  Source Code remains the property of BlechTek Software
-                  Solutions LLP. The customer shall not claim any right in or to
-                  any patent, copyright, trademark or other proprietary right of
-                  the original manufacturer, developer or licensor.
+                  Ownership of Source Code would be property of BlechTek Software Solutions LLP. Customer shall not claim any right whatsoever in or to any patent, copyright, trademark or other proprietary right of the original equipment manufacturer/ software developers or its licensors. The software/ hardware/ other goods supplied are in accordance with the Export laws of respective countries. Diversion of these laws/regulations is prohibited.
                 </p>
               </li>
               <li>
                 <strong>Warranty</strong>
                 <p>
-                  BlechTek offers a standard warranty against development
-                  defects for 3 months from the date of installation. BlechTek
-                  is not responsible for data loss due to platform,
-                  cyber-security or virus issues.
+                  BlechTek Software Solutions LLP offers a Standard Warranty against Development defects for the period of 3 Months from the Date of Installation. And BlechTek Software Solutions LLP is not responsible for the loss of Data due to any Platform related or Cyber Security Issues or Virus problems.
                 </p>
               </li>
               <li>
                 <strong>Installation of Software</strong>
-                <p>
-                  The software is considered installed once loaded on the
-                  server. For on-premise servers, installation follows receipt
-                  of a Site Readiness report.
-                </p>
+<p>
+                   <strong>Definition:</strong> The Software will be considered as installed when it is loaded on the Server.
+                 </p>
+                 <p>
+                   <strong>Installation pre-requisites (in case of on-premise Server):</strong> We will install the Software only after we receive the Site readiness report from you. A Copy of which will be forwarded to you along with our Order Acceptance / Request for Installation.
+                 </p>
               </li>
               <li>
                 <strong>Excused Performance</strong>
                 <p>
-                  BlechTek is not liable for delay or failure in performance due
-                  to strikes, riots, war, fire, acts of God, governmental
-                  regulation, or failure of hardware/network outside its
-                  control.
+                  BlechTek shall not be liable or deemed to be in default for any delay or failure in performance under this Contract or interruption of services due to strike or labor disputes, riots, war, fire, acts of God or governmental regulations. BlechTek should not be held responsible, directly or indirectly for nonperformance of our software due to failure or malfunction of computer or telecommunications hardware, network or related equipment at your installation site.
                 </p>
               </li>
               <li>
                 <strong>Discontinuation of Contract</strong>
                 <p>
-                  The balance amount becomes payable immediately if the contract
-                  is discontinued for reasons unrelated to BlechTek, or stalled
-                  by the client for more than 60 days.
+                  You will immediately pay the balance amount to BlechTek in case of the following…
+                </p>
+                <p>
+                  i. Discontinuation of Contract from your side due to the reasons that are not related to BlechTek
+                </p>
+                <p>
+                  ii. If the contract is stalled by you at any stage for a period more than 60 Days
                 </p>
               </li>
               <li>
                 <strong>TDS</strong>
                 <p>
-                  Any TDS deducted must be supported by a certificate within 6
-                  months or by the end of the financial year, failing which the
-                  deducted amount becomes payable.
+                  In case of deduction of TDS Amount, you have to give us the TDS certificate immediately along with our Payment. If we do not receive the TDS Certificate within 6 months or by the end of the Financial Year, you should pay us the deducted TDS amount immediately.
                 </p>
               </li>
               <li>
                 <strong>Validity of the Offer</strong>
                 <p>
-                  This offer is valid up to{" "}
-                  {formatValidationDate(validationDate)}.
+                  This Offer is valid up to {formatValidationDate(validationDate)}.
                 </p>
               </li>
               <li>
-                <strong>Suggestions by Auditors / Consultants</strong>
+                <strong>Suggestions by your Auditors and / or Consultants</strong>
                 <p>
-                  Any changes suggested by auditors or consultants must be
-                  raised before order finalization; later changes are chargeable
-                  separately.
+                  Any suggestions by your Auditors and / or Consultants should be discussed before the finalization of the Order. If any suggestions are made after the finalization of the order, the same will be considered only after the completion of this Order and would be charged extra.
                 </p>
               </li>
               <li>
                 <strong>Legal</strong>
                 <p>
-                  Disputes arising from this order are subject to the
-                  jurisdiction of courts at Pune, Maharashtra.
+                  Any disputes arising out of in relation to this order is subject to jurisdiction of courts at Pune, Maharashtra. We hope this document is in line with our discussions. We request you to call us for further course of action.
                 </p>
               </li>
             </ol>
@@ -565,12 +558,11 @@ export default function QuotationPdfView({ onBack }) {
 
           <div className="pdf-section pdf-section--closing">
             <p>
-              We hope this document aligns with our discussions. Please feel
-              free to reach out for any clarification.
+              We hope this document is in line with our discussions. We request you to call us for further course of action.
             </p>
-            <p>Sincerely,</p>
-            <p>For BlechTek Software Solutions LLP</p>
-            <p className="pdf-signature">Sushama Inamdar</p>
+            <p>Thanking you in anticipation, Sincerely,</p>
+            <p><strong>For BlechTek Software Solutions LLP</strong></p>
+            <p className="pdf-signature"><strong>Sushama Inamdar</strong></p>
           </div>
 
           <div className="pdf-footer">
