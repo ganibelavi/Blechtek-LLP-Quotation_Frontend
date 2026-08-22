@@ -104,19 +104,19 @@ export default function DashboardPage({ onNavigate }) {
       label: "Modules",
       value: data.totalModules ?? 0,
       icon: <Assessment />,
-      color: "info",
+      color: "primary",
     },
     {
       label: "Quotation Value",
       value: formatCurrency(data.totalQuotedAmount ?? 0),
       icon: <TrendingUp />,
-      color: "success",
+      color: "primary",
     },
     {
       label: "Active Pipeline",
       value: data.statusBreakdown?.find((s) => s.status === "Valid")?.count ?? 0,
       icon: <People />,
-      color: "warning",
+      color: "primary",
     },
   ];
 

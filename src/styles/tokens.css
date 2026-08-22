@@ -42,9 +42,9 @@
   --orange-50: #fff7ed;
 
   /* Type */
-  --font-display: "Sora", "Segoe UI", sans-serif;
-  --font-body: "Inter", "Segoe UI", sans-serif;
-  --font-mono: "JetBrains Mono", monospace;
+  --font-display: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  --font-body: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  --font-mono: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 
   /* Shape */
   --radius-sm: 8px;

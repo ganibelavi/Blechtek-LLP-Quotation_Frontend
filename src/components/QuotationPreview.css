@@ -22,7 +22,7 @@
 }
 
 .q-ticket__brand {
-  font-family: var(--font-display);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   font-weight: 700;
   font-size: 16px;
 }
@@ -114,7 +114,7 @@
 
 .q-ticket__mono {
   margin: 0;
-  font-family: var(--font-mono);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   font-size: 15px;
   color: var(--blue-100);
 }
@@ -146,7 +146,7 @@
 
 .q-result__id {
   margin: 4px 0 14px;
-  font-family: var(--font-mono);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   font-size: 12px;
   color: var(--text-400);
 }
