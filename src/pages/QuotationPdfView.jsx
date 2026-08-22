@@ -553,7 +553,7 @@ export default function QuotationPdfView({ onBack }) {
               <li>
                 <strong>Legal</strong>
                 <p>
-                  Any disputes arising out of in relation to this order is subject to jurisdiction of courts at Pune, Maharashtra. We hope this document is in line with our discussions. We request you to call us for further course of action.
+                  Any disputes arising out of in relation to this order is subject to jurisdiction of courts at Pune, Maharashtra.
                 </p>
               </li>
             </ol>
@@ -561,10 +561,12 @@ export default function QuotationPdfView({ onBack }) {
 
           <div className="pdf-section pdf-section--closing">
             <p>
-              We hope this document is in line with our discussions. We request you to call us for further course of action.
+              We hope that this Document along with the enclosed Business Proposal
+              is in line with your requirements. In case of any query, please feel
+              free to call us.
             </p>
-            <p>Thanking you in anticipation, Sincerely,</p>
-            <p><strong>For BlechTek Software Solutions LLP</strong></p>
+            <p>Sincerely,</p>
+            <p>For BlechTek Software Solutions LLP.</p>
             <p className="pdf-signature"><strong>Sushama Inamdar</strong></p>
           </div>
 
