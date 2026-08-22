@@ -187,12 +187,8 @@ export default function EntityTable({ title, columns, rows }) {
                     minWidth: col.minWidth,
                   }}
                 >
-                 {col.label}
-                  {orderBy === col.key
-                  ? order === "asc"
-                  ? " ▲"
-                  : " ▼"
-                  : null}
+                  {col.label}
+                  {orderBy === col.key ? (order === "asc" ? " ▲" : " ▼") : null}
                 </TableCell>
               ))}
             </TableRow>
@@ -205,7 +201,7 @@ export default function EntityTable({ title, columns, rows }) {
                   <TableCell
                     key={col.key}
                     sx={{
-                      padding: "0.4rem",
+                      padding: "5px 10px",
                       fontSize: 13,
                       borderRight: "1px solid #eee",
                       whiteSpace: "nowrap",

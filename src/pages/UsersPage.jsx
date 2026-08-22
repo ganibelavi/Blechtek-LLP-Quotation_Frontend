@@ -207,11 +207,21 @@ export default function UsersPage() {
       label: "Status",
       sortable: true,
       minWidth: 100,
-      render: ({ row: user }) => (user.isActive ? "Active" : "Inactive"),
+      render: ({ row: user }) => (
+        <Box sx={{ px: "10px", py: "5px" }}>{user.isActive ? "Active" : "Inactive"}</Box>
+      ),
     },
     { key: "createdAt", label: "Created At", sortable: true, minWidth: 160 },
     { key: "lastLoginAt", label: "Last Login", sortable: true, minWidth: 160 },
-    { key: "role", label: "Role", sortable: true, minWidth: 100 },
+    {
+      key: "role",
+      label: "Role",
+      sortable: true,
+      minWidth: 100,
+      render: ({ row }) => (
+        <Box sx={{ px: "10px", py: "5px" }}>{row.role}</Box>
+      ),
+    },
     {
       key: "actions",
       label: "Actions",
