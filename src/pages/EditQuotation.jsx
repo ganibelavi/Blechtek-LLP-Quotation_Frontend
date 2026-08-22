@@ -6,6 +6,7 @@ import "../components/QuotationPreview.css";
 import { Alert, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField } from "@mui/material";
 
 const initialValues = {
+  referenceBy: "",
   organizationName: "",
   validationDate: "",
   quotationNo: "",
@@ -167,6 +168,45 @@ export default function EditQuotation({ onNavigate, quotationId }) {
           <form className="q-form" onSubmit={(e) => e.preventDefault()} noValidate>
             <section className="q-form__section">
               <h3 className="q-form__heading">Quotation details</h3>
+              <div className="q-form__row">
+                <div className="q-field">
+                  <label htmlFor="referenceBy">Reference By</label>
+                  <input
+                    id="referenceBy"
+                    type="text"
+                    placeholder="e.g. John Smith / Internal"
+                    value={values.referenceBy}
+                    onChange={(e) =>
+                      handleFieldChange("referenceBy", e.target.value)
+                    }
+                    readOnly
+                    style={disabledFieldStyle}
+                  />
+                  {errors.referenceBy && (
+                    <span className="q-field__error">
+                      {errors.referenceBy}
+                    </span>
+                  )}
+                </div>
+                <div className="q-field q-field--narrow">
+                  <label htmlFor="validationDate">Valid until</label>
+                  <input
+                    id="validationDate"
+                    type="date"
+                    value={values.validationDate}
+                    onChange={(e) =>
+                      handleFieldChange("validationDate", e.target.value)
+                    }
+                    readOnly
+                    style={disabledFieldStyle}
+                  />
+                  {errors.validationDate && (
+                    <span className="q-field__error">
+                      {errors.validationDate}
+                    </span>
+                  )}
+                </div>
+              </div>
               <div className="q-form__row">
                 <div className="q-field">
                   <label htmlFor="organizationName">Organization name</label>
@@ -401,6 +441,11 @@ export default function EditQuotation({ onNavigate, quotationId }) {
               <p className="q-ticket__label">Prepared for</p>
               <p className="q-ticket__value">
                 {values.organizationName || "Organization name"}
+              </p>
+
+              <p className="q-ticket__label">Reference By</p>
+              <p className="q-ticket__value">
+                {values.referenceBy || "—"}
               </p>
 
               <p className="q-ticket__label">Attention</p>

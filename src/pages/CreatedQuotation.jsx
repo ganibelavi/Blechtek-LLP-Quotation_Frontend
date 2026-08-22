@@ -22,6 +22,7 @@ const buildDownloadUrl = (quotationId, format) =>
 const toTableQuotation = (q) => ({
   QuotationId: q.quotationId,
   OrganizationName: q.organizationName,
+  ReferenceBy: q.referenceBy,
   QuotationNo: q.quotationNo || "",
   Date: q.date && !q.date.startsWith("0001-01-01")
     ? new Date(q.date).toLocaleDateString("en-IN", {
@@ -94,6 +95,7 @@ export default function CreatedQuotation({ onNavigate }) {
       "quotationFormValues",
       JSON.stringify({
         organizationName: quotation.organizationName,
+        referenceBy: quotation.referenceBy,
         validationDate: quotation.validationDate,
         quotationNo: quotation.quotationNo,
         date: quotation.date,
@@ -123,6 +125,7 @@ export default function CreatedQuotation({ onNavigate }) {
       "quotationFormValues",
       JSON.stringify({
         organizationName: quotation.organizationName,
+        referenceBy: quotation.referenceBy,
         validationDate: quotation.validationDate,
         quotationNo: quotation.quotationNo,
         date: quotation.date,
@@ -156,6 +159,12 @@ export default function CreatedQuotation({ onNavigate }) {
       label: "Organization",
       sortable: true,
       minWidth: 220,
+    },
+    {
+      key: "ReferenceBy",
+      label: "Reference By",
+      sortable: true,
+      minWidth: 150,
     },
     {
       key: "QuotationNo",

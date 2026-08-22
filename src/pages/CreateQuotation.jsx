@@ -9,6 +9,7 @@ import "../components/QuotationForm.css";
 import "../components/QuotationPreview.css";
 
 const initialValues = {
+  referenceBy: "",
   organizationName: "",
   validationDate: "",
   quotationNo: "",
@@ -70,6 +71,7 @@ export default function CreateQuotation({ onNavigate }) {
       const payload = {
         validationDate: values.validationDate,
         organizationName: values.organizationName,
+        referenceBy: values.referenceBy,
         quotationNo: values.quotationNo,
         date: values.date,
         selectedModules: values.selectedModules,
@@ -179,6 +181,41 @@ export default function CreateQuotation({ onNavigate }) {
                     </span>
                   )}
                 </div>
+              </div>
+              <div className="q-form__row">
+                <div className="q-field">
+                  <label htmlFor="referenceBy">Reference By</label>
+                  <input
+                    id="referenceBy"
+                    type="text"
+                    placeholder="e.g. John Smith / Internal"
+                    value={values.referenceBy}
+                    onChange={(e) =>
+                      handleFieldChange("referenceBy", e.target.value)
+                    }
+                  />
+                  {errors.referenceBy && (
+                    <span className="q-field__error">
+                      {errors.referenceBy}
+                    </span>
+                  )}
+                </div>
+                {/* <div className="q-field q-field--narrow">
+                  <label htmlFor="validationDate">Valid until</label>
+                  <input
+                    id="validationDate"
+                    type="date"
+                    value={values.validationDate}
+                    onChange={(e) =>
+                      handleFieldChange("validationDate", e.target.value)
+                    }
+                  />
+                  {errors.validationDate && (
+                    <span className="q-field__error">
+                      {errors.validationDate}
+                    </span>
+                  )}
+                </div> */}
               </div>
               <div className="q-form__row">
                 <div className="q-field">
@@ -315,6 +352,11 @@ export default function CreateQuotation({ onNavigate }) {
               <p className="q-ticket__label">Prepared for</p>
               <p className="q-ticket__value">
                 {values.organizationName || "Organization name"}
+              </p>
+
+              <p className="q-ticket__label">Reference By</p>
+              <p className="q-ticket__value">
+                {values.referenceBy || "—"}
               </p>
 
               <p className="q-ticket__label">Attention</p>

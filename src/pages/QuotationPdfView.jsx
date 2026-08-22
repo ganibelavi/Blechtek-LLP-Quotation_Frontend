@@ -5,6 +5,7 @@ import "../components/QuotationPreview.css";
 
 const initialValues = {
   organizationName: "",
+  referenceBy: "",
   validationDate: "",
   selectedModules: [],
   quotationTo: { name: "", address: "", contactNo: "", email: "" },
@@ -61,6 +62,7 @@ export default function QuotationPdfView({ onBack }) {
 
   const {
     organizationName,
+    referenceBy,
     validationDate,
     selectedModules,
     quotationTo,
@@ -179,6 +181,7 @@ export default function QuotationPdfView({ onBack }) {
                 <p>Address: {quotationTo.address || "{{CONTACT_ADDRESS}"}</p>
                 <p>Contact No.: {quotationTo.contactNo || "{{CONTACT_PHONE}"}</p>
                 <p>Email: {quotationTo.email || "{{CONTACT_EMAIL}"}</p>
+                {/* <p>Reference By: {referenceBy || "{{REFERENCE_BY}"}</p> */}
               </div>
               <div className="quotation-to-right">
                 <p>Quotation No.: {displayQuotationNo}</p>
