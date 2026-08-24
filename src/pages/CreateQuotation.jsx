@@ -9,8 +9,17 @@ import "./CreateQuotation.css";
 import "../components/QuotationForm.css";
 import "../components/QuotationPreview.css";
 
+const getDefaultReferenceBy = () => {
+  try {
+    const user = JSON.parse(localStorage.getItem("qa_user") || "null");
+    return user?.email || "";
+  } catch {
+    return "";
+  }
+};
+
 const initialValues = {
-  referenceBy: "",
+  referenceBy: getDefaultReferenceBy(),
   organizationName: "",
   validationDate: "",
   quotationNo: "",
@@ -81,10 +90,19 @@ export default function CreateQuotation({ onNavigate }) {
     setApiError("");
     setResult(null);
     try {
+      const loggedInUser = (() => {
+        try {
+          return JSON.parse(localStorage.getItem("qa_user") || "null")?.email || "";
+        } catch {
+          return "";
+        }
+      })();
+
       const payload = {
         validationDate: values.validationDate,
         organizationName: values.organizationName,
         referenceBy: values.referenceBy,
+        createdByUser: loggedInUser,
         quotationNo: "", // Auto-generated on backend
         date: values.date,
         selectedModules: values.selectedModules,
@@ -118,6 +136,7 @@ export default function CreateQuotation({ onNavigate }) {
   const handleNewQuotation = () => {
     setValues({
       ...initialValues,
+      referenceBy: getDefaultReferenceBy(),
       quotationNo: ""
     });
     setResult(null);

@@ -10,11 +10,14 @@ import {
 } from "recharts";
 
 export default function TopOrganizationsBar({ data }) {
-  const chartData = (data || []).slice(0, 8).map((d) => ({
-    org: d.Organization?.length > 20 ? d.Organization.substring(0, 20) + "..." : d.Organization,
-    fullOrg: d.Organization,
-    count: d.QuoteCount,
-  }));
+  const chartData = (data || []).slice(0, 8).map((d) => {
+    const organizationName = d.organization ?? d.Organization ?? "";
+    return {
+      org: organizationName.length > 20 ? organizationName.substring(0, 20) + "..." : organizationName,
+      fullOrg: organizationName,
+      count: Number(d.quoteCount ?? d.QuoteCount ?? d.count ?? d.Count ?? 0),
+    };
+  });
 
   if (chartData.length === 0) {
     return (

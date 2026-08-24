@@ -10,11 +10,14 @@ import {
 } from "recharts";
 
 export default function ModuleBar({ data }) {
-  const chartData = (data || []).slice(0, 8).map((d) => ({
-    module: d.Module?.length > 20 ? d.Module.substring(0, 20) + "..." : d.Module,
-    fullModule: d.Module,
-    count: d.Count,
-  }));
+  const chartData = (data || []).slice(0, 8).map((d) => {
+    const moduleName = d.module ?? d.Module ?? "";
+    return {
+      module: moduleName.length > 20 ? moduleName.substring(0, 20) + "..." : moduleName,
+      fullModule: moduleName,
+      count: Number(d.count ?? d.Count ?? 0),
+    };
+  });
 
   if (chartData.length === 0) {
     return (

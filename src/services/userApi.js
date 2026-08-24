@@ -1,7 +1,18 @@
 import axios from "axios";
 
+const resolveApiBaseUrl = () => {
+  const envUrl = process.env.REACT_APP_API_BASE_URL?.trim();
+  if (envUrl) return envUrl.replace(/\/+$/, "");
+
+  if (typeof window !== "undefined" && window.location.hostname === "localhost") {
+    return "";
+  }
+
+  return "http://localhost:5000";
+};
+
 const client = axios.create({
-  baseURL: process.env.REACT_APP_API_BASE_URL || "https://localhost:5001",
+  baseURL: resolveApiBaseUrl(),
   headers: { "Content-Type": "application/json" }
 });
 

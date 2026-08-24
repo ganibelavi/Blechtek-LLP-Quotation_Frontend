@@ -6,22 +6,23 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  Cell,
 } from "recharts";
 
-export default function MachineUtilChart({ data }) {
+export default function UserQuotationBar({ data }) {
   const chartData = (data || []).slice(0, 8).map((d) => {
-    const machineName = d.machine ?? d.Machine ?? "";
+    const userName = d.user ?? d.User ?? "Unknown";
     return {
-      machine: machineName.length > 20 ? machineName.substring(0, 20) + "..." : machineName,
-      fullMachine: machineName,
-      utilization: Number(d.utilization ?? d.Utilization ?? d.usage ?? d.Usage ?? d.count ?? d.Count ?? 0),
+      user: userName.length > 18 ? userName.substring(0, 18) + "..." : userName,
+      fullUser: userName,
+      quoteCount: Number(d.quoteCount ?? d.QuoteCount ?? 0),
     };
   });
 
   if (chartData.length === 0) {
     return (
       <div style={{ width: "100%", height: 300, display: "flex", alignItems: "center", justifyContent: "center", color: "#999" }}>
-        No machine utilization data available
+        No quotation creation data available
       </div>
     );
   }
@@ -36,12 +37,12 @@ export default function MachineUtilChart({ data }) {
           fontSize={11}
           tickLine={false}
           axisLine={{ stroke: "#e0e0e0" }}
-          tickFormatter={(value) => `${value}%`}
+          tickFormatter={(value) => (value >= 1000 ? `${(value / 1000).toFixed(1)}k` : value)}
         />
         <YAxis
           type="category"
-          dataKey="machine"
-          width={180}
+          dataKey="user"
+          width={150}
           stroke="#64748b"
           fontSize={12}
           tickLine={false}
@@ -54,13 +55,17 @@ export default function MachineUtilChart({ data }) {
             borderRadius: 12,
             boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
           }}
-          formatter={(value) => [`${value}%`, "Utilization"]}
+          formatter={(value, name) => [value, name === "quoteCount" ? "Quotations" : ""]}
           labelFormatter={(label) => {
-            const item = chartData.find((d) => d.machine === label);
-            return item ? item.fullMachine : label;
+            const item = chartData.find((d) => d.user === label);
+            return item ? item.fullUser : label;
           }}
         />
-        <Bar dataKey="utilization" radius={[0, 4, 4, 0]} barSize={20} fill="#607d8b" />
+        <Bar dataKey="quoteCount" radius={[0, 6, 6, 0]} barSize={24}>
+          {chartData.map((entry, index) => (
+            <Cell key={`cell-${index}`} fill={index % 2 === 0 ? "#2e7d32" : "#66bb6a"} />
+          ))}
+        </Bar>
       </BarChart>
     </ResponsiveContainer>
   );

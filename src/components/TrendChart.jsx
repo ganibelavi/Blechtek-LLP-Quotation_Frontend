@@ -11,12 +11,16 @@ import {
 
 export default function TrendChart({ data }) {
   const chartData = (data || []).map((d) => {
-    const date = new Date(d.Month);
+    const monthValue = d.month ?? d.Month ?? "";
+    const date = monthValue ? new Date(monthValue) : null;
+    const revenueValue = d.revenue ?? d.Revenue ?? d.totalAmount ?? d.TotalAmount ?? 0;
+    const quoteCount = d.quotes ?? d.count ?? d.Count ?? 0;
+
     return {
       ...d,
-      month: date.toLocaleString("en-US", { month: "short", year: "2-digit" }),
-      revenue: d.Revenue || d.TotalAmount || 0,
-      quotes: d.Count || 0,
+      month: date ? date.toLocaleString("en-US", { month: "short", year: "2-digit" }) : monthValue,
+      revenue: Number(revenueValue) || 0,
+      quotes: Number(quoteCount) || 0,
     };
   });
 

@@ -15,7 +15,18 @@ import DescriptionIcon from "@mui/icons-material/Description";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 
-const API_BASE = process.env.REACT_APP_API_BASE_URL || "https://localhost:5001";
+const resolveApiBaseUrl = () => {
+  const envUrl = process.env.REACT_APP_API_BASE_URL?.trim();
+  if (envUrl) return envUrl.replace(/\/+$/, "");
+
+  if (typeof window !== "undefined" && window.location.hostname === "localhost") {
+    return "";
+  }
+
+  return "http://localhost:5000";
+};
+
+const API_BASE = resolveApiBaseUrl();
 const buildDownloadUrl = (quotationId, format) =>
   `${API_BASE}/api/quotation/${quotationId}/download/${format}`;
 

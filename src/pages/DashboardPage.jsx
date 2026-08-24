@@ -7,6 +7,10 @@ import {
   Typography,
   Alert,
   CircularProgress,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
 } from "@mui/material";
 import {
   Business,
@@ -17,6 +21,7 @@ import {
 } from "@mui/icons-material";
 import DataCard from "../components/DataCard";
 import TrendChart from "../components/TrendChart";
+import UserQuotationBar from "../components/UserQuotationBar";
 import StatusPie from "../components/StatusPie";
 import ModuleBar from "../components/ModuleBar";
 import TopOrganizationsBar from "../components/TopOrganizationsBar";
@@ -62,6 +67,40 @@ export default function DashboardPage({ onNavigate }) {
   useEffect(() => {
     loadDashboard();
   }, []);
+
+  const [selectedYear, setSelectedYear] = useState("all");
+  const [selectedMonth, setSelectedMonth] = useState("all");
+
+  const monthlyOptions = (data?.monthlyQuotes || []).map((item) => {
+    const monthLabel = item.month ?? item.Month ?? "";
+    const match = monthLabel.match(/^([A-Za-z]{3})\s+(\d{4})$/);
+    if (match) {
+      return { label: monthLabel, month: match[1], year: match[2] };
+    }
+
+    const date = new Date(monthLabel);
+    if (!Number.isNaN(date.getTime())) {
+      return {
+        label: date.toLocaleString("en-US", { month: "short", year: "numeric" }),
+        month: date.toLocaleString("en-US", { month: "short" }),
+        year: String(date.getFullYear()),
+      };
+    }
+
+    return { label: monthLabel, month: monthLabel, year: "" };
+  });
+
+  const availableYears = [...new Set(monthlyOptions.filter((item) => item.year).map((item) => item.year))].sort();
+  const filteredMonthlyData = (data?.monthlyQuotes || []).filter((item) => {
+    const monthLabel = item.month ?? item.Month ?? "";
+    const match = monthLabel.match(/^([A-Za-z]{3})\s+(\d{4})$/);
+    const month = match ? match[1] : "";
+    const year = match ? match[2] : "";
+
+    const matchesYear = selectedYear === "all" || year === selectedYear;
+    const matchesMonth = selectedMonth === "all" || month === selectedMonth;
+    return matchesYear && matchesMonth;
+  });
 
   if (loading) {
     return (
@@ -203,7 +242,7 @@ export default function DashboardPage({ onNavigate }) {
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: { xs: "1fr", lg: "7.5fr 4.5fr" },
+          gridTemplateColumns: { xs: "1fr", lg: "repeat(3, minmax(0, 1fr))" },
           gap: 3,
           alignItems: "stretch",
           mb: 4,
@@ -211,10 +250,54 @@ export default function DashboardPage({ onNavigate }) {
       >
         <Paper {...chartContainerStyle}>
           <Typography variant="h6" fontWeight={700} gutterBottom sx={{ mb: 2 }}>
-            Monthly Quotation Trend
+            Quotation Creation by User
           </Typography>
           <Box sx={{ flex: 1, minHeight: 300 }}>
-            <TrendChart data={data.monthlyQuotes ?? []} />
+            <UserQuotationBar data={data.userQuotationStats ?? []} />
+          </Box>
+        </Paper>
+
+        <Paper {...chartContainerStyle}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 2, mb: 2, flexWrap: "wrap" }}>
+            <Typography variant="h6" fontWeight={700}>
+              Monthly Quotation Trend
+            </Typography>
+
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
+              <FormControl size="small" sx={{ minWidth: 120 }}>
+                <InputLabel id="trend-month-label">Month</InputLabel>
+                <Select
+                  labelId="trend-month-label"
+                  value={selectedMonth}
+                  label="Month"
+                  onChange={(e) => setSelectedMonth(e.target.value)}
+                >
+                  <MenuItem value="all">All Months</MenuItem>
+                  {Array.from(new Set(monthlyOptions.map((item) => item.month).filter(Boolean))).map((month) => (
+                    <MenuItem key={month} value={month}>{month}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <FormControl size="small" sx={{ minWidth: 110 }}>
+                <InputLabel id="trend-year-label">Year</InputLabel>
+                <Select
+                  labelId="trend-year-label"
+                  value={selectedYear}
+                  label="Year"
+                  onChange={(e) => setSelectedYear(e.target.value)}
+                >
+                  <MenuItem value="all">All Years</MenuItem>
+                  {availableYears.map((year) => (
+                    <MenuItem key={year} value={year}>{year}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
+          </Box>
+
+          <Box sx={{ flex: 1, minHeight: 300 }}>
+            <TrendChart data={filteredMonthlyData} />
           </Box>
         </Paper>
 
