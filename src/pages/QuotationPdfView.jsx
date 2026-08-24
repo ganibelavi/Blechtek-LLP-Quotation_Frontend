@@ -81,7 +81,7 @@ export default function QuotationPdfView({ onBack }) {
     });
   };
 
-  const displayQuotationNo = quotationNo || "{{QUOTATION_NO}}";
+  const displayQuotationNo = result?.quotationNo || quotationNo || "{{QUOTATION_NO}}";
   const displayDate = formatDisplayDate(date) || "{{DATE}}";
 
   const moduleList =

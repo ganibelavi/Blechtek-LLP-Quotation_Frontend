@@ -62,6 +62,20 @@
   outline: none;
 }
 
+.q-field input.q-field__input--readonly,
+.q-field textarea.q-field__input--readonly {
+  background: var(--bg);
+  color: var(--text-500);
+  border-color: var(--border);
+  cursor: not-allowed;
+}
+
+.q-field input.q-field__input--readonly:focus,
+.q-field textarea.q-field__input--readonly:focus {
+  border-color: var(--border);
+  box-shadow: none;
+}
+
 .q-field__error {
   font-size: 12px;
   color: #2196f3;

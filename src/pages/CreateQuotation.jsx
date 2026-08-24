@@ -12,7 +12,7 @@ const initialValues = {
   referenceBy: "",
   organizationName: "",
   validationDate: "",
-  quotationNo: "",
+  quotationNo: "Auto-generated",
   date: "",
   selectedModules: [],
   quotationTo: { name: "", address: "", contactNo: "", email: "" },
@@ -72,7 +72,7 @@ export default function CreateQuotation({ onNavigate }) {
         validationDate: values.validationDate,
         organizationName: values.organizationName,
         referenceBy: values.referenceBy,
-        quotationNo: values.quotationNo,
+        quotationNo: "", // Auto-generated on backend
         date: values.date,
         selectedModules: values.selectedModules,
         quotationTo: {
@@ -102,7 +102,10 @@ export default function CreateQuotation({ onNavigate }) {
   };
 
   const handleNewQuotation = () => {
-    setValues(initialValues);
+    setValues({
+      ...initialValues,
+      quotationNo: "Auto-generated"
+    });
     setResult(null);
     setErrors({});
     setApiError("");
@@ -223,11 +226,10 @@ export default function CreateQuotation({ onNavigate }) {
                   <input
                     id="quotationNo"
                     type="text"
-                    placeholder="e.g. Q-2026-001"
+                    placeholder="Auto-generated"
                     value={values.quotationNo}
-                    onChange={(e) =>
-                      handleFieldChange("quotationNo", e.target.value)
-                    }
+                    readOnly
+                    className="q-field__input--readonly"
                   />
                   {errors.quotationNo && (
                     <span className="q-field__error">{errors.quotationNo}</span>
@@ -402,7 +404,7 @@ export default function CreateQuotation({ onNavigate }) {
           {result && (
             <div className="q-result">
               <p className="q-result__title">Quotation generated</p>
-              <p className="q-result__id">{result.quotationId}</p>
+              <p className="q-result__id">{result.quotationNo}</p>
               <div className="q-result__actions">
                 <button
                   className="q-result__btn q-result__btn--primary"
@@ -502,8 +504,6 @@ function validate(values) {
   if (!values.organizationName.trim())
     errors.organizationName = "Organization name is required.";
   if (!values.validationDate) errors.validationDate = "Pick a validity date.";
-  if (!values.quotationNo.trim())
-    errors.quotationNo = "Quotation No. is required.";
   if (!values.date) errors.date = "Date is required.";
   if (values.selectedModules.length === 0)
     errors.selectedModules = "Select at least one module.";
