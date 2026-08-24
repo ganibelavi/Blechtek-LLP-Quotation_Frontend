@@ -29,7 +29,7 @@ export default function ModuleBar({ data }) {
 
   return (
     <ResponsiveContainer width="100%" height={300}>
-      <BarChart data={chartData} layout="vertical" margin={{ top: 10, right: 30, left: 10, bottom: 0 }}>
+      <BarChart data={chartData} layout="vertical" margin={{ top: 10, right: 20, left: 4, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
         <XAxis
           type="number"
@@ -42,11 +42,12 @@ export default function ModuleBar({ data }) {
         <YAxis
           type="category"
           dataKey="module"
-          width={180}
+          width={82}
           stroke="#64748b"
           fontSize={12}
           tickLine={false}
           axisLine={false}
+          tickMargin={8}
         />
         <Tooltip
           contentStyle={{
