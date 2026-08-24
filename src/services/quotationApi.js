@@ -61,4 +61,13 @@ export async function updateDiscount(quotationId, discountPercentage) {
   return data;
 }
 
+/**
+ * GET /api/quotation/next-quotation-no
+ * returns: { quotationNo: "BTSS/FY2025-26/PR-000X" }
+ */
+export async function fetchNextQuotationNo() {
+  const { data } = await client.get("/api/quotation/next-quotation-no");
+  return data.quotationNo;
+}
+
 export default client;

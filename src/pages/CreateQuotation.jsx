@@ -3,6 +3,7 @@ import {
   fetchModules,
   generateQuotation,
   resolveDownloadUrl,
+  fetchNextQuotationNo,
 } from "../services/quotationApi";
 import "./CreateQuotation.css";
 import "../components/QuotationForm.css";
@@ -12,7 +13,7 @@ const initialValues = {
   referenceBy: "",
   organizationName: "",
   validationDate: "",
-  quotationNo: "Auto-generated",
+  quotationNo: "",
   date: "",
   selectedModules: [],
   quotationTo: { name: "", address: "", contactNo: "", email: "" },
@@ -26,6 +27,7 @@ export default function CreateQuotation({ onNavigate }) {
   const [submitting, setSubmitting] = useState(false);
   const [apiError, setApiError] = useState("");
   const [result, setResult] = useState(null);
+  const [loadingQuotationNo, setLoadingQuotationNo] = useState(true);
 
   useEffect(() => {
     fetchModules()
@@ -33,6 +35,17 @@ export default function CreateQuotation({ onNavigate }) {
       .catch(() =>
         setApiError("Could not load the module list. Is the API running?"),
       );
+
+    // Fetch the next quotation number
+    fetchNextQuotationNo()
+      .then((quotationNo) => {
+        setValues((v) => ({ ...v, quotationNo }));
+        setLoadingQuotationNo(false);
+      })
+      .catch(() => {
+        setValues((v) => ({ ...v, quotationNo: "Auto-generated" }));
+        setLoadingQuotationNo(false);
+      });
   }, []);
 
   const handleFieldChange = (field, value) => {
@@ -105,13 +118,24 @@ export default function CreateQuotation({ onNavigate }) {
   const handleNewQuotation = () => {
     setValues({
       ...initialValues,
-      quotationNo: "Auto-generated"
+      quotationNo: ""
     });
     setResult(null);
     setErrors({});
     setApiError("");
+    setLoadingQuotationNo(true);
     sessionStorage.removeItem("quotationData");
     sessionStorage.removeItem("quotationFormValues");
+    // Fetch new quotation number
+    fetchNextQuotationNo()
+      .then((quotationNo) => {
+        setValues((v) => ({ ...v, quotationNo }));
+        setLoadingQuotationNo(false);
+      })
+      .catch(() => {
+        setValues((v) => ({ ...v, quotationNo: "Auto-generated" }));
+        setLoadingQuotationNo(false);
+      });
   };
 
   return (
@@ -227,11 +251,12 @@ export default function CreateQuotation({ onNavigate }) {
                   <input
                     id="quotationNo"
                     type="text"
-                    placeholder="Auto-generated"
-                    value={values.quotationNo}
+                    placeholder={loadingQuotationNo ? "Loading..." : "Auto-generated"}
+                    value={values.quotationNo || (loadingQuotationNo ? "" : "Auto-generated")}
                     readOnly
                     className="q-field__input--readonly"
                   />
+                  {loadingQuotationNo && <span className="q-field__hint">Generating quotation number…</span>}
                   {errors.quotationNo && (
                     <span className="q-field__error">{errors.quotationNo}</span>
                   )}
