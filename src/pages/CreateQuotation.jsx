@@ -96,6 +96,7 @@ export default function CreateQuotation({ onNavigate }) {
       setSubmitting(false);
     }
   };
+  // d
 
   const handleViewDetails = () => {
     onNavigate("quotation");
