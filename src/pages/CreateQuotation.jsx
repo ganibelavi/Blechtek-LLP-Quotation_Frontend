@@ -8,6 +8,7 @@ import {
 import "./CreateQuotation.css";
 import "../components/QuotationForm.css";
 import "../components/QuotationPreview.css";
+import CustomSnackbar from "../components/CustomSnackbar";
 
 const getDefaultReferenceBy = () => {
   try {
@@ -37,6 +38,11 @@ export default function CreateQuotation({ onNavigate }) {
   const [apiError, setApiError] = useState("");
   const [result, setResult] = useState(null);
   const [loadingQuotationNo, setLoadingQuotationNo] = useState(true);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
 
   useEffect(() => {
     fetchModules()
@@ -92,7 +98,9 @@ export default function CreateQuotation({ onNavigate }) {
     try {
       const loggedInUser = (() => {
         try {
-          return JSON.parse(localStorage.getItem("qa_user") || "null")?.email || "";
+          return (
+            JSON.parse(localStorage.getItem("qa_user") || "null")?.email || ""
+          );
         } catch {
           return "";
         }
@@ -118,11 +126,17 @@ export default function CreateQuotation({ onNavigate }) {
       setResult(data);
       sessionStorage.setItem("quotationData", JSON.stringify(data));
       sessionStorage.setItem("quotationFormValues", JSON.stringify(values));
+      setSnackbar({
+        open: true,
+        message: "Quotation created successfully!",
+        severity: "success",
+      });
     } catch (err) {
-      setApiError(
+      const msg =
         err.response?.data?.error ||
-          "Something went wrong while generating the quotation.",
-      );
+        "Something went wrong while generating the quotation.";
+      setApiError(msg);
+      setSnackbar({ open: true, message: msg, severity: "error" });
     } finally {
       setSubmitting(false);
     }
@@ -137,7 +151,7 @@ export default function CreateQuotation({ onNavigate }) {
     setValues({
       ...initialValues,
       referenceBy: getDefaultReferenceBy(),
-      quotationNo: ""
+      quotationNo: "",
     });
     setResult(null);
     setErrors({});
@@ -242,9 +256,7 @@ export default function CreateQuotation({ onNavigate }) {
                     }
                   />
                   {errors.referenceBy && (
-                    <span className="q-field__error">
-                      {errors.referenceBy}
-                    </span>
+                    <span className="q-field__error">{errors.referenceBy}</span>
                   )}
                 </div>
                 {/* <div className="q-field q-field--narrow">
@@ -270,12 +282,21 @@ export default function CreateQuotation({ onNavigate }) {
                   <input
                     id="quotationNo"
                     type="text"
-                    placeholder={loadingQuotationNo ? "Loading..." : "Auto-generated"}
-                    value={values.quotationNo || (loadingQuotationNo ? "" : "Auto-generated")}
+                    placeholder={
+                      loadingQuotationNo ? "Loading..." : "Auto-generated"
+                    }
+                    value={
+                      values.quotationNo ||
+                      (loadingQuotationNo ? "" : "Auto-generated")
+                    }
                     readOnly
                     className="q-field__input--readonly"
                   />
-                  {loadingQuotationNo && <span className="q-field__hint">Generating quotation number…</span>}
+                  {loadingQuotationNo && (
+                    <span className="q-field__hint">
+                      Generating quotation number…
+                    </span>
+                  )}
                   {errors.quotationNo && (
                     <span className="q-field__error">{errors.quotationNo}</span>
                   )}
@@ -402,9 +423,7 @@ export default function CreateQuotation({ onNavigate }) {
               </p>
 
               <p className="q-ticket__label">Reference By</p>
-              <p className="q-ticket__value">
-                {values.referenceBy || "—"}
-              </p>
+              <p className="q-ticket__value">{values.referenceBy || "—"}</p>
 
               <p className="q-ticket__label">Attention</p>
               <p className="q-ticket__value">
@@ -495,6 +514,12 @@ export default function CreateQuotation({ onNavigate }) {
           )} */}
         </aside>
       </div>
+      <CustomSnackbar
+        open={snackbar.open}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        severity={snackbar.severity}
+        message={snackbar.message}
+      />
     </div>
   );
 }

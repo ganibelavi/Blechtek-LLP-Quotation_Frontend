@@ -4,7 +4,7 @@ import "./CreateQuotation.css";
 import "../components/QuotationForm.css";
 import "../components/QuotationPreview.css";
 import { Alert, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField } from "@mui/material";
-
+import CustomSnackbar from "../components/CustomSnackbar";
 const initialValues = {
   referenceBy: "",
   organizationName: "",
@@ -26,7 +26,8 @@ export default function EditQuotation({ onNavigate, quotationId }) {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [confirmDiscount, setConfirmDiscount] = useState(0);
   const [discountChanged, setDiscountChanged] = useState(false);
-
+  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
+  
   // Light grey background for disabled/readonly fields
   const disabledFieldStyle = {
     backgroundColor: "#f5f5f5",
@@ -53,7 +54,11 @@ export default function EditQuotation({ onNavigate, quotationId }) {
     }
     fetchModules()
       .then(setModules)
-      .catch(() => setApiError("Could not load the module list. Is the API running?"));
+      .catch((err) => {
+        const msg = "Could not load the module list. Is the API running?";
+        setApiError(msg);
+        setSnackbar({ open: true, message: msg, severity: "error" });
+      });
   }, []);
 
   const handleFieldChange = (field, value) => {
@@ -104,11 +109,11 @@ export default function EditQuotation({ onNavigate, quotationId }) {
       sessionStorage.setItem("quotationData", JSON.stringify(data));
       sessionStorage.setItem("quotationFormValues", JSON.stringify({ ...values, discountPercentage: confirmDiscount }));
       setDiscountChanged(false);
+      setSnackbar({ open: true, message: "Quotation updated successfully!", severity: "success" });
     } catch (err) {
-      setApiError(
-        err.response?.data?.error ||
-          "Something went wrong while updating the discount.",
-      );
+      const msg = err.response?.data?.error || "Something went wrong while updating the discount.";
+      setApiError(msg);
+      setSnackbar({ open: true, message: msg, severity: "error" });
     } finally {
       setSubmitting(false);
     }
@@ -164,6 +169,12 @@ export default function EditQuotation({ onNavigate, quotationId }) {
       </div>
 
       <div className="create-quotation__layout">
+      <CustomSnackbar
+        open={snackbar.open}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        severity={snackbar.severity}
+        message={snackbar.message}
+      />
         <div className="create-quotation__card">
           <form className="q-form" onSubmit={(e) => e.preventDefault()} noValidate>
             <section className="q-form__section">

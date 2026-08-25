@@ -4,7 +4,7 @@ import EntityTable from "../components/EntityTable";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
-import Snackbar from "@mui/material/Snackbar";
+import CustomSnackbar from "../components/CustomSnackbar";
 import {
   Box,
   Button,
@@ -15,7 +15,6 @@ import {
   IconButton,
   TextField,
   Typography,
-  Alert,
 } from "@mui/material";
 
 const emptyModule = { pillar: "", moduleName: "", price: "" };
@@ -100,12 +99,19 @@ export default function ModulesPage() {
     if (editingModuleId === null) {
       try {
         const { data } = await axios.post("/api/modules", request);
-        setModules((current) => [...current, toTableModule(data)]);
+        const newModule = toTableModule(data);
+        setModules((current) => [...current, newModule]);
+        setSnackbar({
+          open: true,
+          message: `Module "${newModule.ModuleName}" created successfully!`,
+          severity: "success",
+        });
       } catch (error) {
-        setApiError(
+        const msg =
           error.response?.data?.error ??
-            "Could not create the module in the database.",
-        );
+          "Could not create the module in the database.";
+        setApiError(msg);
+        setSnackbar({ open: true, message: msg, severity: "error" });
         return;
       }
     } else {
@@ -122,11 +128,17 @@ export default function ModulesPage() {
               : currentModule,
           ),
         );
+        setSnackbar({
+          open: true,
+          message: `Module "${updatedModule.ModuleName}" updated successfully!`,
+          severity: "success",
+        });
       } catch (error) {
-        setApiError(
+        const msg =
           error.response?.data?.error ??
-            "Could not update the module in the database.",
-        );
+          "Could not update the module in the database.";
+        setApiError(msg);
+        setSnackbar({ open: true, message: msg, severity: "error" });
         return;
       }
     }
@@ -349,19 +361,12 @@ export default function ModulesPage() {
         </DialogActions>
       </Dialog>
 
-      <Snackbar
+      <CustomSnackbar
         open={snackbar.open}
-        autoHideDuration={6000}
         onClose={() => setSnackbar({ ...snackbar, open: false })}
-      >
-        <Alert
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
-          severity={snackbar.severity}
-          sx={{ width: "100%" }}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+        severity={snackbar.severity}
+        message={snackbar.message}
+      />
     </Box>
   );
 }

@@ -55,12 +55,10 @@ const toTableQuotation = (q) => ({
   QuotationToEmail: q.quotationToEmail,
   Modules: (q.modules || []).join(", "),
   GeneratedAt: q.generatedAt
-    ? new Date(q.generatedAt).toLocaleString("en-IN", {
+    ? new Date(q.generatedAt).toLocaleDateString("en-IN", {
         day: "2-digit",
         month: "short",
         year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
       })
     : "",
   originalData: q,

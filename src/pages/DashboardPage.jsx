@@ -31,12 +31,10 @@ import EntityTable, { StatusText } from "../components/EntityTable";
 function formatDateTime(dateStr) {
   if (!dateStr) return "";
   const date = new Date(dateStr);
-  return date.toLocaleString("en-IN", {
+  return date.toLocaleDateString("en-IN", {
     day: "2-digit",
     month: "short",
     year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
   });
 }
 
@@ -57,7 +55,9 @@ export default function DashboardPage({ onNavigate }) {
       setData(result);
       setError(null);
     } catch (err) {
-      setError("Failed to load dashboard data. Please check if the backend is running.");
+      setError(
+        "Failed to load dashboard data. Please check if the backend is running.",
+      );
       console.error(err);
     } finally {
       setLoading(false);
@@ -81,7 +81,10 @@ export default function DashboardPage({ onNavigate }) {
     const date = new Date(monthLabel);
     if (!Number.isNaN(date.getTime())) {
       return {
-        label: date.toLocaleString("en-US", { month: "short", year: "numeric" }),
+        label: date.toLocaleString("en-US", {
+          month: "short",
+          year: "numeric",
+        }),
         month: date.toLocaleString("en-US", { month: "short" }),
         year: String(date.getFullYear()),
       };
@@ -90,7 +93,11 @@ export default function DashboardPage({ onNavigate }) {
     return { label: monthLabel, month: monthLabel, year: "" };
   });
 
-  const availableYears = [...new Set(monthlyOptions.filter((item) => item.year).map((item) => item.year))].sort();
+  const availableYears = [
+    ...new Set(
+      monthlyOptions.filter((item) => item.year).map((item) => item.year),
+    ),
+  ].sort();
   const filteredMonthlyData = (data?.monthlyQuotes || []).filter((item) => {
     const monthLabel = item.month ?? item.Month ?? "";
     const match = monthLabel.match(/^([A-Za-z]{3})\s+(\d{4})$/);
@@ -104,7 +111,14 @@ export default function DashboardPage({ onNavigate }) {
 
   if (loading) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "60vh" }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "60vh",
+        }}
+      >
         <CircularProgress />
       </Box>
     );
@@ -153,29 +167,89 @@ export default function DashboardPage({ onNavigate }) {
     },
     {
       label: "Active Pipeline",
-      value: data.statusBreakdown?.find((s) => s.status === "Valid")?.count ?? 0,
+      value:
+        data.statusBreakdown?.find((s) => s.status === "Valid")?.count ?? 0,
       icon: <People />,
       color: "primary",
     },
   ];
 
   const recentColumns = [
-    { key: "srNo", label: "Sr. No.", sortable: false, minWidth: 70, render: ({ index, page, rowsPerPage }) => page * rowsPerPage + index + 1 },
-    { key: "quotationNo", label: "Quotation No.", sortable: true, minWidth: 180, render: ({ row }) => (
-      <Typography variant="body2" fontWeight={600} sx={{ fontFamily: "monospace", fontSize: 12 }}>
-        {row.quotationNo}
-      </Typography>
-    )},
-    { key: "organizationName", label: "Customer Name", sortable: true, minWidth: 200 },
-    { key: "modules", label: "Modules", sortable: false, minWidth: 250, render: ({ row }) => (
-      <Typography variant="body2" sx={{ maxWidth: 300, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-        {row.modules}
-      </Typography>
-    )},
-    { key: "generatedAt", label: "Date", sortable: true, minWidth: 160, render: ({ row }) => formatDateTime(row.generatedAt) },
-    { key: "status", label: "Status", sortable: true, minWidth: 120, render: ({ row }) => <StatusText status={row.status} /> },
-    { key: "valuation", label: "Valuation", sortable: true, minWidth: 140, render: ({ row }) => formatCurrency(row.valuation) },
-    { key: "totalQuotedAmount", label: "Quotation Value", sortable: true, minWidth: 140, render: ({ row }) => formatCurrency(row.totalQuotedAmount) },
+    {
+      key: "srNo",
+      label: "Sr. No.",
+      sortable: false,
+      minWidth: 70,
+      render: ({ index, page, rowsPerPage }) => page * rowsPerPage + index + 1,
+    },
+    {
+      key: "quotationNo",
+      label: "Quotation No.",
+      sortable: true,
+      minWidth: 180,
+      render: ({ row }) => (
+        <Typography
+          variant="body2"
+          fontWeight={600}
+          sx={{ fontFamily: "monospace", fontSize: 12 }}
+        >
+          {row.quotationNo}
+        </Typography>
+      ),
+    },
+    {
+      key: "organizationName",
+      label: "Customer Name",
+      sortable: true,
+      minWidth: 200,
+    },
+    {
+      key: "modules",
+      label: "Modules",
+      sortable: false,
+      minWidth: 250,
+      render: ({ row }) => (
+        <Typography
+          variant="body2"
+          sx={{
+            maxWidth: 300,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {row.modules}
+        </Typography>
+      ),
+    },
+    {
+      key: "generatedAt",
+      label: "Date",
+      sortable: true,
+      minWidth: 160,
+      render: ({ row }) => formatDateTime(row.generatedAt),
+    },
+    {
+      key: "status",
+      label: "Status",
+      sortable: true,
+      minWidth: 120,
+      render: ({ row }) => <StatusText status={row.status} />,
+    },
+    {
+      key: "valuation",
+      label: "Valuation",
+      sortable: true,
+      minWidth: 140,
+      render: ({ row }) => formatCurrency(row.valuation),
+    },
+    {
+      key: "totalQuotedAmount",
+      label: "Quotation Value",
+      sortable: true,
+      minWidth: 140,
+      render: ({ row }) => formatCurrency(row.totalQuotedAmount),
+    },
   ];
 
   const recentRows = (data.recentQuotations || []).map((q) => ({
@@ -205,7 +279,16 @@ export default function DashboardPage({ onNavigate }) {
   };
 
   return (
-    <Box sx={{ p: 0, fontSize: "13px", overflow: "hidden", height: "100%", display: "flex", flexDirection: "column" }}>
+    <Box
+      sx={{
+        p: 0,
+        fontSize: "13px",
+        overflow: "hidden",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
       <Box
         sx={{
           display: "flex",
@@ -220,7 +303,11 @@ export default function DashboardPage({ onNavigate }) {
           <Typography variant="h4" fontWeight={900} gutterBottom>
             Dashboard
           </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ opacity: 0.8 }}>
+          <Typography
+            variant="body1"
+            color="text.secondary"
+            sx={{ opacity: 0.8 }}
+          >
             Real-time insights and quotation analytics
           </Typography>
         </Box>
@@ -258,12 +345,28 @@ export default function DashboardPage({ onNavigate }) {
         </Paper>
 
         <Paper {...chartContainerStyle}>
-          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 2, mb: 2, flexWrap: "wrap" }}>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: 2,
+              mb: 2,
+              flexWrap: "wrap",
+            }}
+          >
             <Typography variant="h6" fontWeight={700}>
               Monthly Quotation Trend
             </Typography>
 
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1.5,
+                flexWrap: "wrap",
+              }}
+            >
               <FormControl size="small" sx={{ minWidth: 120 }}>
                 <InputLabel id="trend-month-label">Month</InputLabel>
                 <Select
@@ -273,8 +376,14 @@ export default function DashboardPage({ onNavigate }) {
                   onChange={(e) => setSelectedMonth(e.target.value)}
                 >
                   <MenuItem value="all">All Months</MenuItem>
-                  {Array.from(new Set(monthlyOptions.map((item) => item.month).filter(Boolean))).map((month) => (
-                    <MenuItem key={month} value={month}>{month}</MenuItem>
+                  {Array.from(
+                    new Set(
+                      monthlyOptions.map((item) => item.month).filter(Boolean),
+                    ),
+                  ).map((month) => (
+                    <MenuItem key={month} value={month}>
+                      {month}
+                    </MenuItem>
                   ))}
                 </Select>
               </FormControl>
@@ -289,7 +398,9 @@ export default function DashboardPage({ onNavigate }) {
                 >
                   <MenuItem value="all">All Years</MenuItem>
                   {availableYears.map((year) => (
-                    <MenuItem key={year} value={year}>{year}</MenuItem>
+                    <MenuItem key={year} value={year}>
+                      {year}
+                    </MenuItem>
                   ))}
                 </Select>
               </FormControl>
@@ -305,7 +416,15 @@ export default function DashboardPage({ onNavigate }) {
           <Typography variant="h6" fontWeight={700} gutterBottom sx={{ mb: 2 }}>
             Quotation Status
           </Typography>
-          <Box sx={{ flex: 1, minHeight: 300, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <Box
+            sx={{
+              flex: 1,
+              minHeight: 300,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
             <StatusPie data={data.statusBreakdown ?? []} />
           </Box>
         </Paper>
@@ -363,11 +482,7 @@ export default function DashboardPage({ onNavigate }) {
             boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
           }}
         >
-          <EntityTable
-            title=""
-            columns={recentColumns}
-            rows={recentRows}
-          />
+          <EntityTable title="" columns={recentColumns} rows={recentRows} />
         </Paper>
       </Stack>
     </Box>

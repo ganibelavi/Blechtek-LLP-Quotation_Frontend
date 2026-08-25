@@ -26,8 +26,8 @@ import {
   TextField,
   Typography,
   Alert,
-  Snackbar,
 } from "@mui/material";
+import CustomSnackbar from "../components/CustomSnackbar";
 
 const emptyUser = {
   firstName: "",
@@ -54,11 +54,27 @@ export default function UsersPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
 
+  const formatDate = (iso) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    return d.toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
   const loadUsers = async () => {
     try {
       setLoading(true);
       const data = await fetchUsers();
-      setUsers(data);
+      setUsers(
+        (data || []).map((u) => ({
+          ...u,
+          createdAt: u.createdAt ? formatDate(u.createdAt) : "",
+          lastLoginAt: u.lastLoginAt ? formatDate(u.lastLoginAt) : "",
+        })),
+      );
       setError(null);
     } catch (err) {
       setError("Failed to load users. Please check if the backend is running.");
@@ -208,7 +224,9 @@ export default function UsersPage() {
       sortable: true,
       minWidth: 100,
       render: ({ row: user }) => (
-        <Box sx={{ px: "10px", py: "5px" }}>{user.isActive ? "Active" : "Inactive"}</Box>
+        <Box sx={{ px: "10px", py: "5px" }}>
+          {user.isActive ? "Active" : "Inactive"}
+        </Box>
       ),
     },
     { key: "createdAt", label: "Created At", sortable: true, minWidth: 160 },
@@ -218,9 +236,7 @@ export default function UsersPage() {
       label: "Role",
       sortable: true,
       minWidth: 100,
-      render: ({ row }) => (
-        <Box sx={{ px: "10px", py: "5px" }}>{row.role}</Box>
-      ),
+      render: ({ row }) => <Box sx={{ px: "10px", py: "5px" }}>{row.role}</Box>,
     },
     {
       key: "actions",
@@ -443,7 +459,8 @@ export default function UsersPage() {
               {userToDelete
                 ? `${userToDelete.firstName} ${userToDelete.lastName}`
                 : ""}
-            </strong>? This action cannot be undone.
+            </strong>
+            ? This action cannot be undone.
           </Typography>
         </DialogContent>
         <DialogActions sx={{ p: 3, pt: 0 }}>
@@ -465,19 +482,12 @@ export default function UsersPage() {
         </DialogActions>
       </Dialog>
 
-      <Snackbar
+      <CustomSnackbar
         open={snackbar.open}
-        autoHideDuration={6000}
         onClose={handleSnackbarClose}
-      >
-        <Alert
-          onClose={handleSnackbarClose}
-          severity={snackbar.severity}
-          sx={{ width: "100%" }}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+        severity={snackbar.severity}
+        message={snackbar.message}
+      />
     </Box>
   );
 }
