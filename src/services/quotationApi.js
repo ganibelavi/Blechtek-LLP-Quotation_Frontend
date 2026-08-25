@@ -73,6 +73,15 @@ export async function updateDiscount(quotationId, discountPercentage) {
 }
 
 /**
+ * POST /api/quotation/{quotationId}/send-email
+ * payload: { recipientEmail, subject, message, attachPdf }
+ */
+export async function sendQuotationEmail(quotationId, payload) {
+  const { data } = await client.post(`/api/quotation/${quotationId}/send-email`, payload);
+  return data;
+}
+
+/**
  * GET /api/quotation/next-quotation-no
  * returns: { quotationNo: "BTSS/FY2025-26/PR-000X" }
  */

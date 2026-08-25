@@ -9,6 +9,15 @@ import "./CreateQuotation.css";
 import "../components/QuotationForm.css";
 import "../components/QuotationPreview.css";
 import CustomSnackbar from "../components/CustomSnackbar";
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Button,
+} from "@mui/material";
+import { sendQuotationEmail } from "../services/quotationApi";
 
 const initialValues = {
   referenceBy: "",
@@ -34,6 +43,12 @@ export default function CreateQuotation({ onNavigate }) {
     message: "",
     severity: "success",
   });
+
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [emailRecipient, setEmailRecipient] = useState("");
+  const [emailSubject, setEmailSubject] = useState("");
+  const [emailMessage, setEmailMessage] = useState("");
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   useEffect(() => {
     fetchModules()
@@ -485,6 +500,17 @@ export default function CreateQuotation({ onNavigate }) {
                 >
                   Download Word
                 </button>
+                <button
+                  className="q-result__btn q-result__btn--primary"
+                  onClick={() => {
+                    setEmailRecipient(values.quotationTo.email || "");
+                    setEmailSubject(`Quotation ${result.quotationNo}`);
+                    setEmailMessage("Please find attached the quotation.");
+                    setEmailDialogOpen(true);
+                  }}
+                >
+                  Send Email
+                </button>
               </div>
             </div>
           )}
@@ -504,6 +530,106 @@ export default function CreateQuotation({ onNavigate }) {
             </button>
           )} */}
         </aside>
+
+        <Dialog
+          open={emailDialogOpen}
+          onClose={() => setEmailDialogOpen(false)}
+          maxWidth="sm"
+          fullWidth
+          PaperProps={{ sx: { borderRadius: 2 } }}
+        >
+          <DialogTitle
+            sx={{
+              background: "linear-gradient(120deg, #308aea 0%, #48cae4 100%)",
+              color: "white",
+              px: 3,
+              py: 2,
+              mb: 2,
+              borderTopLeftRadius: 2,
+              borderTopRightRadius: 2,
+            }}
+          >
+            Send quotation by email
+          </DialogTitle>
+          <DialogContent>
+            <TextField
+              autoFocus
+              margin="dense"
+              label="Recipient email"
+              type="email"
+              fullWidth
+              value={emailRecipient}
+              onChange={(e) => setEmailRecipient(e.target.value)}
+            />
+            <TextField
+              margin="dense"
+              label="Subject"
+              fullWidth
+              value={emailSubject}
+              onChange={(e) => setEmailSubject(e.target.value)}
+            />
+            <TextField
+              margin="dense"
+              label="Message"
+              fullWidth
+              multiline
+              minRows={3}
+              value={emailMessage}
+              onChange={(e) => setEmailMessage(e.target.value)}
+            />
+          </DialogContent>
+          <DialogActions sx={{ p: 3, pt: 0 }}>
+            <Button
+              onClick={() => setEmailDialogOpen(false)}
+              sx={{
+                bgcolor: "#757575",
+                color: "white",
+                "&:hover": { bgcolor: "#757575" },
+                textTransform: "none",
+                borderRadius: 2,
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              disabled={sendingEmail}
+              onClick={async () => {
+                if (!emailRecipient) {
+                  setSnackbar({
+                    open: true,
+                    message: "Please enter recipient email.",
+                    severity: "error",
+                  });
+                  return;
+                }
+                setSendingEmail(true);
+                try {
+                  await sendQuotationEmail(result.quotationId, {
+                    recipientEmail: emailRecipient,
+                    subject: emailSubject,
+                    message: emailMessage,
+                    attachPdf: true,
+                  });
+                  setSnackbar({
+                    open: true,
+                    message: "Email sent successfully.",
+                    severity: "success",
+                  });
+                  setEmailDialogOpen(false);
+                } catch (err) {
+                  const msg =
+                    err.response?.data?.error || "Failed to send email.";
+                  setSnackbar({ open: true, message: msg, severity: "error" });
+                } finally {
+                  setSendingEmail(false);
+                }
+              }}
+            >
+              {sendingEmail ? "Sending…" : "Send"}
+            </Button>
+          </DialogActions>
+        </Dialog>
       </div>
       <CustomSnackbar
         open={snackbar.open}
