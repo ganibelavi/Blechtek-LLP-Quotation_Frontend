@@ -536,10 +536,11 @@ export default function CreateQuotation({ onNavigate }) {
           onClose={() => setEmailDialogOpen(false)}
           maxWidth="sm"
           fullWidth
-          PaperProps={{ sx: { borderRadius: 2 } }}
+          PaperProps={{ sx: { borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)' } }}
         >
           <DialogTitle
             sx={{
+              position: 'relative',
               background: "linear-gradient(120deg, #308aea 0%, #48cae4 100%)",
               color: "white",
               px: 3,
@@ -550,8 +551,28 @@ export default function CreateQuotation({ onNavigate }) {
             }}
           >
             Send quotation by email
+            <button
+              aria-label="Close"
+              onClick={() => setEmailDialogOpen(false)}
+              style={{
+                position: 'absolute',
+                right: 12,
+                top: 8,
+                width: 40,
+                height: 40,
+                borderRadius: '50%',
+                border: 'none',
+                background: 'transparent',
+                color: 'white',
+                cursor: 'pointer'
+              }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}>
+                <path d="M18 6L6 18M6 6l12 12" />
+              </svg>
+            </button>
           </DialogTitle>
-          <DialogContent>
+          <DialogContent sx={{ px: 3, py: 2 }}>
             <TextField
               autoFocus
               margin="dense"
@@ -578,7 +599,7 @@ export default function CreateQuotation({ onNavigate }) {
               onChange={(e) => setEmailMessage(e.target.value)}
             />
           </DialogContent>
-          <DialogActions sx={{ p: 3, pt: 0 }}>
+          <DialogActions sx={{ justifyContent: 'flex-end', gap: 1, p: '16px 24px' }}>
             <Button
               onClick={() => setEmailDialogOpen(false)}
               sx={{
@@ -587,6 +608,8 @@ export default function CreateQuotation({ onNavigate }) {
                 "&:hover": { bgcolor: "#757575" },
                 textTransform: "none",
                 borderRadius: 2,
+                px: 2,
+                py: 1,
               }}
             >
               Cancel

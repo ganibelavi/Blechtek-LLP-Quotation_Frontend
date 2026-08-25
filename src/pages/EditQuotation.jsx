@@ -1,9 +1,21 @@
 import React, { useEffect, useState } from "react";
-import { fetchModules, updateDiscount, resolveDownloadUrl } from "../services/quotationApi";
+import {
+  fetchModules,
+  updateDiscount,
+  resolveDownloadUrl,
+} from "../services/quotationApi";
 import "./CreateQuotation.css";
 import "../components/QuotationForm.css";
 import "../components/QuotationPreview.css";
-import { Alert, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField } from "@mui/material";
+import {
+  Alert,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+} from "@mui/material";
 import CustomSnackbar from "../components/CustomSnackbar";
 import { sendQuotationEmail } from "../services/quotationApi";
 const initialValues = {
@@ -27,8 +39,12 @@ export default function EditQuotation({ onNavigate, quotationId }) {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [confirmDiscount, setConfirmDiscount] = useState(0);
   const [discountChanged, setDiscountChanged] = useState(false);
-  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
-  
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
+
   // Email dialog state
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
   const [emailRecipient, setEmailRecipient] = useState("");
@@ -115,11 +131,20 @@ export default function EditQuotation({ onNavigate, quotationId }) {
       const data = await updateDiscount(result.quotationId, confirmDiscount);
       setResult(data);
       sessionStorage.setItem("quotationData", JSON.stringify(data));
-      sessionStorage.setItem("quotationFormValues", JSON.stringify({ ...values, discountPercentage: confirmDiscount }));
+      sessionStorage.setItem(
+        "quotationFormValues",
+        JSON.stringify({ ...values, discountPercentage: confirmDiscount }),
+      );
       setDiscountChanged(false);
-      setSnackbar({ open: true, message: "Quotation updated successfully!", severity: "success" });
+      setSnackbar({
+        open: true,
+        message: "Quotation updated successfully!",
+        severity: "success",
+      });
     } catch (err) {
-      const msg = err.response?.data?.error || "Something went wrong while updating the discount.";
+      const msg =
+        err.response?.data?.error ||
+        "Something went wrong while updating the discount.";
       setApiError(msg);
       setSnackbar({ open: true, message: msg, severity: "error" });
     } finally {
@@ -150,9 +175,7 @@ export default function EditQuotation({ onNavigate, quotationId }) {
       <div className="create-quotation__header">
         <div className="create-quotation__title">
           <h2>Edit Quotation</h2>
-          <p>
-            Update discount percentage and regenerate the quotation.
-          </p>
+          <p>Update discount percentage and regenerate the quotation.</p>
         </div>
         <button
           className="create-quotation__back-btn"
@@ -177,14 +200,18 @@ export default function EditQuotation({ onNavigate, quotationId }) {
       </div>
 
       <div className="create-quotation__layout">
-      <CustomSnackbar
-        open={snackbar.open}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-        severity={snackbar.severity}
-        message={snackbar.message}
-      />
+        <CustomSnackbar
+          open={snackbar.open}
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          message={snackbar.message}
+        />
         <div className="create-quotation__card">
-          <form className="q-form" onSubmit={(e) => e.preventDefault()} noValidate>
+          <form
+            className="q-form"
+            onSubmit={(e) => e.preventDefault()}
+            noValidate
+          >
             <section className="q-form__section">
               <h3 className="q-form__heading">Quotation details</h3>
               <div className="q-form__row">
@@ -202,9 +229,7 @@ export default function EditQuotation({ onNavigate, quotationId }) {
                     style={disabledFieldStyle}
                   />
                   {errors.referenceBy && (
-                    <span className="q-field__error">
-                      {errors.referenceBy}
-                    </span>
+                    <span className="q-field__error">{errors.referenceBy}</span>
                   )}
                 </div>
                 <div className="q-field q-field--narrow">
@@ -280,9 +305,7 @@ export default function EditQuotation({ onNavigate, quotationId }) {
                     style={disabledFieldStyle}
                   />
                   {errors.quotationNo && (
-                    <span className="q-field__error">
-                      {errors.quotationNo}
-                    </span>
+                    <span className="q-field__error">{errors.quotationNo}</span>
                   )}
                 </div>
                 <div className="q-field q-field--narrow">
@@ -291,16 +314,12 @@ export default function EditQuotation({ onNavigate, quotationId }) {
                     id="date"
                     type="date"
                     value={values.date}
-                    onChange={(e) =>
-                      handleFieldChange("date", e.target.value)
-                    }
+                    onChange={(e) => handleFieldChange("date", e.target.value)}
                     readOnly
                     style={disabledFieldStyle}
                   />
                   {errors.date && (
-                    <span className="q-field__error">
-                      {errors.date}
-                    </span>
+                    <span className="q-field__error">{errors.date}</span>
                   )}
                 </div>
                 <div className="q-field q-field--narrow">
@@ -418,14 +437,17 @@ export default function EditQuotation({ onNavigate, quotationId }) {
             </section>
 
             {discountChanged && (
-              <div className="q-form__row" style={{ justifyContent: 'flex-end', marginTop: '16px' }}>
+              <div
+                className="q-form__row"
+                style={{ justifyContent: "flex-end", marginTop: "16px" }}
+              >
                 <Button
                   variant="contained"
                   color="primary"
                   size="large"
                   onClick={handleConfirmDiscount}
                   disabled={submitting}
-                  style={{ fontSize:'13px' }}
+                  style={{ fontSize: "13px" }}
                 >
                   {submitting ? "Applying…" : "Apply Discount"}
                 </Button>
@@ -433,14 +455,22 @@ export default function EditQuotation({ onNavigate, quotationId }) {
             )}
 
             {!discountChanged && result && (
-              <div className="q-form__row" style={{ justifyContent: 'flex-end', marginTop: '16px' }}>
+              <div
+                className="q-form__row"
+                style={{ justifyContent: "flex-end", marginTop: "16px" }}
+              >
                 <Button
                   variant="contained"
                   color="primary"
                   size="large"
-                  onClick={() => handleFieldChange("discountPercentage", values.discountPercentage)}
+                  onClick={() =>
+                    handleFieldChange(
+                      "discountPercentage",
+                      values.discountPercentage,
+                    )
+                  }
                   disabled={submitting}
-                  style={{ fontSize:'13px' }}
+                  style={{ fontSize: "13px" }}
                 >
                   Edit Discount
                 </Button>
@@ -463,9 +493,7 @@ export default function EditQuotation({ onNavigate, quotationId }) {
               </p>
 
               <p className="q-ticket__label">Reference By</p>
-              <p className="q-ticket__value">
-                {values.referenceBy || "—"}
-              </p>
+              <p className="q-ticket__value">{values.referenceBy || "—"}</p>
 
               <p className="q-ticket__label">Attention</p>
               <p className="q-ticket__value">
@@ -504,9 +532,7 @@ export default function EditQuotation({ onNavigate, quotationId }) {
               </div>
               <div>
                 <p className="q-ticket__label">Discount %</p>
-                <p className="q-ticket__mono">
-                  {values.discountPercentage}%
-                </p>
+                <p className="q-ticket__mono">{values.discountPercentage}%</p>
               </div>
             </div>
           </div>
@@ -543,7 +569,7 @@ export default function EditQuotation({ onNavigate, quotationId }) {
                   Download Word
                 </button>
                 <button
-                  className="q-result__btn q-result__btn--secondary"
+                  className="q-result__btn q-result__btn--primary"
                   onClick={() => {
                     setEmailRecipient(values.quotationTo.email || "");
                     setEmailSubject(`Quotation ${result.quotationId}`);
@@ -560,7 +586,8 @@ export default function EditQuotation({ onNavigate, quotationId }) {
           {!result && !apiError && (
             <div className="q-preview__hint">
               <p>
-                Edit the discount percentage and click "Apply Discount" to regenerate the quotation.
+                Edit the discount percentage and click "Apply Discount" to
+                regenerate the quotation.
               </p>
             </div>
           )}
@@ -589,8 +616,9 @@ export default function EditQuotation({ onNavigate, quotationId }) {
         </DialogTitle>
         <DialogContent>
           <Alert severity="info" sx={{ color: "black" }}>
-            You are about to update the discount to <strong>{confirmDiscount}%</strong>.
-            This will regenerate the PDF and Word documents with the new discount applied.
+            You are about to update the discount to{" "}
+            <strong>{confirmDiscount}%</strong>. This will regenerate the PDF
+            and Word documents with the new discount applied.
           </Alert>
           <TextField
             label="Discount %"
@@ -599,12 +627,14 @@ export default function EditQuotation({ onNavigate, quotationId }) {
             max="100"
             step="0.01"
             value={confirmDiscount}
-            onChange={(e) => setConfirmDiscount(parseFloat(e.target.value) || 0)}
+            onChange={(e) =>
+              setConfirmDiscount(parseFloat(e.target.value) || 0)
+            }
             fullWidth
             margin="normal"
-            inputProps={{ style: { textAlign: 'right' } }}
+            inputProps={{ style: { textAlign: "right" } }}
             InputProps={{
-              endAdornment: <span style={{ marginLeft: 8 }}>%</span>
+              endAdornment: <span style={{ marginLeft: 8 }}>%</span>,
             }}
           />
         </DialogContent>
@@ -621,15 +651,28 @@ export default function EditQuotation({ onNavigate, quotationId }) {
           >
             Cancel
           </Button>
-          <Button onClick={handleConfirmApply} variant="contained" disabled={submitting}>
+          <Button
+            onClick={handleConfirmApply}
+            variant="contained"
+            disabled={submitting}
+          >
             {submitting ? "Applying…" : "Confirm & Generate"}
           </Button>
         </DialogActions>
       </Dialog>
 
-      <Dialog open={emailDialogOpen} onClose={() => setEmailDialogOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 2 } }}>
+      <Dialog
+        open={emailDialogOpen}
+        onClose={() => setEmailDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: { borderRadius: 2, boxShadow: "0 4px 12px rgba(0,0,0,0.15)" },
+        }}
+      >
         <DialogTitle
           sx={{
+            position: "relative",
             background: "linear-gradient(120deg, #308aea 0%, #48cae4 100%)",
             color: "white",
             px: 3,
@@ -640,8 +683,38 @@ export default function EditQuotation({ onNavigate, quotationId }) {
           }}
         >
           Send quotation by email
+          <button
+            aria-label="Close"
+            onClick={() => setEmailDialogOpen(false)}
+            style={{
+              position: "absolute",
+              right: 12,
+              top: 8,
+              width: 40,
+              height: 40,
+              borderRadius: "50%",
+              border: "none",
+              background: "transparent",
+              color: "white",
+              cursor: "pointer",
+            }}
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{ display: "block" }}
+            >
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
         </DialogTitle>
-        <DialogContent>
+        <DialogContent sx={{ px: 3, py: 2 }}>
           <TextField
             autoFocus
             margin="dense"
@@ -668,7 +741,9 @@ export default function EditQuotation({ onNavigate, quotationId }) {
             onChange={(e) => setEmailMessage(e.target.value)}
           />
         </DialogContent>
-        <DialogActions sx={{ p: 3, pt: 0 }}>
+        <DialogActions
+          sx={{ justifyContent: "flex-end", gap: 1, p: "16px 24px" }}
+        >
           <Button
             onClick={() => setEmailDialogOpen(false)}
             sx={{
@@ -677,6 +752,8 @@ export default function EditQuotation({ onNavigate, quotationId }) {
               "&:hover": { bgcolor: "#757575" },
               textTransform: "none",
               borderRadius: 2,
+              px: 2,
+              py: 1,
             }}
           >
             Cancel
@@ -686,7 +763,11 @@ export default function EditQuotation({ onNavigate, quotationId }) {
             disabled={sendingEmail}
             onClick={async () => {
               if (!emailRecipient) {
-                setSnackbar({ open: true, message: "Please enter recipient email.", severity: "error" });
+                setSnackbar({
+                  open: true,
+                  message: "Please enter recipient email.",
+                  severity: "error",
+                });
                 return;
               }
               setSendingEmail(true);
@@ -697,21 +778,38 @@ export default function EditQuotation({ onNavigate, quotationId }) {
                   message: emailMessage,
                   attachPdf: true,
                 });
-                setSnackbar({ open: true, message: "Email sent successfully.", severity: "success" });
+                setSnackbar({
+                  open: true,
+                  message: "Email sent successfully.",
+                  severity: "success",
+                });
                 setEmailDialogOpen(false);
               } catch (err) {
-                const msg = err.response?.data?.error || "Failed to send email.";
+                const msg =
+                  err.response?.data?.error || "Failed to send email.";
                 setSnackbar({ open: true, message: msg, severity: "error" });
               } finally {
                 setSendingEmail(false);
               }
+            }}
+            sx={{
+              background: "linear-gradient(120deg,#308aea 0%,#48cae4 100%)",
+              color: "white",
+              textTransform: "none",
+              borderRadius: 2,
+              px: 2.5,
+              py: 1,
+              boxShadow: "0 4px 6px rgba(0,0,0,0.08)",
+              transition: "transform 0.2s ease",
+              "&:hover": {
+                transform: "translateY(-1px)",
+              },
             }}
           >
             {sendingEmail ? "Sending…" : "Send"}
           </Button>
         </DialogActions>
       </Dialog>
-
     </div>
   );
 }

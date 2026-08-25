@@ -26,28 +26,30 @@ function defaultGetValue(row, key) {
 }
 
 function StatusText({ status }) {
+  // Normalize and map status values to display label and color (word-format)
   const statusConfig = {
-    Valid: { color: "success" },
-    Pending: { color: "warning" },
-    Draft: { color: "info" },
-    Rejected: { color: "error" },
-    Expired: { color: "default" },
+    valid: { color: "#2e7d32", label: "Valid" }, // green
+    pending: { color: "#ff9800", label: "Pending" }, // orange
+    draft: { color: "#0288d1", label: "Draft" }, // blue
+    rejected: { color: "#d32f2f", label: "Rejected" }, // red
+    expired: { color: "#9e9e9e", label: "Expired" }, // grey
   };
 
-  const config = statusConfig[status] || { color: "default" };
+  const key = String(status || "").toLowerCase();
+  const cfg = statusConfig[key] || { color: "#9e9e9e", label: typeof status === 'string' && status ? status : "Unknown" };
 
   return (
-    <Chip
-      label={status}
-      size="small"
-      color={config.color}
-      variant="outlined"
+    <Typography
+      variant="body2"
       sx={{
-        fontWeight: 600,
-        fontSize: "0.7rem",
-        height: 24,
+        fontSize: 13,
+        fontWeight: 700,
+        color: cfg.color,
+        textTransform: 'none'
       }}
-    />
+    >
+      {cfg.label}
+    </Typography>
   );
 }
 
