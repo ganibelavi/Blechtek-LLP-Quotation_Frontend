@@ -10,6 +10,7 @@ import {
   Button,
 } from "@mui/material";
 import VisibilityIcon from "@mui/icons-material/Visibility";
+import EditIcon from "@mui/icons-material/Edit";
 
 const resolveApiBaseUrl = () => {
   const envUrl = process.env.REACT_APP_API_BASE_URL?.trim();
@@ -230,7 +231,7 @@ export default function CreatedQuotation({ onNavigate }) {
                 handleEditQuotation(row.originalData);
               }}
             >
-              <img src="/logo/edit.png" alt="Edit" style={{ width: 18, height: 18 }} />
+              <EditIcon fontSize="small" />
             </IconButton>
           </Tooltip>
           <Tooltip title="View Quotation">

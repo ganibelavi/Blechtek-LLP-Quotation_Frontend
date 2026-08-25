@@ -13,6 +13,8 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
 
 const emptyModule = { pillar: "", moduleName: "", price: "" };
 
@@ -202,14 +204,14 @@ export default function ModulesPage() {
             size="small"
             onClick={() => openEditDialog(module)}
           >
-            <img src="/logo/edit.png" alt="Edit" style={{ width: 18, height: 18 }} />
+            <EditIcon fontSize="small" />
           </IconButton>
           <IconButton
             aria-label={`Delete ${module.ModuleName}`}
             size="small"
             onClick={() => handleRemoveModule(module)}
           >
-            <img src="/logo/danger.png" alt="Delete" style={{ width: 18, height: 18 }} />
+            <DeleteIcon fontSize="small" />
           </IconButton>
         </Box>
       ),

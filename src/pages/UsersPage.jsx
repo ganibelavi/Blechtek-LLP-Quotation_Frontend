@@ -8,6 +8,8 @@ import {
 import EntityTable from "../components/EntityTable";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
 import {
   Box,
   Button,
@@ -246,14 +248,14 @@ export default function UsersPage() {
             size="small"
             onClick={() => openEditDialog(user)}
           >
-            <img src="/logo/edit.png" alt="Edit" style={{ width: 18, height: 18 }} />
+            <EditIcon fontSize="small" />
           </IconButton>
           <IconButton
             aria-label={`Delete ${user.email}`}
             size="small"
             onClick={() => handleRemoveUser(user)}
           >
-            <img src="/logo/danger.png" alt="Delete" style={{ width: 18, height: 18 }} />
+            <DeleteIcon fontSize="small" />
           </IconButton>
         </Box>
       ),
