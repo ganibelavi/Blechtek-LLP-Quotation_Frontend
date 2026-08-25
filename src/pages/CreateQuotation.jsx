@@ -10,17 +10,8 @@ import "../components/QuotationForm.css";
 import "../components/QuotationPreview.css";
 import CustomSnackbar from "../components/CustomSnackbar";
 
-const getDefaultReferenceBy = () => {
-  try {
-    const user = JSON.parse(localStorage.getItem("qa_user") || "null");
-    return user?.email || "";
-  } catch {
-    return "";
-  }
-};
-
 const initialValues = {
-  referenceBy: getDefaultReferenceBy(),
+  referenceBy: "",
   organizationName: "",
   validationDate: "",
   quotationNo: "",
@@ -150,7 +141,7 @@ export default function CreateQuotation({ onNavigate }) {
   const handleNewQuotation = () => {
     setValues({
       ...initialValues,
-      referenceBy: getDefaultReferenceBy(),
+      referenceBy: "",
       quotationNo: "",
     });
     setResult(null);
