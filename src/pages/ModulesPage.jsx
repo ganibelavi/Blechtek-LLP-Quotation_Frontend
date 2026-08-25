@@ -1,9 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import EntityTable from "../components/EntityTable";
-import AddIcon from "@mui/icons-material/Add";
-import DeleteIcon from "@mui/icons-material/Delete";
-import EditIcon from "@mui/icons-material/Edit";
 import CustomSnackbar from "../components/CustomSnackbar";
 import {
   Box,
@@ -205,14 +202,14 @@ export default function ModulesPage() {
             size="small"
             onClick={() => openEditDialog(module)}
           >
-            <EditIcon fontSize="small" />
+            <img src="/logo/edit.png" alt="Edit" style={{ width: 18, height: 18 }} />
           </IconButton>
           <IconButton
             aria-label={`Delete ${module.ModuleName}`}
             size="small"
             onClick={() => handleRemoveModule(module)}
           >
-            <DeleteIcon fontSize="small" />
+            <img src="/logo/danger.png" alt="Delete" style={{ width: 18, height: 18 }} />
           </IconButton>
         </Box>
       ),
@@ -234,7 +231,7 @@ export default function ModulesPage() {
         </Typography>
         <Button
           variant="contained"
-          startIcon={<AddIcon />}
+          startIcon={<img src="/logo/add.png" alt="Add" style={{ width: 20, height: 20 }} />}
           onClick={openAddDialog}
         >
           Add Module

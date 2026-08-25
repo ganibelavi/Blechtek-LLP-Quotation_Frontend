@@ -1,6 +1,5 @@
 import React from "react";
 import { Snackbar, Alert, IconButton, Portal } from "@mui/material";
-import { Close } from "@mui/icons-material";
 
 export default function CustomSnackbar({
   open,
@@ -58,7 +57,7 @@ export default function CustomSnackbar({
               onClick={onClose}
               aria-label="Close notification"
             >
-              <Close fontSize="small" />
+              <img src="/logo/exit.png" alt="Close" style={{ width: 18, height: 18 }} />
             </IconButton>
           }
         >

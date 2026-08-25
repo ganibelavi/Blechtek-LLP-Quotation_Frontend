@@ -12,13 +12,6 @@ import {
   MenuItem,
   Select,
 } from "@mui/material";
-import {
-  Business,
-  Description,
-  Assessment,
-  TrendingUp,
-  People,
-} from "@mui/icons-material";
 import DataCard from "../components/DataCard";
 import TrendChart from "../components/TrendChart";
 import UserQuotationBar from "../components/UserQuotationBar";
@@ -144,32 +137,32 @@ export default function DashboardPage({ onNavigate }) {
     {
       label: "Total Quotations",
       value: data.totalQuotations ?? 0,
-      icon: <Description />,
+    icon: <img src="/logo/report.png" alt="Total Quotations" style={{ width: 28, height: 28 }} />,
       color: "primary",
     },
     {
       label: "Organizations",
       value: data.totalOrganizations ?? 0,
-      icon: <Business />,
+    icon: <img src="/logo/industry.png" alt="Organizations" style={{ width: 28, height: 28 }} />,
       color: "secondary",
     },
     {
       label: "Modules",
       value: data.totalModules ?? 0,
-      icon: <Assessment />,
+    icon: <img src="/logo/report.png" alt="Modules" style={{ width: 28, height: 28 }} />,
       color: "primary",
     },
     {
       label: "Quotation Value",
       value: formatCurrency(data.totalQuotedAmount ?? 0),
-      icon: <TrendingUp />,
+    icon: <img src="/logo/speedometer.png" alt="Quotation Value" style={{ width: 28, height: 28 }} />,
       color: "primary",
     },
     {
       label: "Active Pipeline",
       value:
         data.statusBreakdown?.find((s) => s.status === "Valid")?.count ?? 0,
-      icon: <People />,
+    icon: <img src="/logo/users.png" alt="Active Pipeline" style={{ width: 28, height: 28 }} />,
       color: "primary",
     },
   ];

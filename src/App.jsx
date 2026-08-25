@@ -11,9 +11,7 @@ import EditQuotation from "./pages/EditQuotation";
 import { useAuth } from "./context/AuthContext";
 import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
-import SettingsIcon from "@mui/icons-material/Settings";
-import LogoutIcon from "@mui/icons-material/Logout";
-import DashboardIcon from "@mui/icons-material/Dashboard";
+// Use local icons from public/logo instead of @mui/icons-material in topbar buttons
 import "./App.css";
 
 export default function App() {
@@ -52,7 +50,7 @@ export default function App() {
                   className="app-topbar__icon-btn"
                   onClick={() => navigate("dashboard")}
                 >
-                  <DashboardIcon />
+                  <img src="/logo/dashboard.png" alt="Dashboard" style={{ width: 24, height: 24 }} />
                 </IconButton>
               </Tooltip>
               <Tooltip title="Settings">
@@ -60,7 +58,7 @@ export default function App() {
                   className="app-topbar__icon-btn"
                   onClick={() => navigate("settings")}
                 >
-                  <SettingsIcon />
+                  <img src="/logo/settings.png" alt="Settings" style={{ width: 24, height: 24 }} />
                 </IconButton>
               </Tooltip>
               <Tooltip title="Logout">
@@ -71,7 +69,7 @@ export default function App() {
                     navigate("login");
                   }}
                 >
-                  <LogoutIcon />
+                  <img src="/logo/logout.png" alt="Logout" style={{ width: 24, height: 24 }} />
                 </IconButton>
               </Tooltip>
             </>

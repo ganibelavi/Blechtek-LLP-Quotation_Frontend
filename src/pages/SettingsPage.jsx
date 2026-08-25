@@ -8,9 +8,6 @@ import {
   Paper,
 } from "@mui/material";
 import { useState } from "react";
-import PeopleIcon from "@mui/icons-material/People";
-import AppsIcon from "@mui/icons-material/Apps";
-import DescriptionIcon from "@mui/icons-material/Description";
 
 import UsersPage from "./UsersPage";
 import ModulesPage from "./ModulesPage";
@@ -20,14 +17,11 @@ import QuotationPdfView from "./QuotationPdfView";
 export default function SettingsPage({ onNavigate, initialTab = "users", quotationDetail = null }) {
   const [activeTab, setActiveTab] = useState(initialTab);
 
+  // Use icon filenames and render them with conditional styling so selected icons become white
   const menuItems = [
-    { id: "users", label: "Users", icon: <PeopleIcon /> },
-    { id: "modules", label: "Modules", icon: <AppsIcon /> },
-    {
-      id: "created-quotations",
-      label: "Quotations",
-      icon: <DescriptionIcon />,
-    },
+    { id: "users", label: "Users", icon: "users.png" },
+    { id: "modules", label: "Modules", icon: "processes.png" },
+    { id: "created-quotations", label: "Quotations", icon: "clipboard.png" },
   ];
 
   const renderContent = () => {
@@ -108,10 +102,22 @@ export default function SettingsPage({ onNavigate, initialTab = "users", quotati
                 <ListItemIcon
                   sx={{
                     minWidth: 38,
-                    color: isActive ? "inherit" : "text.secondary",
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                   }}
                 >
-                  {item.icon}
+                  {/* Render image and apply filter when active to make it white */}
+                  <img
+                    src={`/logo/${item.icon}`}
+                    alt={item.label}
+                    style={{
+                      width: 22,
+                      height: 22,
+                      transition: 'filter 160ms ease, opacity 160ms ease',
+                      filter: isActive ? 'brightness(0) invert(1)' : 'none',
+                    }}
+                  />
                 </ListItemIcon>
                 <ListItemText
                   primary={item.label}

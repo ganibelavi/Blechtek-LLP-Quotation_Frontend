@@ -15,9 +15,6 @@ import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
 import Stack from "@mui/material/Stack";
 import Chip from "@mui/material/Chip";
-import SearchIcon from "@mui/icons-material/Search";
-import ChevronLeft from "@mui/icons-material/ChevronLeft";
-import ChevronRight from "@mui/icons-material/ChevronRight";
 
 function defaultGetValue(row, key) {
   const v = row?.[key];
@@ -160,7 +157,7 @@ export default function EntityTable({ title, columns, rows }) {
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <SearchIcon />
+                <img src="/logo/filter.png" alt="Search" style={{ width: 18, height: 18 }} />
                 </InputAdornment>
               ),
             }}
@@ -254,7 +251,7 @@ export default function EntityTable({ title, columns, rows }) {
             onClick={() => setPage((p) => Math.max(0, p - 1))}
             disabled={page === 0}
           >
-            <ChevronLeft />
+            <img src="/logo/uparrow.svg" alt="Prev" style={{ width: 18, height: 18, transform: 'rotate(270deg)' }} />
           </IconButton>
           <Typography
             sx={{ fontSize: 13 }}
@@ -264,7 +261,7 @@ export default function EntityTable({ title, columns, rows }) {
             onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
             disabled={page >= pageCount - 1}
           >
-            <ChevronRight />
+            <img src="/logo/uparrow.svg" alt="Next" style={{ width: 18, height: 18, transform: 'rotate(90deg)' }} />
           </IconButton>
         </Stack>
       </Box>

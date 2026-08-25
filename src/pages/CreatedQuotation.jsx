@@ -10,10 +10,6 @@ import {
   Button,
 } from "@mui/material";
 import VisibilityIcon from "@mui/icons-material/Visibility";
-import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
-import DescriptionIcon from "@mui/icons-material/Description";
-import AddIcon from "@mui/icons-material/Add";
-import EditIcon from "@mui/icons-material/Edit";
 
 const resolveApiBaseUrl = () => {
   const envUrl = process.env.REACT_APP_API_BASE_URL?.trim();
@@ -234,7 +230,7 @@ export default function CreatedQuotation({ onNavigate }) {
                 handleEditQuotation(row.originalData);
               }}
             >
-              <EditIcon fontSize="small" color="warning" />
+              <img src="/logo/edit.png" alt="Edit" style={{ width: 18, height: 18 }} />
             </IconButton>
           </Tooltip>
           <Tooltip title="View Quotation">
@@ -254,7 +250,7 @@ export default function CreatedQuotation({ onNavigate }) {
                   if (row.pdfDownloadUrl) window.open(row.pdfDownloadUrl, "_blank");
                 }}
               >
-                <PictureAsPdfIcon fontSize="small" color="error" />
+                <img src="/logo/download.png" alt="PDF" style={{ width: 18, height: 18 }} />
               </IconButton>
             </span>
           </Tooltip>
@@ -267,7 +263,7 @@ export default function CreatedQuotation({ onNavigate }) {
                   if (row.wordDownloadUrl) window.open(row.wordDownloadUrl, "_blank");
                 }}
               >
-                <DescriptionIcon fontSize="small" color="success" />
+                <img src="/logo/clipboard.png" alt="Word" style={{ width: 18, height: 18 }} />
               </IconButton>
             </span>
           </Tooltip>
@@ -291,7 +287,7 @@ export default function CreatedQuotation({ onNavigate }) {
         </Typography>
         <Button
           variant="contained"
-          startIcon={<AddIcon />}
+          startIcon={<img src="/logo/add.png" alt="Add" style={{ width: 20, height: 20 }} />}
           onClick={handleNewQuotation}
           sx={{ px: 3, py: 1 }}
         >
