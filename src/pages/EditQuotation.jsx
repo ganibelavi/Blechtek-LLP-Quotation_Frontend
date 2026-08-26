@@ -271,7 +271,7 @@ export default function EditQuotation({ onNavigate, quotationId }) {
                     </span>
                   )}
                 </div>
-                <div className="q-field q-field--narrow">
+                {/* <div className="q-field q-field--narrow">
                   <label htmlFor="validationDate">Valid until</label>
                   <input
                     id="validationDate"
@@ -288,7 +288,7 @@ export default function EditQuotation({ onNavigate, quotationId }) {
                       {errors.validationDate}
                     </span>
                   )}
-                </div>
+                </div> */}
               </div>
               <div className="q-form__row">
                 <div className="q-field">

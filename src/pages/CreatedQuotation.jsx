@@ -166,9 +166,22 @@ export default function CreatedQuotation({ onNavigate }) {
       sortable: true,
       minWidth: 220,
     },
+    { key: "QuotationToEmail", label: "Email", sortable: true, minWidth: 200 },
     {
-      key: "ReferenceBy",
-      label: "Reference By",
+      key: "QuotationToAddress",
+      label: "Address",
+      sortable: true,
+      minWidth: 250,
+    },
+    {
+      key: "QuotationToName",
+      label: "Contact Name",
+      sortable: true,
+      minWidth: 160,
+    },
+    {
+      key: "QuotationToContactNo",
+      label: "Contact No.",
       sortable: true,
       minWidth: 150,
     },
@@ -176,11 +189,11 @@ export default function CreatedQuotation({ onNavigate }) {
       key: "QuotationNo",
       label: "Quotation No.",
       sortable: true,
-      minWidth: 150,
+      minWidth: 180,
     },
     {
-      key: "Date",
-      label: "Date",
+      key: "GeneratedAt",
+      label: "Generated At",
       sortable: true,
       minWidth: 130,
     },
@@ -191,31 +204,12 @@ export default function CreatedQuotation({ onNavigate }) {
       minWidth: 130,
     },
     {
-      key: "QuotationToName",
-      label: "Contact Name",
-      sortable: true,
-      minWidth: 160,
-    },
-    {
-      key: "QuotationToAddress",
-      label: "Address",
-      sortable: true,
-      minWidth: 250,
-    },
-    {
-      key: "QuotationToContactNo",
-      label: "Contact No.",
+      key: "ReferenceBy",
+      label: "Reference By",
       sortable: true,
       minWidth: 150,
     },
-    { key: "QuotationToEmail", label: "Email", sortable: true, minWidth: 200 },
     { key: "Modules", label: "Modules", sortable: true, minWidth: 300 },
-    {
-      key: "GeneratedAt",
-      label: "Generated At",
-      sortable: true,
-      minWidth: 180,
-    },
     {
       key: "actions",
       label: "Actions",
@@ -252,19 +246,6 @@ export default function CreatedQuotation({ onNavigate }) {
                 }}
               >
                 <img src="/logo/download.png" alt="PDF" style={{ width: 18, height: 18 }} />
-              </IconButton>
-            </span>
-          </Tooltip>
-          <Tooltip title="Download Word">
-            <span>
-              <IconButton
-                size="small"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (row.wordDownloadUrl) window.open(row.wordDownloadUrl, "_blank");
-                }}
-              >
-                <img src="/logo/clipboard.png" alt="Word" style={{ width: 18, height: 18 }} />
               </IconButton>
             </span>
           </Tooltip>
