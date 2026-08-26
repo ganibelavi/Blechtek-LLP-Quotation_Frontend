@@ -117,7 +117,7 @@ export default function QuotationPdfView({ onBack }) {
     return (
       <div className="quotation-pdf-view">
         <div className="pdf-view__header">
-          <h2>Quotation Preview</h2>
+          <h2 className="page-heading page-heading__text">Quotation Preview</h2>
         </div>
         <div className="pdf-view__content">
           <aside className="q-preview">
@@ -136,7 +136,7 @@ export default function QuotationPdfView({ onBack }) {
   return (
     <div className="quotation-pdf-view">
       <div className="pdf-view__header">
-        <h2>Quotation Preview</h2>
+        <h2 className="page-heading page-heading__text">Quotation Preview</h2>
         <div className="pdf-view__actions"></div>
         <button
           className="pdf-view__back-btn"

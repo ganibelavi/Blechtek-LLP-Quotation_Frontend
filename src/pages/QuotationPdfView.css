@@ -57,9 +57,9 @@
 }
 
 .pdf-view__header h2 {
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--text-dark);
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #000;
   margin: 0;
 }
 

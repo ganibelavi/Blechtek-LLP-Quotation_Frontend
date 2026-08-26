@@ -225,11 +225,12 @@ export default function ModulesPage() {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          mb: 2,
+          mb: 2.5,
+          gap: 2,
         }}
       >
-        <Typography variant="h5" fontWeight={700}>
-          Modules Management
+        <Typography className="page-heading page-heading__text" component="h1">
+          Modules
         </Typography>
         <Button
           variant="contained"

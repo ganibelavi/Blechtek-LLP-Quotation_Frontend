@@ -1,13 +1,4 @@
-import {
-  Box,
-  List,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  Typography,
-  Paper,
-} from "@mui/material";
-import { useState } from "react";
+import { Box, Paper } from "@mui/material";
 
 import UsersPage from "./UsersPage";
 import ModulesPage from "./ModulesPage";
@@ -15,20 +6,11 @@ import CreatedQuotation from "./CreatedQuotation";
 import QuotationPdfView from "./QuotationPdfView";
 
 export default function SettingsPage({ onNavigate, initialTab = "users", quotationDetail = null }) {
-  const [activeTab, setActiveTab] = useState(initialTab);
-
-  // Use icon filenames and render them with conditional styling so selected icons become white
-  const menuItems = [
-    { id: "users", label: "Users", icon: "users.png" },
-    { id: "modules", label: "Modules", icon: "processes.png" },
-    { id: "created-quotations", label: "Quotations", icon: "clipboard.png" },
-  ];
-
   const renderContent = () => {
     if (quotationDetail) {
       return <QuotationPdfView onBack={() => onNavigate("settings", "created-quotations")} />;
     }
-    switch (activeTab) {
+    switch (initialTab) {
       case "users":
         return <UsersPage onNavigate={onNavigate} showSidebar={false} />;
       case "modules":
@@ -41,104 +23,13 @@ export default function SettingsPage({ onNavigate, initialTab = "users", quotati
   };
 
   return (
-    <Box sx={{ display: "flex", height: "100%", gap: 3, overflow: "hidden" }}>
-      {/* Sidebar Partition */}
-      <Paper
-        elevation={0}
-        className="glass"
-        sx={{
-          overflow: "hidden",
-          p: 1,
-          border: "1px solid #d8d2c6",
-          boxShadow: "0 4px 20px rgba(0, 0, 0, 0.15)",
-          width: 280,
-          flexShrink: 0,
-          height: "100%",
-        }}
-      >
-        <Box sx={{ p: 2, pb: 1 }}>
-          <Typography
-            variant="h4"
-            sx={{
-              color: "primary.main",
-              fontWeight: 600,
-              letterSpacing: "-0.02em",
-            }}
-          >
-            Settings
-          </Typography>
-          <Typography variant="h6" color="text.secondary" fontWeight={400}>
-            System Configuration
-          </Typography>
-        </Box>
-        <List sx={{ px: 1 }}>
-          {menuItems.map((item) => {
-            const isActive = activeTab === item.id;
-            return (
-              <ListItemButton
-                key={item.id}
-                selected={isActive}
-                onClick={() => setActiveTab(item.id)}
-                sx={{
-                  borderRadius: 2,
-                  mb: 0.5,
-                  py: 1.5,
-                  "&.Mui-selected": {
-                    backgroundColor: "primary.main",
-                    color: "primary.contrastText",
-                    background:
-                      "linear-gradient(120deg, #308aea 0%, #48cae4 100%)",
-                    boxShadow: "0 4px 12px rgba(48, 138, 234, 0.35)",
-                    "&:hover": { backgroundColor: "primary.dark" },
-                    "& .MuiListItemIcon-root": { color: "inherit" },
-                  },
-                  "&:hover:not(.Mui-selected)": {
-                    backgroundColor: "rgba(15, 107, 95, 0.08)",
-                    color: "primary.main",
-                    "& .MuiListItemIcon-root": { color: "primary.main" },
-                  },
-                }}
-              >
-                <ListItemIcon
-                  sx={{
-                    minWidth: 38,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  {/* Render image and apply filter when active to make it white */}
-                  <img
-                    src={`/logo/${item.icon}`}
-                    alt={item.label}
-                    style={{
-                      width: 22,
-                      height: 22,
-                      transition: 'filter 160ms ease, opacity 160ms ease',
-                      filter: isActive ? 'brightness(0) invert(1)' : 'none',
-                    }}
-                  />
-                </ListItemIcon>
-                <ListItemText
-                  primary={item.label}
-                  primaryTypographyProps={{
-                    fontWeight: isActive ? 700 : 500,
-                    fontSize: "13px",
-                  }}
-                />
-              </ListItemButton>
-            );
-          })}
-        </List>
-      </Paper>
-
-      {/* Main Content Area */}
+    <Box sx={{ width: "100%", height: "100%", overflow: "hidden" }}>
       <Box
-        sx={{
-          flexGrow: 1,
-          display: "flex",
-          flexDirection: "column",
-          minWidth: 0,
+      sx={{
+        width: "100%",
+        display: "flex",
+        flexDirection: "column",
+        minWidth: 0,
         }}
       >
         <Paper

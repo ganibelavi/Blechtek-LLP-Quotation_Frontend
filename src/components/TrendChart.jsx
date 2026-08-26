@@ -75,10 +75,16 @@ export default function TrendChart({ data }) {
             boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
           }}
           labelStyle={{ color: "#1e293b", fontWeight: 600 }}
-          formatter={(value, name) => [
-            name === "revenue" ? `${value.toLocaleString("en-IN")}` : value,
-            name === "revenue" ? "Revenue" : "Quotes",
-          ]}
+          // use the payload dataKey (props) to reliably detect which series this value belongs to
+          formatter={(value, name, props) => {
+            const key = props?.dataKey ?? String(name).toLowerCase();
+            if (String(key).toLowerCase() === "revenue") {
+              const formatted = Number(value || 0).toLocaleString("en-IN");
+              return [formatted, "Revenue"];
+            }
+            // fallback: show raw value for quotes/counts
+            return [value, "Quotes"];
+          }}
         />
         <Legend
           layout="horizontal"

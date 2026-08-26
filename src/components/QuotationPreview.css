@@ -2,6 +2,7 @@
   position: sticky;
   top: 32px;
   width: 320px;
+  max-width: 100%;
   flex-shrink: 0;
 }
 
@@ -153,11 +154,12 @@
 
 .q-result__actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
 }
 
 .q-result__btn {
-  flex: 1;
+  flex: 1 1 120px;
   text-align: center;
   padding: 10px 12px;
   border-radius: var(--radius-sm);

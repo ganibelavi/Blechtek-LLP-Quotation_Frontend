@@ -171,7 +171,7 @@ export default function EditQuotation({ onNavigate, quotationId }) {
   };
 
   return (
-    <div className="create-quotation">
+    <div className="create-quotation edit-quotation">
       <div className="create-quotation__header">
         <div className="create-quotation__title">
           <h2>Edit Quotation</h2>

@@ -276,8 +276,8 @@ export default function DashboardPage({ onNavigate }) {
       sx={{
         p: 0,
         fontSize: "13px",
-        overflow: "hidden",
-        height: "100%",
+        overflow: "visible",
+        minHeight: "100%",
         display: "flex",
         flexDirection: "column",
       }}
@@ -292,7 +292,7 @@ export default function DashboardPage({ onNavigate }) {
           mb: 3,
         }}
       >
-        <Box>
+        {/* <Box>
           <Typography variant="h4" fontWeight={900} gutterBottom>
             Dashboard
           </Typography>
@@ -303,7 +303,7 @@ export default function DashboardPage({ onNavigate }) {
           >
             Real-time insights and quotation analytics
           </Typography>
-        </Box>
+        </Box> */}
       </Box>
 
       <Box

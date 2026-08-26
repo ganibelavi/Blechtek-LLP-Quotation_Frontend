@@ -272,8 +272,8 @@ export default function UsersPage() {
           mb: 2,
         }}
       >
-        <Typography variant="h5" fontWeight={700}>
-          User Management
+        <Typography className="page-heading page-heading__text" component="h1">
+          Users
         </Typography>
         <Button
           variant="contained"

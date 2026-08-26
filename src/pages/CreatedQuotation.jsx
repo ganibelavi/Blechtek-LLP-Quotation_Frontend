@@ -283,7 +283,7 @@ export default function CreatedQuotation({ onNavigate }) {
           mb: 2,
         }}
       >
-        <Typography variant="h5" fontWeight={700}>
+        <Typography className="page-heading page-heading__text" component="h1">
           Quotations
         </Typography>
         <Button
