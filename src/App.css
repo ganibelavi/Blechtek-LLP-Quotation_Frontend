@@ -110,7 +110,7 @@
   flex: 0 0 var(--sidebar-width);
   width: var(--sidebar-width);
   position: relative;
-  padding: 20px 12px;
+  padding: 12px 12px;
   background: #fff;
   border-right: 1px solid var(--border-color);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
@@ -201,8 +201,7 @@
   height: 22px;
   object-fit: contain;
   transition: filter 0.2s ease;
-  filter: brightness(0) saturate(100%) invert(46%) sepia(98%) saturate(1168%)
-    hue-rotate(164deg) brightness(94%) contrast(93%);
+  filter: brightness(0) saturate(100%) invert(46%) sepia(98%) saturate(1168%) hue-rotate(164deg) brightness(94%) contrast(93%);
 }
 
 .app-sidebar__item--active .app-sidebar__icon img {

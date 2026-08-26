@@ -187,7 +187,7 @@ export default function CreateQuotation({ onNavigate }) {
             everything else follows the standard BlechTek format.
           </p>
         </div>
-        <button
+        {/* <button
           className="create-quotation__back-btn"
           onClick={() => onNavigate("settings", "created-quotations")}
           aria-label="Back to quotations list"
@@ -206,7 +206,7 @@ export default function CreateQuotation({ onNavigate }) {
             <path d="M19 12H5M12 19l-7-7 7-7" />
           </svg>
           <span className="create-quotation__back-text"></span>
-        </button>
+        </button> */}
       </div>
 
       <div className="create-quotation__layout">
