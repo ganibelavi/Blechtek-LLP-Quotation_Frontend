@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import {
   fetchModules,
   updateDiscount,
+  updateQuotation,
   resolveDownloadUrl,
 } from "../services/quotationApi";
 import "./CreateQuotation.css";
@@ -39,6 +40,7 @@ export default function EditQuotation({ onNavigate, quotationId }) {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [confirmDiscount, setConfirmDiscount] = useState(0);
   const [discountChanged, setDiscountChanged] = useState(false);
+  const [detailsChanged, setDetailsChanged] = useState(false);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
@@ -170,6 +172,43 @@ export default function EditQuotation({ onNavigate, quotationId }) {
     onNavigate("settings", "created-quotations");
   };
 
+  const handleSaveDetails = async () => {
+    if (!result?.quotationId) return;
+    if (!values.selectedModules || values.selectedModules.length === 0) {
+      setSnackbar({
+        open: true,
+        message: "Please select at least one module.",
+        severity: "error",
+      });
+      return;
+    }
+    setSubmitting(true);
+    setApiError("");
+    try {
+      const payload = {
+        validationDate: values.validationDate,
+        selectedModules: values.selectedModules,
+      };
+      const data = await updateQuotation(result.quotationId, payload);
+      setResult(data);
+      sessionStorage.setItem("quotationData", JSON.stringify(data));
+      sessionStorage.setItem("quotationFormValues", JSON.stringify(values));
+      setDetailsChanged(false);
+      setSnackbar({
+        open: true,
+        message: "Quotation details updated successfully!",
+        severity: "success",
+      });
+    } catch (err) {
+      const msg =
+        err.response?.data?.error || "Failed to update quotation details.";
+      setApiError(msg);
+      setSnackbar({ open: true, message: msg, severity: "error" });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="create-quotation edit-quotation">
       <div className="create-quotation__header">
@@ -238,11 +277,10 @@ export default function EditQuotation({ onNavigate, quotationId }) {
                     id="validationDate"
                     type="date"
                     value={values.validationDate}
-                    onChange={(e) =>
-                      handleFieldChange("validationDate", e.target.value)
-                    }
-                    readOnly
-                    style={disabledFieldStyle}
+                    onChange={(e) => {
+                      handleFieldChange("validationDate", e.target.value);
+                      setDetailsChanged(true);
+                    }}
                   />
                   {errors.validationDate && (
                     <span className="q-field__error">
@@ -425,14 +463,17 @@ export default function EditQuotation({ onNavigate, quotationId }) {
             <section className="q-form__section">
               <h3 className="q-form__heading">Scope & modules</h3>
               <p className="q-form__hint">
-                Modules selected in this quotation (read-only).
+                Modules selected in this quotation.
               </p>
               <ModuleSelector
                 modules={modules}
                 selected={values.selectedModules}
-                onToggle={() => {}}
+                onToggle={(moduleName) => {
+                  handleToggleModule(moduleName);
+                  setDetailsChanged(true);
+                }}
                 error={errors.selectedModules}
-                readOnly
+                readOnly={false}
               />
             </section>
 
@@ -450,6 +491,24 @@ export default function EditQuotation({ onNavigate, quotationId }) {
                   style={{ fontSize: "13px" }}
                 >
                   {submitting ? "Applying…" : "Apply Discount"}
+                </Button>
+              </div>
+            )}
+
+            {detailsChanged && (
+              <div
+                className="q-form__row"
+                style={{ justifyContent: "flex-end", marginTop: "16px" }}
+              >
+                <Button
+                  variant="contained"
+                  color="secondary"
+                  size="large"
+                  onClick={handleSaveDetails}
+                  disabled={submitting}
+                  style={{ fontSize: "13px" }}
+                >
+                  {submitting ? "Saving…" : "Save Details"}
                 </Button>
               </div>
             )}

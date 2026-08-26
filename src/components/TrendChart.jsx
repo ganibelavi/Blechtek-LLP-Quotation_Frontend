@@ -7,6 +7,7 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  Label,
 } from "recharts";
 
 export default function TrendChart({ data }) {
@@ -34,7 +35,7 @@ export default function TrendChart({ data }) {
 
   return (
     <ResponsiveContainer width="100%" height={300}>
-      <LineChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+      <LineChart data={chartData} margin={{ top: 20, right: 30, left: 60, bottom: 50 }}>
         <defs>
           <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
             <stop offset="5%" stopColor="#308aea" stopOpacity={0.1} />
@@ -49,6 +50,7 @@ export default function TrendChart({ data }) {
           tickLine={false}
           axisLine={false}
         />
+        <Label value="Month" position="bottom" offset={38} fontSize={12} fill="#64748b" fontWeight={600} />
         <YAxis
           yAxisId="left"
           orientation="left"
@@ -58,6 +60,7 @@ export default function TrendChart({ data }) {
           axisLine={false}
           tickFormatter={(value) => `${(value / 100000).toFixed(1)}L`}
         />
+        <Label value="Revenue (Lakhs)" angle={-90} position="insideLeft" offset={-60} fontSize={12} fill="#64748b" fontWeight={600} />
         <YAxis
           yAxisId="right"
           orientation="right"
@@ -67,6 +70,7 @@ export default function TrendChart({ data }) {
           axisLine={false}
           tickFormatter={(value) => value}
         />
+        <Label value="Quotes" angle={90} position="insideRight" offset={-40} fontSize={12} fill="#64748b" fontWeight={600} />
         <Tooltip
           contentStyle={{
             backgroundColor: "#fff",

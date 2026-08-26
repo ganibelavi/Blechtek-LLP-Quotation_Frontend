@@ -73,6 +73,16 @@ export async function updateDiscount(quotationId, discountPercentage) {
 }
 
 /**
+ * PUT /api/quotation/{quotationId}
+ * payload: { validationDate, selectedModules, referenceBy, organizationName, quotationTo, date, discountPercentage }
+ * returns: updated quotation data
+ */
+export async function updateQuotation(quotationId, payload) {
+  const { data } = await client.put(`/api/quotation/${quotationId}`, payload);
+  return data;
+}
+
+/**
  * POST /api/quotation/{quotationId}/send-email
  * payload: { recipientEmail, subject, message, attachPdf }
  */

@@ -6,6 +6,7 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  Label,
 } from "recharts";
 
 export default function MachineUtilChart({ data }) {
@@ -28,7 +29,7 @@ export default function MachineUtilChart({ data }) {
 
   return (
     <ResponsiveContainer width="100%" height={300}>
-      <BarChart data={chartData} layout="vertical" margin={{ top: 10, right: 18, left: 0, bottom: 0 }}>
+      <BarChart data={chartData} layout="vertical" margin={{ top: 20, right: 18, left: 60, bottom: 50 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
         <XAxis
           type="number"
@@ -38,6 +39,7 @@ export default function MachineUtilChart({ data }) {
           axisLine={{ stroke: "#e0e0e0" }}
           tickFormatter={(value) => `${value}%`}
         />
+        <Label value="Utilization (%)" position="bottom" offset={38} fontSize={12} fill="#64748b" fontWeight={600} />
         <YAxis
           type="category"
           dataKey="machine"
@@ -48,6 +50,7 @@ export default function MachineUtilChart({ data }) {
           axisLine={false}
           tickMargin={8}
         />
+        <Label value="Machine" angle={-90} position="insideLeft" offset={-60} fontSize={12} fill="#64748b" fontWeight={600} />
         <Tooltip
           contentStyle={{
             backgroundColor: "#fff",

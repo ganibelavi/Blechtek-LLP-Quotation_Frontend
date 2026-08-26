@@ -7,6 +7,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   Cell,
+  Label,
 } from "recharts";
 
 export default function TopOrganizationsBar({ data }) {
@@ -29,7 +30,7 @@ export default function TopOrganizationsBar({ data }) {
 
   return (
     <ResponsiveContainer width="100%" height={300}>
-      <BarChart data={chartData} layout="vertical" margin={{ top: 10, right: 20, left: 4, bottom: 0 }}>
+      <BarChart data={chartData} layout="vertical" margin={{ top: 20, right: 20, left: 60, bottom: 50 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
         <XAxis
           type="number"
@@ -37,8 +38,9 @@ export default function TopOrganizationsBar({ data }) {
           fontSize={11}
           tickLine={false}
           axisLine={{ stroke: "#e0e0e0" }}
-          tickFormatter={(value) => (value >= 1000 ? `${(value / 1000).toFixed(1)}k` : value)}
+          tickFormatter={(value) => (value >= 1000 ? `${(value / 1000).toFixed(0)}k` : Math.floor(value))}
         />
+        <Label value="No. of Quotes" position="bottom" offset={38} fontSize={12} fill="#64748b" fontWeight={600} />
         <YAxis
           type="category"
           dataKey="org"
@@ -49,6 +51,7 @@ export default function TopOrganizationsBar({ data }) {
           axisLine={false}
           tickMargin={8}
         />
+        <Label value="Organization" angle={-90} position="insideLeft" offset={-60} fontSize={12} fill="#64748b" fontWeight={600} />
         <Tooltip
           contentStyle={{
             backgroundColor: "#fff",
