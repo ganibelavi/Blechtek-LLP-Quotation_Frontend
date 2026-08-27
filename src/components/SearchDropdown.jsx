@@ -15,6 +15,7 @@ export default function SearchDropdown({
   allowFreeText = true,
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isAddingNew, setIsAddingNew] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const inputRef = useRef(null);
@@ -57,16 +58,18 @@ export default function SearchDropdown({
     const newValue = e.target.value;
     setSearchText(newValue);
     onChange(newValue);
-    setIsOpen(true);
+    setIsOpen(!isAddingNew);
     setHighlightedIndex(-1);
   };
 
   const handleInputFocus = () => {
-    setIsOpen(true);
+    if (!isAddingNew) {
+      setIsOpen(true);
+    }
   };
 
   const handleKeyDown = (e) => {
-    if (!isOpen) return;
+    if (!isOpen && !isAddingNew) return;
 
     switch (e.key) {
       case "ArrowDown":
@@ -93,6 +96,7 @@ export default function SearchDropdown({
         break;
       case "Escape":
         setIsOpen(false);
+        setIsAddingNew(false);
         setHighlightedIndex(-1);
         break;
       default:
@@ -104,13 +108,17 @@ export default function SearchDropdown({
     onChange(option);
     setSearchText(option);
     setIsOpen(false);
+    setIsAddingNew(false);
     setHighlightedIndex(-1);
   };
 
   const handleAddNewClick = (e) => {
     e.stopPropagation();
+    onAddNew?.();
+    setIsAddingNew(true);
     setSearchText("");
-    setIsOpen(true);
+    setIsOpen(false);
+    setHighlightedIndex(-1);
     inputRef.current?.focus();
   };
 
@@ -120,6 +128,7 @@ export default function SearchDropdown({
         acceptInputValue();
       } else {
         setIsOpen(false);
+        setIsAddingNew(false);
         setHighlightedIndex(-1);
       }
     }, 200);
@@ -170,7 +179,7 @@ export default function SearchDropdown({
         )}
       </div>
       {error && <span className="search-dropdown__error">{error}</span>}
-      {isOpen && filteredOptions.length > 0 && (
+      {isOpen && !isAddingNew && filteredOptions.length > 0 && (
         <ul className="search-dropdown__options" role="listbox">
           {filteredOptions.map((option, index) => (
             <li
@@ -186,7 +195,7 @@ export default function SearchDropdown({
           ))}
         </ul>
       )}
-      {isOpen && filteredOptions.length === 0 && searchText && allowFreeText && (
+      {isOpen && !isAddingNew && filteredOptions.length === 0 && searchText && allowFreeText && (
         <div className="search-dropdown__no-results">
           Press Enter to add "{searchText}" as new entry
         </div>
