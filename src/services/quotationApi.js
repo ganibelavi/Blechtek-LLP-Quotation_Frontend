@@ -100,4 +100,28 @@ export async function fetchNextQuotationNo() {
   return data.quotationNo;
 }
 
+/**
+ * Fetch unique organization names from quotation history
+ * Returns a list of unique organization names
+ */
+export async function fetchOrganizations() {
+  const { data } = await client.get("/api/quotation/history", {
+    params: { page: 1, pageSize: 500 }
+  });
+  const organizations = [...new Set(data.map((q) => q.organizationName).filter(Boolean))];
+  return organizations.sort();
+}
+
+/**
+ * Fetch unique reference by names from quotation history
+ * Returns a list of unique reference by names
+ */
+export async function fetchReferences() {
+  const { data } = await client.get("/api/quotation/history", {
+    params: { page: 1, pageSize: 500 }
+  });
+  const references = [...new Set(data.map((q) => q.referenceBy).filter(Boolean))];
+  return references.sort();
+}
+
 export default client;

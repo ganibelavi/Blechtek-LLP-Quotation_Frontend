@@ -4,11 +4,14 @@ import {
   generateQuotation,
   resolveDownloadUrl,
   fetchNextQuotationNo,
+  fetchOrganizations,
+  fetchReferences,
 } from "../services/quotationApi";
 import "./CreateQuotation.css";
 import "../components/QuotationForm.css";
 import "../components/QuotationPreview.css";
 import CustomSnackbar from "../components/CustomSnackbar";
+import SearchDropdown from "../components/SearchDropdown";
 import {
   Dialog,
   DialogTitle,
@@ -32,6 +35,8 @@ const initialValues = {
 
 export default function CreateQuotation({ onNavigate }) {
   const [modules, setModules] = useState([]);
+  const [organizations, setOrganizations] = useState([]);
+  const [references, setReferences] = useState([]);
   const [values, setValues] = useState(initialValues);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
@@ -57,6 +62,14 @@ export default function CreateQuotation({ onNavigate }) {
         setApiError("Could not load the module list. Is the API running?"),
       );
 
+    fetchOrganizations()
+      .then(setOrganizations)
+      .catch(() => setOrganizations([]));
+
+    fetchReferences()
+      .then(setReferences)
+      .catch(() => setReferences([]));
+
     // Fetch the next quotation number
     fetchNextQuotationNo()
       .then((quotationNo) => {
@@ -71,6 +84,14 @@ export default function CreateQuotation({ onNavigate }) {
 
   const handleFieldChange = (field, value) => {
     setValues((v) => ({ ...v, [field]: value }));
+  };
+
+  const handleAddNewOrganization = () => {
+    // Clear field for new entry - direct typing now works
+  };
+
+  const handleAddNewReference = () => {
+    // Clear field for new entry - direct typing now works
   };
 
   const handleQuotationToChange = (field, value) => {
@@ -216,21 +237,19 @@ export default function CreateQuotation({ onNavigate }) {
               <h3 className="q-form__heading">Quotation details</h3>
               <div className="q-form__row">
                 <div className="q-field">
-                  <label htmlFor="organizationName">Organization name</label>
-                  <input
-                    id="organizationName"
-                    type="text"
-                    placeholder="e.g. Vantage Auto Components Pvt. Ltd."
+                  <SearchDropdown
+                    name="organizationName"
+                    label="Organization name"
                     value={values.organizationName}
-                    onChange={(e) =>
-                      handleFieldChange("organizationName", e.target.value)
-                    }
+                    onChange={(val) => handleFieldChange("organizationName", val)}
+                    options={organizations}
+                    placeholder="e.g. Vantage Auto Components Pvt. Ltd."
+                    error={errors.organizationName}
+                    onAddNew={handleAddNewOrganization}
+                    addNewLabel="Add new organization"
+                    required
+                    allowFreeText
                   />
-                  {errors.organizationName && (
-                    <span className="q-field__error">
-                      {errors.organizationName}
-                    </span>
-                  )}
                 </div>
                 <div className="q-field q-field--narrow">
                   <label htmlFor="validationDate">Valid until</label>
@@ -251,19 +270,18 @@ export default function CreateQuotation({ onNavigate }) {
               </div>
               <div className="q-form__row">
                 <div className="q-field">
-                  <label htmlFor="referenceBy">Reference By</label>
-                  <input
-                    id="referenceBy"
-                    type="text"
-                    placeholder="e.g. John Smith / Internal"
+                  <SearchDropdown
+                    name="referenceBy"
+                    label="Reference By"
                     value={values.referenceBy}
-                    onChange={(e) =>
-                      handleFieldChange("referenceBy", e.target.value)
-                    }
+                    onChange={(val) => handleFieldChange("referenceBy", val)}
+                    options={references}
+                    placeholder="e.g. John Smith / Internal"
+                    error={errors.referenceBy}
+                    onAddNew={handleAddNewReference}
+                    addNewLabel="Add new reference"
+                    allowFreeText
                   />
-                  {errors.referenceBy && (
-                    <span className="q-field__error">{errors.referenceBy}</span>
-                  )}
                 </div>
                 {/* <div className="q-field q-field--narrow">
                   <label htmlFor="validationDate">Valid until</label>

@@ -310,11 +310,11 @@ export default function UsersPage() {
           sx={{
             background: "var(--primary-gradient)",
             color: "white",
-            px: 3,
-            py: 2,
-            mb: 2,
-            borderTopLeftRadius: "var(--radius-md)",
-            borderTopRightRadius: "var(--radius-md)",
+            p: 1.5,
+            // py: 2,
+            // mb: 2,
+            // borderTopLeftRadius: "var(--radius-md)",
+            // borderTopRightRadius: "var(--radius-md)",
           }}
         >
           {editingUserId === null ? "Add User" : "Edit User"}
@@ -443,7 +443,7 @@ export default function UsersPage() {
       >
         <DialogTitle
           sx={{
-            fontWeight: 800,
+            // fontWeight: 800,
             color: "white",
             background: "linear-gradient(120deg, #308aea 0%, #48cae4 100%)",
             py: 1.5,
@@ -452,7 +452,7 @@ export default function UsersPage() {
           Confirm Delete User
         </DialogTitle>
         <DialogContent>
-          <Typography variant="body1" sx={{ mt: 1 }}>
+          <Typography variant="body1" sx={{ mt: 1, fontSize:'14px'}}>
             Are you sure you want to delete the user{" "}
             <strong>
               {userToDelete

@@ -260,11 +260,11 @@ export default function ModulesPage() {
           sx={{
             background: "var(--primary-gradient)",
             color: "white",
-            px: 3,
-            py: 2,
-            mb: 2,
-            borderTopLeftRadius: "var(--radius-md)",
-            borderTopRightRadius: "var(--radius-md)",
+            p: 1.5,
+            // py: 2,
+            // mb: 2,
+            // borderTopLeftRadius: "var(--radius-md)",
+            // borderTopRightRadius: "var(--radius-md)",
           }}
         >
           {editingModuleId === null ? "Add Module" : "Edit Module"}
@@ -327,7 +327,7 @@ export default function ModulesPage() {
       >
         <DialogTitle
           sx={{
-            fontWeight: 800,
+            // fontWeight: 800,
             color: "white",
             background: "linear-gradient(120deg, #308aea 0%, #48cae4 100%)",
             py: 1.5,
@@ -336,7 +336,7 @@ export default function ModulesPage() {
           Confirm Delete Module
         </DialogTitle>
         <DialogContent>
-          <Typography variant="body1" sx={{ mt: 1 }}>
+          <Typography variant="body1" sx={{ mt: 1, fontSize:'14px'}}>
             Are you sure you want to delete the module{" "}
             <strong>{moduleToDelete?.ModuleName}</strong>? This action cannot be
             undone.
