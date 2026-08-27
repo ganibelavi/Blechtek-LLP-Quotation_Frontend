@@ -5,7 +5,13 @@ import "./ModuleSelector.css";
  * Renders the master "Scope" list grouped by pillar as a checklist.
  * Only the modules the user checks here are written into the generated quotation.
  */
-export default function ModuleSelector({ modules, selected, onToggle, error }) {
+export default function ModuleSelector({
+  modules,
+  selected,
+  onToggle,
+  error,
+  disabled = false,
+}) {
   const grouped = useMemo(() => {
     const map = new Map();
     for (const m of modules) {
@@ -30,12 +36,13 @@ export default function ModuleSelector({ modules, selected, onToggle, error }) {
               return (
                 <label
                   key={module}
-                  className={`module-chip ${active ? "module-chip--active" : ""}`}
+                  className={`module-chip ${active ? "module-chip--active" : ""} ${disabled ? "module-chip--disabled" : ""}`}
                 >
                   <input
                     type="checkbox"
                     checked={active}
                     onChange={() => onToggle(module)}
+                    disabled={disabled}
                   />
                   <span className="module-chip__box" aria-hidden="true" />
                   {module}

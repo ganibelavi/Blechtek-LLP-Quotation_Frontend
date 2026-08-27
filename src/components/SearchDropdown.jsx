@@ -13,6 +13,7 @@ export default function SearchDropdown({
   name,
   required = false,
   allowFreeText = true,
+  disabled = false,
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isAddingNew, setIsAddingNew] = useState(false);
@@ -152,10 +153,11 @@ export default function SearchDropdown({
           onKeyDown={handleKeyDown}
           onBlur={handleBlur}
           placeholder={placeholder}
+          disabled={disabled}
           className={`search-dropdown__input ${error ? "search-dropdown__input--error" : ""} ${isOpen ? "search-dropdown__input--open" : ""}`}
           autoComplete="off"
         />
-        {onAddNew && (
+        {onAddNew && !disabled && (
           <button
             type="button"
             className="search-dropdown__add-btn"

@@ -205,7 +205,7 @@ export default function App() {
                 case "settings":
                   return <SettingsPage onNavigate={navigate} initialTab={settingsInitialTab} />;
                 case "quotation-detail":
-                  return <SettingsPage onNavigate={navigate} initialTab="created-quotations" quotationDetail={true} />;
+                  return <CreateQuotation onNavigate={navigate} readOnly />;
                 case "users":
                   return <UsersPage onNavigate={navigate} initialTab="users" />;
                 case "modules":

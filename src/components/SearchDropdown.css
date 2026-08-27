@@ -38,12 +38,23 @@
   box-sizing: border-box;
 }
 
+.search-dropdown__input:disabled {
+  background: #f5f5f5;
+  color: #666;
+  border-color: #d1d1d1;
+  cursor: not-allowed;
+}
+
 .search-dropdown__input::placeholder {
   color: var(--text-400, #9ca3af);
 }
 
 .search-dropdown__input:hover:not(.search-dropdown__input--error) {
   border-color: var(--border-hover, #9ca3af);
+}
+
+.search-dropdown__input:hover:disabled {
+  border-color: #d1d1d1;
 }
 
 .search-dropdown__input:focus,

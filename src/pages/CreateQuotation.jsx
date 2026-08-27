@@ -33,7 +33,7 @@ const initialValues = {
   discountPercentage: 0,
 };
 
-export default function CreateQuotation({ onNavigate }) {
+export default function CreateQuotation({ onNavigate, readOnly = false }) {
   const [modules, setModules] = useState([]);
   const [organizations, setOrganizations] = useState([]);
   const [references, setReferences] = useState([]);
@@ -56,11 +56,33 @@ export default function CreateQuotation({ onNavigate }) {
   const [sendingEmail, setSendingEmail] = useState(false);
 
   useEffect(() => {
+    if (readOnly) {
+      setLoadingQuotationNo(false);
+      const storedResult = sessionStorage.getItem("quotationData");
+      const storedValues = sessionStorage.getItem("quotationFormValues");
+      if (storedResult) {
+        try {
+          setResult(JSON.parse(storedResult));
+        } catch (error) {
+          console.error("Failed to parse quotation data", error);
+        }
+      }
+      if (storedValues) {
+        try {
+          setValues(JSON.parse(storedValues));
+        } catch (error) {
+          console.error("Failed to parse quotation form values", error);
+        }
+      }
+    }
+
     fetchModules()
       .then(setModules)
       .catch(() =>
         setApiError("Could not load the module list. Is the API running?"),
       );
+
+    if (readOnly) return;
 
     fetchOrganizations()
       .then(setOrganizations)
@@ -80,7 +102,7 @@ export default function CreateQuotation({ onNavigate }) {
         setValues((v) => ({ ...v, quotationNo: "Auto-generated" }));
         setLoadingQuotationNo(false);
       });
-  }, []);
+  }, [readOnly]);
 
   const handleFieldChange = (field, value) => {
     setValues((v) => ({ ...v, [field]: value }));
@@ -199,16 +221,17 @@ export default function CreateQuotation({ onNavigate }) {
   };
 
   return (
-    <div className="create-quotation">
+    <div className={`create-quotation ${readOnly ? "create-quotation--readonly" : ""}`}>
       <div className="create-quotation__header">
         <div className="create-quotation__title">
-          <h2>New quotation</h2>
+          <h2>{readOnly ? "View quotation" : "New quotation"}</h2>
           <p>
-            Fill in the client details and pick the modules in scope —
-            everything else follows the standard BlechTek format.
+            {readOnly
+              ? "Review the quotation details and selected modules."
+              : "Fill in the client details and pick the modules in scope — everything else follows the standard BlechTek format."}
           </p>
         </div>
-        {/* <button
+        <button
           className="create-quotation__back-btn"
           onClick={() => onNavigate("settings", "created-quotations")}
           aria-label="Back to quotations list"
@@ -227,12 +250,12 @@ export default function CreateQuotation({ onNavigate }) {
             <path d="M19 12H5M12 19l-7-7 7-7" />
           </svg>
           <span className="create-quotation__back-text"></span>
-        </button> */}
+        </button>
       </div>
 
       <div className="create-quotation__layout">
         <div className="create-quotation__card">
-          <form className="q-form" onSubmit={handleSubmit} noValidate>
+          <form className="q-form" onSubmit={readOnly ? undefined : handleSubmit} noValidate>
             <section className="q-form__section">
               <h3 className="q-form__heading">Quotation details</h3>
               <div className="q-form__row">
@@ -242,6 +265,7 @@ export default function CreateQuotation({ onNavigate }) {
                     label="Organization name"
                     value={values.organizationName}
                     onChange={(val) => handleFieldChange("organizationName", val)}
+                    disabled={readOnly}
                     options={organizations}
                     placeholder="e.g. Vantage Auto Components Pvt. Ltd."
                     error={errors.organizationName}
@@ -275,6 +299,8 @@ export default function CreateQuotation({ onNavigate }) {
                     label="Reference By"
                     value={values.referenceBy}
                     onChange={(val) => handleFieldChange("referenceBy", val)}
+                    disabled={readOnly}
+                    className={readOnly ? "q-field__input--readonly" : ""}
                     options={references}
                     placeholder="e.g. John Smith / Internal"
                     error={errors.referenceBy}
@@ -292,6 +318,7 @@ export default function CreateQuotation({ onNavigate }) {
                     onChange={(e) =>
                       handleFieldChange("validationDate", e.target.value)
                     }
+                    disabled={readOnly}
                   />
                   {errors.validationDate && (
                     <span className="q-field__error">
@@ -332,6 +359,8 @@ export default function CreateQuotation({ onNavigate }) {
                     type="date"
                     value={values.date}
                     onChange={(e) => handleFieldChange("date", e.target.value)}
+                    disabled={readOnly}
+                    className={readOnly ? "q-field__input--readonly" : ""}
                   />
                   {errors.date && (
                     <span className="q-field__error">{errors.date}</span>
@@ -340,7 +369,7 @@ export default function CreateQuotation({ onNavigate }) {
               </div>
             </section>
 
-            <section className="q-form__section">
+            <section className={`q-form__section ${readOnly ? "q-form__section--disabled" : ""}`}>
               <h3 className="q-form__heading">Quotation to</h3>
               <div className="q-form__row">
                 <div className="q-field">
@@ -353,6 +382,7 @@ export default function CreateQuotation({ onNavigate }) {
                     onChange={(e) =>
                       handleQuotationToChange("name", e.target.value)
                     }
+                    disabled={readOnly}
                   />
                   {errors.contactName && (
                     <span className="q-field__error">{errors.contactName}</span>
@@ -368,6 +398,7 @@ export default function CreateQuotation({ onNavigate }) {
                     onChange={(e) =>
                       handleQuotationToChange("contactNo", e.target.value)
                     }
+                    disabled={readOnly}
                   />
                   {errors.contactNo && (
                     <span className="q-field__error">{errors.contactNo}</span>
@@ -386,6 +417,7 @@ export default function CreateQuotation({ onNavigate }) {
                     onChange={(e) =>
                       handleQuotationToChange("address", e.target.value)
                     }
+                    disabled={readOnly}
                   />
                   {errors.contactAddress && (
                     <span className="q-field__error">
@@ -403,6 +435,7 @@ export default function CreateQuotation({ onNavigate }) {
                     onChange={(e) =>
                       handleQuotationToChange("email", e.target.value)
                     }
+                    disabled={readOnly}
                   />
                   {errors.email && (
                     <span className="q-field__error">{errors.email}</span>
@@ -422,13 +455,16 @@ export default function CreateQuotation({ onNavigate }) {
                 selected={values.selectedModules}
                 onToggle={handleToggleModule}
                 error={errors.selectedModules}
+                disabled={readOnly}
               />
             </section>
 
             <div className="q-form__row" style={{ justifyContent: "flex-end" }}>
-              <button type="submit" className="q-submit" disabled={submitting}>
-                {submitting ? "Generating quotation…" : "Generate quotation"}
-              </button>
+              {!readOnly && (
+                <button type="submit" className="q-submit" disabled={submitting}>
+                  {submitting ? "Generating quotation…" : "Generate quotation"}
+                </button>
+              )}
             </div>
           </form>
         </div>
@@ -494,12 +530,12 @@ export default function CreateQuotation({ onNavigate }) {
               <p className="q-result__title">Quotation generated</p>
               <p className="q-result__id">{result.quotationNo}</p>
               <div className="q-result__actions">
-                <button
+                {!readOnly && <button
                   className="q-result__btn q-result__btn--primary"
                   onClick={handleViewDetails}
                 >
                   View Details
-                </button>
+                </button>}
                 <button
                   className="q-result__btn q-result__btn--primary"
                   onClick={() => {
