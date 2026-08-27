@@ -63,14 +63,14 @@ export default function QuotationPreview({ values, result, error }) {
             >
               Download PDF
             </a>
-            <a
+            {/* <a
               className="q-result__btn"
               href={resolveDownloadUrl(result.wordDownloadUrl)}
               target="_blank"
               rel="noreferrer"
             >
               Download Word
-            </a>
+            </a> */}
           </div>
         </div>
       )}

@@ -162,6 +162,12 @@ export default function QuotationPdfView({ onBack }) {
 
       <div className="pdf-view__content">
         <div className="pdf-document">
+          <div
+            className="pdf-watermark"
+            style={{
+              backgroundImage: 'url("/logo/watermark.png")',
+            }}
+          />
           <div className="pdf-header">
             <div className="pdf-header__left">
               <img
@@ -177,10 +183,10 @@ export default function QuotationPdfView({ onBack }) {
             <h3>{organizationName ? `QUOTATION TO - ${organizationName}` : "QUOTATION TO"}</h3>
             <div className="quotation-to-grid">
               <div className="quotation-to-left">
-                <p>Name: {quotationTo.name || "{{CONTACT_NAME}"}</p>
-                <p>Address: {quotationTo.address || "{{CONTACT_ADDRESS}"}</p>
-                <p>Contact No.: {quotationTo.contactNo || "{{CONTACT_PHONE}"}</p>
-                <p>Email: {quotationTo.email || "{{CONTACT_EMAIL}"}</p>
+                <p>Name: {quotationTo.name || "{{CONTACT_NAME}}"}</p>
+                <p>Address: {quotationTo.address || "{{CONTACT_ADDRESS}}"}</p>
+                <p>Contact No.: {quotationTo.contactNo || "{{CONTACT_PHONE}}"}</p>
+                <p>Email: {quotationTo.email || "{{CONTACT_EMAIL}}"}</p>
                 {/* <p>Reference By: {referenceBy || "{{REFERENCE_BY}"}</p> */}
               </div>
               <div className="quotation-to-right">

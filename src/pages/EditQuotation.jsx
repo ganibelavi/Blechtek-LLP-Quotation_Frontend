@@ -618,7 +618,7 @@ export default function EditQuotation({ onNavigate, quotationId }) {
                 >
                   Download PDF
                 </button>
-                <button
+                {/* <button
                   className="q-result__btn q-result__btn--primary"
                   onClick={() => {
                     const url = resolveDownloadUrl(result.wordDownloadUrl);
@@ -626,7 +626,7 @@ export default function EditQuotation({ onNavigate, quotationId }) {
                   }}
                 >
                   Download Word
-                </button>
+                </button> */}
                 <button
                   className="q-result__btn q-result__btn--primary"
                   onClick={() => {
