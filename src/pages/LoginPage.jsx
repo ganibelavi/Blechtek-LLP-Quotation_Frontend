@@ -38,7 +38,7 @@ export default function LoginPage() {
   return (
     <Box
       sx={{
-        minHeight: "100vh",
+        // minHeight: "100vh",
         display: "grid",
         placeItems: "center",
         position: "relative",
