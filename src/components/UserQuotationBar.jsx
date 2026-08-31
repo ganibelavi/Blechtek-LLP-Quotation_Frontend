@@ -13,8 +13,9 @@ import {
 export default function UserQuotationBar({ data }) {
   const chartData = (data || []).slice(0, 8).map((d) => {
     const userName = d.user ?? d.User ?? "Unknown";
+    const shortUser = userName.length > 5 ? userName.substring(0, 5) + "..." : userName;
     return {
-      user: userName.length > 18 ? userName.substring(0, 18) + "..." : userName,
+      user: shortUser,
       fullUser: userName,
       quoteCount: Number(d.quoteCount ?? d.QuoteCount ?? 0),
     };
@@ -30,9 +31,20 @@ export default function UserQuotationBar({ data }) {
 
   return (
     <ResponsiveContainer width="100%" height={300}>
-      <BarChart data={chartData} layout="vertical" margin={{ top: 20, right: 22, left: 60, bottom: 50 }}>
+      <BarChart data={chartData} layout="horizontal" margin={{ top: 20, right: 22, left: 20, bottom: 50 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
         <XAxis
+          type="category"
+          dataKey="user"
+          width={60}
+          stroke="#64748b"
+          fontSize={11}
+          tickLine={false}
+          axisLine={false}
+          tickMargin={4}
+        />
+        <Label value="User / Creator" position="bottom" offset={38} fontSize={12} fill="#64748b" fontWeight={600} />
+        <YAxis
           type="number"
           stroke="#64748b"
           fontSize={11}
@@ -40,18 +52,7 @@ export default function UserQuotationBar({ data }) {
           axisLine={{ stroke: "#e0e0e0" }}
           tickFormatter={(value) => (value >= 1000 ? `${(value / 1000).toFixed(0)}k` : Math.floor(value))}
         />
-        <Label value="No. of Quotations" position="bottom" offset={38} fontSize={12} fill="#64748b" fontWeight={600} />
-        <YAxis
-          type="category"
-          dataKey="user"
-          width={94}
-          stroke="#64748b"
-          fontSize={12}
-          tickLine={false}
-          axisLine={false}
-          tickMargin={8}
-        />
-        <Label value="User / Creator" angle={-90} position="insideLeft" offset={-60} fontSize={12} fill="#64748b" fontWeight={600} />
+        <Label value="No. of Quotations" angle={-90} position="insideLeft" offset={-30} fontSize={12} fill="#64748b" fontWeight={600} />
         <Tooltip
           contentStyle={{
             backgroundColor: "#fff",
@@ -65,7 +66,7 @@ export default function UserQuotationBar({ data }) {
             return item ? item.fullUser : label;
           }}
         />
-        <Bar dataKey="quoteCount" radius={[0, 6, 6, 0]} barSize={24}>
+        <Bar dataKey="quoteCount" radius={[6, 0, 0, 6]} barSize={24}>
           {chartData.map((entry, index) => (
             <Cell key={`cell-${index}`} fill={index % 2 === 0 ? "#2e7d32" : "#66bb6a"} />
           ))}

@@ -47,6 +47,11 @@ export async function fetchQuotations(page = 1, pageSize = 50) {
   return data;
 }
 
+export async function fetchQuotationRevisions(quotationId) {
+  const { data } = await client.get(`/api/quotation/${quotationId}/revisions`);
+  return data;
+}
+
 /**
  * GET /api/quotation/dashboard
  * returns: Dashboard analytics data

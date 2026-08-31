@@ -13,8 +13,9 @@ import {
 export default function ModuleBar({ data }) {
   const chartData = (data || []).slice(0, 8).map((d) => {
     const moduleName = d.module ?? d.Module ?? "";
+    const shortModule = moduleName.length > 5 ? moduleName.substring(0, 5) + "..." : moduleName;
     return {
-      module: moduleName.length > 20 ? moduleName.substring(0, 20) + "..." : moduleName,
+      module: shortModule,
       fullModule: moduleName,
       count: Number(d.count ?? d.Count ?? 0),
     };
@@ -30,9 +31,20 @@ export default function ModuleBar({ data }) {
 
   return (
     <ResponsiveContainer width="100%" height={300}>
-      <BarChart data={chartData} layout="vertical" margin={{ top: 20, right: 20, left: 60, bottom: 50 }}>
+      <BarChart data={chartData} layout="horizontal" margin={{ top: 20, right: 20, left: 20, bottom: 50 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
         <XAxis
+          type="category"
+          dataKey="module"
+          width={60}
+          stroke="#64748b"
+          fontSize={11}
+          tickLine={false}
+          axisLine={false}
+          tickMargin={4}
+        />
+        <Label value="Module" position="bottom" offset={38} fontSize={12} fill="#64748b" fontWeight={600} />
+        <YAxis
           type="number"
           stroke="#64748b"
           fontSize={11}
@@ -40,18 +52,7 @@ export default function ModuleBar({ data }) {
           axisLine={{ stroke: "#e0e0e0" }}
           tickFormatter={(value) => (value >= 1000 ? `${(value / 1000).toFixed(0)}k` : Math.floor(value))}
         />
-        <Label value="No. of Quotes" position="bottom" offset={38} fontSize={12} fill="#64748b" fontWeight={600} />
-        <YAxis
-          type="category"
-          dataKey="module"
-          width={82}
-          stroke="#64748b"
-          fontSize={12}
-          tickLine={false}
-          axisLine={false}
-          tickMargin={8}
-        />
-        <Label value="Module" angle={-90} position="insideLeft" offset={-60} fontSize={12} fill="#64748b" fontWeight={600} />
+        <Label value="No. of Quotes" angle={-90} position="insideLeft" offset={-30} fontSize={12} fill="#64748b" fontWeight={600} />
         <Tooltip
           contentStyle={{
             backgroundColor: "#fff",
@@ -65,7 +66,7 @@ export default function ModuleBar({ data }) {
             return item ? item.fullModule : label;
           }}
         />
-        <Bar dataKey="count" radius={[0, 6, 6, 0]} barSize={24}>
+        <Bar dataKey="count" radius={[6, 0, 0, 6]} barSize={24}>
           {chartData.map((entry, index) => (
             <Cell key={`cell-${index}`} fill="#308aea" />
           ))}

@@ -8,6 +8,8 @@ import SettingsPage from "./pages/SettingsPage";
 import UsersPage from "./pages/UsersPage";
 import ModulesPage from "./pages/ModulesPage";
 import EditQuotation from "./pages/EditQuotation";
+import QuotationHistory from "./pages/QuotationHistory";
+import AllQuotationRevisions from "./pages/AllQuotationRevisions";
 import { useAuth } from "./context/AuthContext";
 import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
@@ -38,6 +40,8 @@ export default function App() {
     create: "Create quotation",
     "created-quotations": "Quotations",
     "edit-quotation": "Edit quotation",
+    "quotation-history": "Quotation revision history",
+    "all-revisions": "All Quotation Revisions",
     users: "Users",
     modules: "Modules",
     settings: "Settings",
@@ -49,6 +53,7 @@ export default function App() {
     { label: "Dashboard", icon: "dashboard.png", view: "dashboard" },
     { label: "Create quotation", icon: "add-button.png", view: "create" },
     { label: "Quotations", icon: "clipboard.png", view: "created-quotations" },
+    { label: "Revision History", icon: "audit.png", view: "all-revisions" },
     { label: "Users", icon: "users.png", view: "users" },
     { label: "Modules", icon: "processes.png", view: "modules" },
   ];
@@ -169,12 +174,14 @@ export default function App() {
             <div className="app-sidebar__heading">Workspace</div>
             <nav className="app-sidebar__nav">
               {menuItems.map((item) => {
-                const activeView =
+const activeView =
                   item.view === "created-quotations"
-                    ? ["created-quotations", "quotation-detail", "edit-quotation", "quotation"].includes(view)
+                    ? ["created-quotations", "quotation-detail", "edit-quotation", "quotation", "quotation-history"].includes(view)
+                    : item.view === "all-revisions"
+                    ? view === "all-revisions"
                     : item.view === "settings"
-                      ? ["settings", "users", "modules"].includes(view)
-                      : view === item.view;
+                    ? ["settings", "users", "modules"].includes(view)
+                    : view === item.view;
                 return (
                   <button
                     type="button"
@@ -192,7 +199,7 @@ export default function App() {
             </nav>
           </aside>
           <main className="app-main">
-            {!["create", "created-quotations", "users", "modules", "settings", "edit-quotation", "quotation", "quotation-detail"].includes(view) && (
+            {!["create", "created-quotations", "users", "modules", "settings", "edit-quotation", "quotation", "quotation-detail", "quotation-history", "all-revisions"].includes(view) && (
               <div className="app-section-title">
                 <h1>{pageTitle}</h1>
                 <span aria-hidden="true" />
@@ -210,10 +217,14 @@ export default function App() {
                   return <UsersPage onNavigate={navigate} initialTab="users" />;
                 case "modules":
                   return <ModulesPage onNavigate={navigate} initialTab="modules" />;
+                case "all-revisions":
+                  return <AllQuotationRevisions onNavigate={navigate} />;
                 case "created-quotations":
                   return <CreatedQuotation onNavigate={navigate} />;
                 case "edit-quotation":
                   return <EditQuotation onNavigate={navigate} quotationId={editQuotationId} />;
+                case "quotation-history":
+                  return <QuotationHistory onNavigate={navigate} quotationId={editQuotationId} />;
                 case "quotation":
                   return <QuotationPdfView onBack={() => navigate("settings", "created-quotations")} />;
                 case "create":

@@ -11,6 +11,7 @@ import {
 } from "@mui/material";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import EditIcon from "@mui/icons-material/Edit";
+import HistoryIcon from "@mui/icons-material/History";
 
 const resolveApiBaseUrl = () => {
   const envUrl = process.env.REACT_APP_API_BASE_URL?.trim();
@@ -234,6 +235,17 @@ export default function CreatedQuotation({ onNavigate }) {
               onClick={() => handleViewQuotation(row.originalData)}
             >
               <VisibilityIcon fontSize="small" color="primary" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Revision History">
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                onNavigate("quotation-history", null, row.originalData.quotationId);
+              }}
+            >
+              <HistoryIcon fontSize="small" color="secondary" />
             </IconButton>
           </Tooltip>
           <Tooltip title="Download PDF">
