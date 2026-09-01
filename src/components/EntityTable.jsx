@@ -10,11 +10,11 @@ import TableRow from "@mui/material/TableRow";
 import TableCell from "@mui/material/TableCell";
 import IconButton from "@mui/material/IconButton";
 import TextField from "@mui/material/TextField";
-import InputAdornment from "@mui/material/InputAdornment";
 import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
 import Stack from "@mui/material/Stack";
 import Chip from "@mui/material/Chip";
+import SearchIcon from "@mui/icons-material/Search";
 
 function defaultGetValue(row, key) {
   const v = row?.[key];
@@ -149,30 +149,38 @@ export default function EntityTable({ title, columns, rows }) {
           <Typography variant="h6" sx={{ fontSize: 16 }}>
             {title}
           </Typography>
-          <TextField
-            size="small"
-            placeholder="Search"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(0);
-            }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <img
-                    src="/logo/filter.png"
-                    alt="Search"
-                    style={{ width: 18, height: 18 }}
-                  />
-                </InputAdornment>
-              ),
-            }}
+          <Box
             sx={{
-              minWidth: 200,
-              "& .MuiInputBase-input": { padding: "4px 10px" },
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              border: "1px solid #d9d9d9",
+              borderRadius: 1,
+              background: "#fff",
+              px: 1,
+              py: 0.25,
             }}
-          />
+          >
+            <SearchIcon sx={{ color: "#6b7280", fontSize: 18 }} />
+            <TextField
+              size="small"
+              placeholder="Search"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(0);
+              }}
+              variant="standard"
+              InputProps={{
+                disableUnderline: true,
+                sx: {
+                  fontSize: 14,
+                  minWidth: 170,
+                  "& input": { padding: "4px 0" },
+                },
+              }}
+            />
+          </Box>
         </Box>
       </Box>
 

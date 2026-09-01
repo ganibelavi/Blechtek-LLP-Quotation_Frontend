@@ -13,6 +13,7 @@ import AllQuotationRevisions from "./pages/AllQuotationRevisions";
 import PurchaseOrder from "./pages/PurchaseOrder/PurchaseOrder";
 import PurchaseOrderEntryForm from "./pages/PurchaseOrder/PurchaseOrderEntryForm";
 import CreatedPurchaseOrders from "./pages/PurchaseOrder/CreatedPurchaseOrders";
+import CreatedInvoices from "./pages/Inovice/CreatedInvoices";
 import InvoiceEntryForm from "./pages/Inovice/InvoiceEntryForm";
 import GSTInvoice from "./pages/Inovice/GSTInvoice";
 import { useAuth } from "./context/AuthContext";
@@ -74,6 +75,7 @@ export default function App() {
       "purchase-order": "Purchase Order",
       "purchase-order-entry": "Purchase Order Entry",
       "created-purchase-orders": "Purchase Orders",
+      "created-invoices": "GST Invoices",
       users: "Users",
       modules: "Modules",
       settings: "Settings",
@@ -93,7 +95,7 @@ export default function App() {
       view: "created-purchase-orders",
     },
     { label: "Revision History", icon: "audit.png", view: "all-revisions" },
-    { label: "GST Invoice", icon: "calculator.png", view: "invoice-entry" },
+    { label: "GST Invoice", icon: "calculator.png", view: "created-invoices" },
     { label: "Users", icon: "users.png", view: "users" },
     { label: "Modules", icon: "processes.png", view: "modules" },
   ];
@@ -231,8 +233,12 @@ export default function App() {
                       ? view === "all-revisions"
                       : item.view === "settings"
                         ? ["settings", "users", "modules"].includes(view)
-                        : item.view === "invoice-entry"
-                          ? ["invoice-entry", "invoice"].includes(view)
+                        : item.view === "created-invoices"
+                          ? [
+                              "created-invoices",
+                              "invoice-entry",
+                              "invoice",
+                            ].includes(view)
                           : view === item.view;
                 return (
                   <button
@@ -269,6 +275,7 @@ export default function App() {
               "purchase-order",
               "purchase-order-entry",
               "created-purchase-orders",
+              "created-invoices",
               "invoice",
             ].includes(view) && (
               <div className="app-section-title">
@@ -320,21 +327,55 @@ export default function App() {
                     />
                   );
                 case "purchase-order-entry":
-                  return <PurchaseOrderEntryForm onNavigate={navigate} />;
+                  return (
+                    <PurchaseOrderEntryForm
+                      onNavigate={navigate}
+                      defaultReturnView={
+                        sessionStorage.getItem("purchaseOrderBackView") ||
+                        "created-purchase-orders"
+                      }
+                    />
+                  );
                 case "created-purchase-orders":
                   return <CreatedPurchaseOrders onNavigate={navigate} />;
                 case "purchase-order":
                   return (
                     <PurchaseOrder
                       initialData={getPurchaseOrderInitialData()}
-                      onConvertToInvoice={() => navigate("invoice-entry")}
-                      onBackToQuotation={() => navigate("created-quotations")}
+                      onConvertToInvoice={() => {
+                        sessionStorage.setItem(
+                          "invoiceBackView",
+                          "purchase-order",
+                        );
+                        navigate("invoice-entry");
+                      }}
+                      onBackToQuotation={() =>
+                        navigate(
+                          sessionStorage.getItem("purchaseOrderBackView") ||
+                            "created-purchase-orders",
+                        )
+                      }
                     />
                   );
+                case "created-invoices":
+                  return <CreatedInvoices onNavigate={navigate} />;
                 case "invoice-entry":
-                  return <InvoiceEntryForm onNavigate={navigate} />;
+                  return (
+                    <InvoiceEntryForm
+                      onNavigate={navigate}
+                      defaultReturnView={
+                        sessionStorage.getItem("invoiceBackView") ||
+                        "created-invoices"
+                      }
+                    />
+                  );
                 case "invoice":
-                  return <GSTInvoice initialData={getInvoiceInitialData()} />;
+                  return (
+                    <GSTInvoice
+                      initialData={getInvoiceInitialData()}
+                      onBackToInvoiceList={() => navigate("created-invoices")}
+                    />
+                  );
                 case "create":
                 default:
                   return <CreateQuotation onNavigate={navigate} />;

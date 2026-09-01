@@ -154,14 +154,19 @@ export default function CreatedQuotation({ onNavigate }) {
     sessionStorage.setItem(
       "selectedQuotationForPo",
       JSON.stringify({
+        quotationId: quotation.quotationId || "",
         quotationNo: quotation.quotationNo || "",
         date: quotation.date || "",
         organizationName: quotation.organizationName || "",
         quotationToName: quotation.quotationToName || "",
         quotationToAddress: quotation.quotationToAddress || "",
+        quotationToContactNo: quotation.quotationToContactNo || "",
+        quotationToEmail: quotation.quotationToEmail || "",
+        referenceBy: quotation.referenceBy || "",
         modules: quotation.modules || [],
       }),
     );
+    sessionStorage.setItem("purchaseOrderBackView", "created-quotations");
     onNavigate("purchase-order-entry");
   };
 

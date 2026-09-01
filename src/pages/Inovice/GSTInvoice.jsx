@@ -76,7 +76,7 @@ function currency(n) {
   });
 }
 
-export default function GSTInvoice({ initialData }) {
+export default function GSTInvoice({ initialData, onBackToInvoiceList }) {
   const [invoice, setInvoice] = useState(() => ({
     ...emptyInvoice,
     ...(initialData?.invoice || {}),
@@ -147,6 +147,25 @@ export default function GSTInvoice({ initialData }) {
   return (
     <div className="gi-page">
       <div className="gi-toolbar no-print">
+        {/* {onBackToInvoiceList && (
+          <button type="button" className="gi-btn gi-btn-secondary" onClick={onBackToInvoiceList} aria-label="Back to invoices list">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+            <span>Back</span>
+          </button>
+        )} */}
+        <div className="gi-toolbar-spacer" />
         <button
           type="button"
           className="gi-btn gi-btn-primary"
@@ -157,6 +176,22 @@ export default function GSTInvoice({ initialData }) {
         <button type="button" className="gi-btn" onClick={addRow}>
           + Add item row
         </button>
+         <button type="button" className="gi-btn gi-btn-secondary" onClick={onBackToInvoiceList} aria-label="Back to invoices list">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+            {/* <span>Back</span> */}
+          </button>
       </div>
 
       <div className="gi-sheet" ref={printRef}>

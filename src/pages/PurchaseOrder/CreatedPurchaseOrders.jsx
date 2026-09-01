@@ -46,6 +46,7 @@ export default function CreatedPurchaseOrders({ onNavigate }) {
 
   const openPurchaseOrder = (row) => {
     sessionStorage.setItem("purchaseOrderData", JSON.stringify(row.data || row));
+    sessionStorage.setItem("purchaseOrderBackView", "created-purchase-orders");
     onNavigate("purchase-order");
   };
 
@@ -111,7 +112,10 @@ export default function CreatedPurchaseOrders({ onNavigate }) {
         <h1 className="page-heading page-heading__text">Purchase Orders</h1>
         <Button
           variant="contained"
-          onClick={() => onNavigate("purchase-order-entry")}
+          onClick={() => {
+            sessionStorage.setItem("purchaseOrderBackView", "created-purchase-orders");
+            onNavigate("purchase-order-entry");
+          }}
           sx={{ px: 3, py: 1 }}
         >
           New Purchase Order

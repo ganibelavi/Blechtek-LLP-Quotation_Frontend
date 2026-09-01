@@ -1,4 +1,6 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import SearchDropdown from "../../components/SearchDropdown";
+import { fetchOrganizations, fetchQuotations } from "../../services/quotationApi";
 
 const emptyItem = () => ({
   id: Date.now() + Math.random(),
@@ -11,7 +13,8 @@ const emptyItem = () => ({
 const defaultForm = () => {
   const quotation = (() => {
     try {
-      return JSON.parse(sessionStorage.getItem("selectedQuotationForPo") || "null");
+      const storedQuotation = sessionStorage.getItem("selectedQuotationForPo");
+      return storedQuotation ? JSON.parse(storedQuotation) : null;
     } catch (error) {
       console.error("Failed to read selected quotation info", error);
       return null;
@@ -19,7 +22,7 @@ const defaultForm = () => {
   })();
 
   return {
-    companyName: quotation?.organizationName || "Your Company Name",
+    companyName: quotation?.organizationName || "",
     poNo: "",
     poDate: new Date().toISOString().slice(0, 10),
     status: "open",
@@ -51,8 +54,100 @@ const defaultForm = () => {
   };
 };
 
-export default function PurchaseOrderEntryForm({ onNavigate }) {
+export default function PurchaseOrderEntryForm({ onNavigate, defaultReturnView = "created-purchase-orders" }) {
   const [form, setForm] = useState(defaultForm);
+  const [companyOptions, setCompanyOptions] = useState([]);
+  const [quotationRecords, setQuotationRecords] = useState([]);
+
+  useEffect(() => {
+    fetchOrganizations()
+      .then(setCompanyOptions)
+      .catch(() => setCompanyOptions([]));
+
+    fetchQuotations(1, 500)
+      .then((data) => setQuotationRecords(Array.isArray(data) ? data : []))
+      .catch(() => setQuotationRecords([]));
+  }, []);
+
+  useEffect(() => {
+    const selectedQuotation = (() => {
+      try {
+        const stored = sessionStorage.getItem("selectedQuotationForPo");
+        return stored ? JSON.parse(stored) : null;
+      } catch (error) {
+        console.error("Failed to parse selected quotation for PO", error);
+        return null;
+      }
+    })();
+
+    if (!selectedQuotation) return;
+
+    const matchedQuotation = quotationRecords.find(
+      (quotation) =>
+        String(quotation.quotationId) === String(selectedQuotation.quotationId) ||
+        ((quotation.organizationName || "").trim().toLowerCase() ===
+          (selectedQuotation.organizationName || "").trim().toLowerCase() &&
+          (quotation.quotationNo || "").trim().toLowerCase() ===
+          (selectedQuotation.quotationNo || "").trim().toLowerCase()),
+    );
+
+    if (!matchedQuotation) return;
+
+    setForm((prev) => ({
+      ...prev,
+      companyName: matchedQuotation.organizationName || prev.companyName || "",
+      quotationRefNo: prev.quotationRefNo || matchedQuotation.quotationNo || "",
+      quotationRefDate: prev.quotationRefDate || matchedQuotation.date || "",
+      buyerName: prev.buyerName || matchedQuotation.quotationToName || "",
+      buyerAddress: prev.buyerAddress || matchedQuotation.quotationToAddress || "",
+      supplierName: prev.supplierName || matchedQuotation.organizationName || "",
+      items: prev.items.map((item, index) =>
+        index === 0 && !item.description
+          ? { ...item, description: (matchedQuotation.modules || []).join(", ") || item.description }
+          : item,
+      ),
+    }));
+
+    sessionStorage.removeItem("selectedQuotationForPo");
+  }, [quotationRecords]);
+
+  useEffect(() => {
+    const selectedCompanyName = form.companyName?.trim();
+    if (!selectedCompanyName) return;
+
+    const matchedQuotation = quotationRecords.find(
+      (quotation) =>
+        (quotation.organizationName || "").trim().toLowerCase() ===
+        selectedCompanyName.toLowerCase(),
+    );
+
+    if (!matchedQuotation) return;
+
+    setForm((prev) => {
+      if ((prev.companyName || "").trim().toLowerCase() !== selectedCompanyName.toLowerCase()) {
+        return prev;
+      }
+
+      const nextItems = prev.items.map((item, index) => {
+        if (index !== 0 || item.description) return item;
+        return {
+          ...item,
+          description: (matchedQuotation.modules || []).join(", ") || item.description,
+        };
+      });
+
+      return {
+        ...prev,
+        companyName: matchedQuotation.organizationName || prev.companyName,
+        quotationRefNo: prev.quotationRefNo || matchedQuotation.quotationNo || "",
+        quotationRefDate: prev.quotationRefDate || matchedQuotation.date || "",
+        buyerName: prev.buyerName || matchedQuotation.quotationToName || "",
+        buyerAddress: prev.buyerAddress || matchedQuotation.quotationToAddress || "",
+        supplierName: prev.supplierName || matchedQuotation.organizationName || "",
+        items: nextItems,
+      };
+    });
+  }, [form.companyName, quotationRecords]);
 
   const totals = useMemo(() => {
     const totalQty = form.items.reduce((sum, item) => sum + (Number(item.qty) || 0), 0);
@@ -160,7 +255,7 @@ export default function PurchaseOrderEntryForm({ onNavigate }) {
             <span aria-hidden="true" />
           </div>
           <div style={{ display: "flex", gap: 12, alignItems: "center", flexShrink: 0 }}>
-            <button type="button" className="app-action-btn app-action-btn--secondary" onClick={() => onNavigate("created-quotations")}>
+            <button type="button" className="app-action-btn app-action-btn--secondary" onClick={() => onNavigate(sessionStorage.getItem("purchaseOrderBackView") || defaultReturnView)}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M19 12H5M12 19l-7-7 7-7" />
               </svg>
@@ -173,10 +268,17 @@ export default function PurchaseOrderEntryForm({ onNavigate }) {
 
         <div style={{ background: "#fff", borderRadius: 12, padding: 20, boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 }}>
-            <label>
-              <div style={{ fontWeight: 600, marginBottom: 6 }}>Company Name</div>
-              <input value={form.companyName} onChange={(e) => updateField("companyName", e.target.value)} style={inputStyle} />
-            </label>
+            <div>
+              <SearchDropdown
+                name="companyName"
+                label="Company Name"
+                value={form.companyName}
+                onChange={(value) => updateField("companyName", value)}
+                options={companyOptions}
+                placeholder="Select or type company name"
+                allowFreeText
+              />
+            </div>
             <label>
               <div style={{ fontWeight: 600, marginBottom: 6 }}>PO No.</div>
               <input value={form.poNo} onChange={(e) => updateField("poNo", e.target.value)} style={inputStyle} />

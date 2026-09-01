@@ -1,4 +1,6 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import SearchDropdown from "../../components/SearchDropdown";
+import { fetchOrganizations } from "../../services/quotationApi";
 
 const emptyItem = () => ({
   id: Date.now() + Math.random(),
@@ -31,7 +33,7 @@ const defaultForm = () => {
 
   return {
     originalFor: "ORIGINAL FOR RECIPIENT",
-    companyName: poDetails.companyName || "Your Company Name",
+    companyName: poDetails.companyName || "",
     invoiceNo: "",
     dateOfIssue: new Date().toISOString().slice(0, 10),
     timeOfIssue: "",
@@ -71,8 +73,15 @@ const defaultForm = () => {
   };
 };
 
-export default function InvoiceEntryForm({ onNavigate }) {
+export default function InvoiceEntryForm({ onNavigate, defaultReturnView = "created-invoices" }) {
   const [form, setForm] = useState(defaultForm);
+  const [companyOptions, setCompanyOptions] = useState([]);
+
+  useEffect(() => {
+    fetchOrganizations()
+      .then(setCompanyOptions)
+      .catch(() => setCompanyOptions([]));
+  }, []);
 
   const totals = useMemo(() => {
     const totalQty = form.items.reduce((sum, item) => sum + (Number(item.qty) || 0), 0);
@@ -184,9 +193,9 @@ export default function InvoiceEntryForm({ onNavigate }) {
             <button
               type="button"
               className="app-action-btn app-action-btn--secondary"
-              onClick={() => onNavigate("purchase-order")}
-              aria-label="Back to Purchase Order"
-              title="Back to Purchase Order"
+              onClick={() => onNavigate(sessionStorage.getItem("invoiceBackView") || defaultReturnView)}
+              aria-label="Back to previous page"
+              title="Back to previous page"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M19 12H5M12 19l-7-7 7-7" />
@@ -200,10 +209,17 @@ export default function InvoiceEntryForm({ onNavigate }) {
 
         <div style={{ background: "#fff", borderRadius: 12, padding: 20, boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 }}>
-            <label>
-              <div style={{ fontWeight: 600, marginBottom: 6 }}>Company Name</div>
-              <input value={form.companyName} onChange={(e) => updateField("companyName", e.target.value)} style={inputStyle} />
-            </label>
+            <div>
+              <SearchDropdown
+                name="companyName"
+                label="Company Name"
+                value={form.companyName}
+                onChange={(value) => updateField("companyName", value)}
+                options={companyOptions}
+                placeholder="Select or type company name"
+                allowFreeText
+              />
+            </div>
             <label>
               <div style={{ fontWeight: 600, marginBottom: 6 }}>Invoice No.</div>
               <input value={form.invoiceNo} onChange={(e) => updateField("invoiceNo", e.target.value)} style={inputStyle} />

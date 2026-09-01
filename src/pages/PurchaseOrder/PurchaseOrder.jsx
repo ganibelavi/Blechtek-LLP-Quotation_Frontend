@@ -106,11 +106,6 @@ export default function PurchaseOrder({ initialData, onConvertToInvoice, onBackT
   return (
     <div className="po-page">
       <div className="po-toolbar no-print">
-        {po.quotationRefNo && (
-          <button type="button" className="po-link-btn" onClick={onBackToQuotation}>
-            ← Created from Quotation {po.quotationRefNo}
-          </button>
-        )}
         <div className="po-toolbar-spacer" />
         <button type="button" className="po-btn po-btn-secondary" onClick={handlePrint}>
           Print / Save PDF
@@ -126,6 +121,21 @@ export default function PurchaseOrder({ initialData, onConvertToInvoice, onBackT
           title={canConvert ? "" : "Only open or partially fulfilled POs can be invoiced"}
         >
           Convert to Invoice
+        </button>
+         <button type="button" className="po-btn po-btn-secondary" onClick={onBackToQuotation} aria-label="Back to previous page">
+          <svg
+            className="po-link-btn__icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M19 12H5M12 19l-7-7 7-7" />
+          </svg>
+          {/* <span className="po-link-btn__text">Back</span> */}
         </button>
       </div>
 
