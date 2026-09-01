@@ -33,7 +33,10 @@ function StatusText({ status }) {
   };
 
   const key = String(status || "").toLowerCase();
-  const cfg = statusConfig[key] || { color: "#9e9e9e", label: typeof status === 'string' && status ? status : "Unknown" };
+  const cfg = statusConfig[key] || {
+    color: "#9e9e9e",
+    label: typeof status === "string" && status ? status : "Unknown",
+  };
 
   return (
     <Typography
@@ -42,7 +45,7 @@ function StatusText({ status }) {
         fontSize: 13,
         fontWeight: 700,
         color: cfg.color,
-        textTransform: 'none'
+        textTransform: "none",
       }}
     >
       {cfg.label}
@@ -157,7 +160,11 @@ export default function EntityTable({ title, columns, rows }) {
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                <img src="/logo/filter.png" alt="Search" style={{ width: 18, height: 18 }} />
+                  <img
+                    src="/logo/filter.png"
+                    alt="Search"
+                    style={{ width: 18, height: 18 }}
+                  />
                 </InputAdornment>
               ),
             }}
@@ -224,7 +231,7 @@ export default function EntityTable({ title, columns, rows }) {
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  sx={{ textAlign: "center", p: 4 }}
+                  sx={{ textAlign: "center", p: "0.5rem" }}
                 >
                   No records
                 </TableCell>
@@ -251,7 +258,11 @@ export default function EntityTable({ title, columns, rows }) {
             onClick={() => setPage((p) => Math.max(0, p - 1))}
             disabled={page === 0}
           >
-            <img src="/logo/uparrow.svg" alt="Prev" style={{ width: 18, height: 18, transform: 'rotate(270deg)' }} />
+            <img
+              src="/logo/uparrow.svg"
+              alt="Prev"
+              style={{ width: 18, height: 18, transform: "rotate(270deg)" }}
+            />
           </IconButton>
           <Typography
             sx={{ fontSize: 13 }}
@@ -261,7 +272,11 @@ export default function EntityTable({ title, columns, rows }) {
             onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
             disabled={page >= pageCount - 1}
           >
-            <img src="/logo/uparrow.svg" alt="Next" style={{ width: 18, height: 18, transform: 'rotate(90deg)' }} />
+            <img
+              src="/logo/uparrow.svg"
+              alt="Next"
+              style={{ width: 18, height: 18, transform: "rotate(90deg)" }}
+            />
           </IconButton>
         </Stack>
       </Box>

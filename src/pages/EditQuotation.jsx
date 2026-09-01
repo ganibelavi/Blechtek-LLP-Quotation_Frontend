@@ -213,7 +213,7 @@ export default function EditQuotation({ onNavigate, quotationId }) {
     <div className="create-quotation edit-quotation">
       <div className="create-quotation__header">
         <div className="create-quotation__title">
-          <h2>Edit Quotation</h2>
+          <h2 className="page-heading page-heading__text">Edit Quotation</h2>
           <p>Update discount percentage and regenerate the quotation.</p>
         </div>
         <button

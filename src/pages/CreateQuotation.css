@@ -11,31 +11,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 24px;
+  /* margin-bottom: 24px; */
   /* padding-bottom: 16px; */
-}
-
-.create-quotation__title h2 {
-  margin: 0 0 16px;
-  padding-bottom: 10px;
-  position: relative;
-  width: fit-content;
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #000;
-}
-
-.create-quotation__title h2::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  width: 100%;
-  height: 4px;
-  border-radius: 4px;
-  background: linear-gradient(90deg, #308aea, #48cae4);
-  background-size: 200% auto;
-  animation: title-shimmer 3s linear infinite;
 }
 
 @keyframes title-shimmer {
@@ -45,7 +22,7 @@
 }
 
 .create-quotation__title p {
-  margin: 0;
+  margin: 5;
   color: var(--text-600);
   font-size: 14px;
 }

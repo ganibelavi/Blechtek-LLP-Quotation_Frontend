@@ -229,9 +229,7 @@ export default function ModulesPage() {
           gap: 2,
         }}
       >
-        <Typography className="page-heading page-heading__text" component="h1">
-          Modules
-        </Typography>
+        <h1 className="page-heading page-heading__text">Modules</h1>
         <Button
           variant="contained"
           startIcon={<img src="/logo/add.png" alt="Add" style={{ width: 20, height: 20 }} />}

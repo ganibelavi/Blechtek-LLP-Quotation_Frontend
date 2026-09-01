@@ -48,14 +48,52 @@ export default function AllQuotationRevisions({ onNavigate }) {
   const [revisionsCache, setRevisionsCache] = useState({});
   const [revisionLoading, setRevisionLoading] = useState({});
 
+  const hasMeaningfulRevisionHistory = (revisions = []) =>
+    Array.isArray(revisions) && revisions.length > 1;
+
   const loadQuotations = async () => {
     try {
       setLoading(true);
       const data = await fetchQuotations(1, 100);
-      setQuotations(data || []);
+      const nextRevisionCache = {};
+      const filteredQuotations = [];
+
+      for (const quotation of data || []) {
+        try {
+          const revisions = await fetchQuotationRevisions(
+            quotation.quotationId,
+          );
+          const normalizedRevisions = Array.isArray(revisions) ? revisions : [];
+
+          if (!hasMeaningfulRevisionHistory(normalizedRevisions)) {
+            continue;
+          }
+
+          nextRevisionCache[quotation.quotationId] = normalizedRevisions;
+          filteredQuotations.push({
+            ...quotation,
+            modules: quotation.modules || [],
+          });
+        } catch (err) {
+          console.error(
+            `Failed to load revisions for quotation ${quotation.quotationId}`,
+            err,
+          );
+        }
+      }
+
+      setRevisionsCache(nextRevisionCache);
+      setQuotations(filteredQuotations);
+      setExpandedQuotationId((currentId) =>
+        currentId && filteredQuotations.some((q) => q.quotationId === currentId)
+          ? currentId
+          : null,
+      );
       setError(null);
     } catch (err) {
-      setError("Failed to load quotations. Please check if the backend is running.");
+      setError(
+        "Failed to load quotations. Please check if the backend is running.",
+      );
       console.error(err);
     } finally {
       setLoading(false);
@@ -81,7 +119,10 @@ export default function AllQuotationRevisions({ onNavigate }) {
     setRevisionLoading((prev) => ({ ...prev, [quotationId]: true }));
     try {
       const revisions = await fetchQuotationRevisions(quotationId);
-      setRevisionsCache((prev) => ({ ...prev, [quotationId]: revisions || [] }));
+      setRevisionsCache((prev) => ({
+        ...prev,
+        [quotationId]: revisions || [],
+      }));
     } catch (err) {
       console.error(err);
       setRevisionsCache((prev) => ({ ...prev, [quotationId]: [] }));
@@ -104,7 +145,12 @@ export default function AllQuotationRevisions({ onNavigate }) {
       sortable: true,
       minWidth: 220,
     },
-    { key: "quotationNo", label: "Quotation No.", sortable: true, minWidth: 180 },
+    {
+      key: "quotationNo",
+      label: "Quotation No.",
+      sortable: true,
+      minWidth: 180,
+    },
     {
       key: "date",
       label: "Date",
@@ -199,9 +245,7 @@ export default function AllQuotationRevisions({ onNavigate }) {
           mb: 2,
         }}
       >
-        <Typography className="page-heading page-heading__text" component="h1">
-          All Quotation Revisions
-        </Typography>
+        <h1 className="page-heading page-heading__text">All Quotation Revisions</h1>
       </Box>
 
       {error && (
@@ -238,7 +282,9 @@ export default function AllQuotationRevisions({ onNavigate }) {
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
               <Typography variant="h6" sx={{ fontSize: 16, flexGrow: 1 }}>
-                Revision History for Quotation {quotations.find((q) => q.quotationId === expandedQuotationId)?.quotationNo || ""}
+                Revision History for Quotation{" "}
+                {quotations.find((q) => q.quotationId === expandedQuotationId)
+                  ?.quotationNo || ""}
               </Typography>
               <Tooltip title="Close">
                 <IconButton
@@ -279,7 +325,8 @@ export default function AllQuotationRevisions({ onNavigate }) {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {((revisionsCache[expandedQuotationId] || []).length === 0 ? (
+                    {(revisionsCache[expandedQuotationId] || []).length ===
+                    0 ? (
                       <TableRow>
                         <TableCell
                           colSpan={revisionColumns.length}
@@ -289,27 +336,29 @@ export default function AllQuotationRevisions({ onNavigate }) {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      (revisionsCache[expandedQuotationId] || []).map((rev, idx) => (
-                        <TableRow key={`${rev.id ?? ""}-${idx}`}>
-                          {revisionColumns.map((col) => (
-                            <TableCell
-                              key={col.key}
-                              sx={{
-                                padding: "5px 10px",
-                                fontSize: 13,
-                                borderRight: "1px solid #eee",
-                                whiteSpace: "nowrap",
-                                minWidth: col.minWidth,
-                              }}
-                            >
-                              {col.render
-                                ? col.render({ row: rev, index: idx })
-                                : rev[col.key] ?? ""}
-                            </TableCell>
-                          ))}
-                        </TableRow>
-                      ))
-                    ))}
+                      (revisionsCache[expandedQuotationId] || []).map(
+                        (rev, idx) => (
+                          <TableRow key={`${rev.id ?? ""}-${idx}`}>
+                            {revisionColumns.map((col) => (
+                              <TableCell
+                                key={col.key}
+                                sx={{
+                                  padding: "5px 10px",
+                                  fontSize: 13,
+                                  borderRight: "1px solid #eee",
+                                  whiteSpace: "nowrap",
+                                  minWidth: col.minWidth,
+                                }}
+                              >
+                                {col.render
+                                  ? col.render({ row: rev, index: idx })
+                                  : (rev[col.key] ?? "")}
+                              </TableCell>
+                            ))}
+                          </TableRow>
+                        ),
+                      )
+                    )}
                   </TableBody>
                 </Table>
               </TableContainer>

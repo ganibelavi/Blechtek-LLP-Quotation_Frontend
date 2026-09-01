@@ -10,6 +10,11 @@ import ModulesPage from "./pages/ModulesPage";
 import EditQuotation from "./pages/EditQuotation";
 import QuotationHistory from "./pages/QuotationHistory";
 import AllQuotationRevisions from "./pages/AllQuotationRevisions";
+import PurchaseOrder from "./pages/PurchaseOrder/PurchaseOrder";
+import PurchaseOrderEntryForm from "./pages/PurchaseOrder/PurchaseOrderEntryForm";
+import CreatedPurchaseOrders from "./pages/PurchaseOrder/CreatedPurchaseOrders";
+import InvoiceEntryForm from "./pages/Inovice/InvoiceEntryForm";
+import GSTInvoice from "./pages/Inovice/GSTInvoice";
 import { useAuth } from "./context/AuthContext";
 import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
@@ -23,6 +28,29 @@ export default function App() {
   const [editQuotationId, setEditQuotationId] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
+  const getPurchaseOrderInitialData = () => {
+    try {
+      const stored = sessionStorage.getItem("purchaseOrderData");
+      return stored ? JSON.parse(stored) : undefined;
+    } catch (error) {
+      console.error(
+        "Failed to read purchase order data from session storage",
+        error,
+      );
+      return undefined;
+    }
+  };
+
+  const getInvoiceInitialData = () => {
+    try {
+      const stored = sessionStorage.getItem("invoiceData");
+      return stored ? JSON.parse(stored) : undefined;
+    } catch (error) {
+      console.error("Failed to read invoice data from session storage", error);
+      return undefined;
+    }
+  };
+
   useEffect(() => {
     if (user) {
       setView("dashboard");
@@ -35,25 +63,37 @@ export default function App() {
     setView(newView);
   };
 
-  const pageTitle = {
-    dashboard: "Dashboard",
-    create: "Create quotation",
-    "created-quotations": "Quotations",
-    "edit-quotation": "Edit quotation",
-    "quotation-history": "Quotation revision history",
-    "all-revisions": "All Quotation Revisions",
-    users: "Users",
-    modules: "Modules",
-    settings: "Settings",
-    "quotation-detail": "Quotation details",
-    quotation: "Quotation preview",
-  }[view] || "Dashboard";
+  const pageTitle =
+    {
+      dashboard: "Dashboard",
+      create: "Create quotation",
+      "created-quotations": "Quotations",
+      "edit-quotation": "Edit quotation",
+      "quotation-history": "Quotation revision history",
+      "all-revisions": "All Quotation Revisions",
+      "purchase-order": "Purchase Order",
+      "purchase-order-entry": "Purchase Order Entry",
+      "created-purchase-orders": "Purchase Orders",
+      users: "Users",
+      modules: "Modules",
+      settings: "Settings",
+      "quotation-detail": "Quotation details",
+      quotation: "Quotation preview",
+      // "invoice-entry": "GST Invoice Entry",
+      invoice: "GST Invoice",
+    }[view] || "";
 
   const menuItems = [
     { label: "Dashboard", icon: "dashboard.png", view: "dashboard" },
     { label: "Create quotation", icon: "add-button.png", view: "create" },
     { label: "Quotations", icon: "clipboard.png", view: "created-quotations" },
+    {
+      label: "Purchase Orders",
+      icon: "clipboard.png",
+      view: "created-purchase-orders",
+    },
     { label: "Revision History", icon: "audit.png", view: "all-revisions" },
+    { label: "GST Invoice", icon: "calculator.png", view: "invoice-entry" },
     { label: "Users", icon: "users.png", view: "users" },
     { label: "Modules", icon: "processes.png", view: "modules" },
   ];
@@ -67,7 +107,9 @@ export default function App() {
             alt="BlechTek Software Solutions LLP"
             className="app-topbar__logo"
           />
-          {user && <span className="app-topbar__page-title">Quotation Management</span>}
+          {user && (
+            <span className="app-topbar__page-title">Quotation Management</span>
+          )}
         </div>
         <div className="app-topbar__actions">
           {user && (
@@ -81,9 +123,7 @@ export default function App() {
                 }}
               >
                 <div style={{ textAlign: "right", lineHeight: 1 }}>
-                  <div
-                    style={{color: "#1e293b" }}
-                  >
+                  <div style={{ color: "#1e293b" }}>
                     {user?.name ||
                       user?.firstName ||
                       (user?.email ? user.email.split("@")[0] : "")}
@@ -160,13 +200,17 @@ export default function App() {
           <LoginPage />
         </main>
       ) : (
-        <div className={`app-body ${sidebarCollapsed ? "app-body--collapsed" : ""}`}>
+        <div
+          className={`app-body ${sidebarCollapsed ? "app-body--collapsed" : ""}`}
+        >
           <aside className="app-sidebar" aria-label="Primary navigation">
             <div className="app-sidebar__header">
               <IconButton
                 className="app-sidebar__toggle"
                 onClick={() => setSidebarCollapsed((collapsed) => !collapsed)}
-                aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                aria-label={
+                  sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"
+                }
               >
                 <img src="/logo/sidebar.png" alt="" aria-hidden="true" />
               </IconButton>
@@ -174,14 +218,22 @@ export default function App() {
             <div className="app-sidebar__heading">Workspace</div>
             <nav className="app-sidebar__nav">
               {menuItems.map((item) => {
-const activeView =
+                const activeView =
                   item.view === "created-quotations"
-                    ? ["created-quotations", "quotation-detail", "edit-quotation", "quotation", "quotation-history"].includes(view)
+                    ? [
+                        "created-quotations",
+                        "quotation-detail",
+                        "edit-quotation",
+                        "quotation",
+                        "quotation-history",
+                      ].includes(view)
                     : item.view === "all-revisions"
-                    ? view === "all-revisions"
-                    : item.view === "settings"
-                    ? ["settings", "users", "modules"].includes(view)
-                    : view === item.view;
+                      ? view === "all-revisions"
+                      : item.view === "settings"
+                        ? ["settings", "users", "modules"].includes(view)
+                        : item.view === "invoice-entry"
+                          ? ["invoice-entry", "invoice"].includes(view)
+                          : view === item.view;
                 return (
                   <button
                     type="button"
@@ -190,7 +242,11 @@ const activeView =
                     onClick={() => navigate(item.view)}
                   >
                     <span className="app-sidebar__icon">
-                      <img src={`/logo/${item.icon}`} alt="" aria-hidden="true" />
+                      <img
+                        src={`/logo/${item.icon}`}
+                        alt=""
+                        aria-hidden="true"
+                      />
                     </span>
                     <span className="app-sidebar__label">{item.label}</span>
                   </button>
@@ -199,7 +255,22 @@ const activeView =
             </nav>
           </aside>
           <main className="app-main">
-            {!["create", "created-quotations", "users", "modules", "settings", "edit-quotation", "quotation", "quotation-detail", "quotation-history", "all-revisions"].includes(view) && (
+            {![
+              "create",
+              "created-quotations",
+              "users",
+              "modules",
+              "settings",
+              "edit-quotation",
+              "quotation",
+              "quotation-detail",
+              "quotation-history",
+              "all-revisions",
+              "purchase-order",
+              "purchase-order-entry",
+              "created-purchase-orders",
+              "invoice",
+            ].includes(view) && (
               <div className="app-section-title">
                 <h1>{pageTitle}</h1>
                 <span aria-hidden="true" />
@@ -210,23 +281,60 @@ const activeView =
                 case "dashboard":
                   return <DashboardPage onNavigate={navigate} />;
                 case "settings":
-                  return <SettingsPage onNavigate={navigate} initialTab={settingsInitialTab} />;
+                  return (
+                    <SettingsPage
+                      onNavigate={navigate}
+                      initialTab={settingsInitialTab}
+                    />
+                  );
                 case "quotation-detail":
                   return <CreateQuotation onNavigate={navigate} readOnly />;
                 case "users":
                   return <UsersPage onNavigate={navigate} initialTab="users" />;
                 case "modules":
-                  return <ModulesPage onNavigate={navigate} initialTab="modules" />;
+                  return (
+                    <ModulesPage onNavigate={navigate} initialTab="modules" />
+                  );
                 case "all-revisions":
                   return <AllQuotationRevisions onNavigate={navigate} />;
                 case "created-quotations":
                   return <CreatedQuotation onNavigate={navigate} />;
                 case "edit-quotation":
-                  return <EditQuotation onNavigate={navigate} quotationId={editQuotationId} />;
+                  return (
+                    <EditQuotation
+                      onNavigate={navigate}
+                      quotationId={editQuotationId}
+                    />
+                  );
                 case "quotation-history":
-                  return <QuotationHistory onNavigate={navigate} quotationId={editQuotationId} />;
+                  return (
+                    <QuotationHistory
+                      onNavigate={navigate}
+                      quotationId={editQuotationId}
+                    />
+                  );
                 case "quotation":
-                  return <QuotationPdfView onBack={() => navigate("settings", "created-quotations")} />;
+                  return (
+                    <QuotationPdfView
+                      onBack={() => navigate("settings", "created-quotations")}
+                    />
+                  );
+                case "purchase-order-entry":
+                  return <PurchaseOrderEntryForm onNavigate={navigate} />;
+                case "created-purchase-orders":
+                  return <CreatedPurchaseOrders onNavigate={navigate} />;
+                case "purchase-order":
+                  return (
+                    <PurchaseOrder
+                      initialData={getPurchaseOrderInitialData()}
+                      onConvertToInvoice={() => navigate("invoice-entry")}
+                      onBackToQuotation={() => navigate("created-quotations")}
+                    />
+                  );
+                case "invoice-entry":
+                  return <InvoiceEntryForm onNavigate={navigate} />;
+                case "invoice":
+                  return <GSTInvoice initialData={getInvoiceInitialData()} />;
                 case "create":
                 default:
                   return <CreateQuotation onNavigate={navigate} />;

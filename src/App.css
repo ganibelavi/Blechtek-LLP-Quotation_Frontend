@@ -88,6 +88,52 @@
   color: #81d4fa;
 }
 
+.app-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-transform: none;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.app-action-btn svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.app-action-btn--primary {
+  background: var(--primary-gradient);
+  color: #fff;
+  box-shadow: 0 2px 4px rgba(48, 138, 234, 0.3);
+}
+
+.app-action-btn--primary:hover {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(48, 138, 234, 0.35);
+}
+
+.app-action-btn--secondary {
+  background: #757575;
+  color: #fff;
+  box-shadow: 0 2px 4px rgba(117, 117, 117, 0.25);
+}
+
+.app-action-btn--secondary:hover {
+  background: #616161;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(117, 117, 117, 0.35);
+}
+
 .app-main {
   flex: 1;
   min-width: 0;
@@ -233,8 +279,8 @@
 .app-section-title {
   position: relative;
   width: fit-content;
-  margin: 0 0 20px;
-  padding-bottom: 12px;
+  /* margin: 0 0 20px; */
+  /* padding-bottom: 12px; */
 }
 
 .app-section-title h1 {
@@ -257,8 +303,10 @@
 
 .page-heading {
   position: relative;
+  display: inline-block;
   width: fit-content;
   padding-bottom: 10px;
+  margin: 0;
 }
 
 .page-heading::after {
@@ -280,6 +328,11 @@
   font-weight: 600;
   line-height: 1.2;
   color: #000;
+}
+
+.create-quotation__title h2.page-heading,
+.create-quotation__title h2.page-heading__text {
+  margin-bottom: 0;
 }
 
 @keyframes title-shimmer {

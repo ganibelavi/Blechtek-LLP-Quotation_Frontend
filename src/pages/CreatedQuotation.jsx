@@ -12,6 +12,7 @@ import {
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import EditIcon from "@mui/icons-material/Edit";
 import HistoryIcon from "@mui/icons-material/History";
+import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 
 const resolveApiBaseUrl = () => {
   const envUrl = process.env.REACT_APP_API_BASE_URL?.trim();
@@ -149,6 +150,21 @@ export default function CreatedQuotation({ onNavigate }) {
     onNavigate("edit-quotation", quotation.quotationId);
   };
 
+  const handleOpenPurchaseOrder = (quotation) => {
+    sessionStorage.setItem(
+      "selectedQuotationForPo",
+      JSON.stringify({
+        quotationNo: quotation.quotationNo || "",
+        date: quotation.date || "",
+        organizationName: quotation.organizationName || "",
+        quotationToName: quotation.quotationToName || "",
+        quotationToAddress: quotation.quotationToAddress || "",
+        modules: quotation.modules || [],
+      }),
+    );
+    onNavigate("purchase-order-entry");
+  };
+
   const handleNewQuotation = () => {
     onNavigate("create");
   };
@@ -237,7 +253,18 @@ export default function CreatedQuotation({ onNavigate }) {
               <VisibilityIcon fontSize="small" color="primary" />
             </IconButton>
           </Tooltip>
-          <Tooltip title="Revision History">
+          <Tooltip title="Create Purchase Order">
+           <IconButton
+             size="small"
+             onClick={(e) => {
+               e.stopPropagation();
+               handleOpenPurchaseOrder(row.originalData);
+             }}
+           >
+             <ReceiptLongIcon fontSize="small" color="success" />
+           </IconButton>
+          </Tooltip>
+          {/* <Tooltip title="Revision History">
             <IconButton
               size="small"
               onClick={(e) => {
@@ -247,7 +274,7 @@ export default function CreatedQuotation({ onNavigate }) {
             >
               <HistoryIcon fontSize="small" color="secondary" />
             </IconButton>
-          </Tooltip>
+          </Tooltip> */}
           <Tooltip title="Download PDF">
             <span>
               <IconButton
@@ -276,9 +303,7 @@ export default function CreatedQuotation({ onNavigate }) {
           mb: 2,
         }}
       >
-        <Typography className="page-heading page-heading__text" component="h1">
-          Quotations
-        </Typography>
+        <h1 className="page-heading page-heading__text">Quotations</h1>
         <Button
           variant="contained"
           startIcon={<img src="/logo/add.png" alt="Add" style={{ width: 20, height: 20 }} />}

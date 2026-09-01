@@ -1,0 +1,405 @@
+import React, { useMemo, useState } from "react";
+
+const emptyItem = () => ({
+  id: Date.now() + Math.random(),
+  description: "",
+  qty: 1,
+  uom: "Nos.",
+  rate: 0,
+});
+
+const defaultForm = () => {
+  const po = (() => {
+    try {
+      return JSON.parse(sessionStorage.getItem("purchaseOrderData") || "null");
+    } catch (error) {
+      console.error("Failed to read purchase order info", error);
+      return null;
+    }
+  })();
+
+  const poDetails = po?.po || {};
+  const itemRows = Array.isArray(po?.items) && po.items.length
+    ? po.items.map((item) => ({
+        id: Date.now() + Math.random() + Math.floor(Math.random() * 1000),
+        description: item.description || "",
+        qty: Number(item.qty) || 1,
+        uom: item.uom || "Nos.",
+        rate: Number(item.rate) || 0,
+      }))
+    : [emptyItem()];
+
+  return {
+    originalFor: "ORIGINAL FOR RECIPIENT",
+    companyName: poDetails.companyName || "Your Company Name",
+    invoiceNo: "",
+    dateOfIssue: new Date().toISOString().slice(0, 10),
+    timeOfIssue: "",
+    placeOfService: "",
+    supplierName: poDetails.supplierName || "",
+    supplierAddress: poDetails.supplierAddress || "",
+    supplierState: poDetails.supplierState || "",
+    supplierStateCode: poDetails.supplierStateCode || "",
+    supplierGSTN: poDetails.supplierGSTN || "",
+    bankName: "",
+    accountNo: "",
+    accountType: "Current",
+    ifsc: "",
+    msmeNo: "",
+    receiverName: poDetails.buyerName || "",
+    receiverAddress: poDetails.buyerAddress || "",
+    receiverState: poDetails.buyerState || "",
+    receiverStateCode: poDetails.buyerStateCode || "",
+    receiverGSTN: poDetails.buyerGSTN || "",
+    consigneeName: poDetails.buyerName || "",
+    consigneeAddress: poDetails.buyerAddress || "",
+    consigneeState: poDetails.buyerState || "",
+    consigneeStateCode: poDetails.buyerStateCode || "",
+    consigneeGSTN: poDetails.buyerGSTN || "",
+    poNoDate: poDetails.poNo ? `PO No. ${poDetails.poNo} / ${poDetails.poDate || ""}` : "",
+    hsnCode: "",
+    sacCode: "",
+    reverseCharge: "No",
+    amountInWords: "",
+    termsOfSale: "",
+    sgstPct: 9,
+    cgstPct: 9,
+    igstPct: 0,
+    tdsPct: 0,
+    insurance: 0,
+    items: itemRows,
+  };
+};
+
+export default function InvoiceEntryForm({ onNavigate }) {
+  const [form, setForm] = useState(defaultForm);
+
+  const totals = useMemo(() => {
+    const totalQty = form.items.reduce((sum, item) => sum + (Number(item.qty) || 0), 0);
+    const totalPrice = form.items.reduce(
+      (sum, item) => sum + (Number(item.qty) || 0) * (Number(item.rate) || 0),
+      0,
+    );
+    const sgst = (totalPrice * (Number(form.sgstPct) || 0)) / 100;
+    const cgst = (totalPrice * (Number(form.cgstPct) || 0)) / 100;
+    const igst = (totalPrice * (Number(form.igstPct) || 0)) / 100;
+    const subtotal = totalPrice + sgst + cgst + igst;
+    const tds = (subtotal * (Number(form.tdsPct) || 0)) / 100;
+    const insurance = Number(form.insurance) || 0;
+    const grandTotal = subtotal - tds + insurance;
+
+    return { totalQty, totalPrice, sgst, cgst, igst, subtotal, tds, insurance, grandTotal };
+  }, [form]);
+
+  const updateField = (field, value) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const updateItem = (id, field, value) => {
+    setForm((prev) => ({
+      ...prev,
+      items: prev.items.map((row) => (row.id === id ? { ...row, [field]: value } : row)),
+    }));
+  };
+
+  const addRow = () => {
+    setForm((prev) => ({ ...prev, items: [...prev.items, emptyItem()] }));
+  };
+
+  const removeRow = (id) => {
+    setForm((prev) => ({
+      ...prev,
+      items: prev.items.length > 1 ? prev.items.filter((row) => row.id !== id) : prev.items,
+    }));
+  };
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+
+    const payload = {
+      invoice: {
+        originalFor: form.originalFor,
+        companyName: form.companyName,
+        invoiceNo: form.invoiceNo,
+        dateOfIssue: form.dateOfIssue,
+        timeOfIssue: form.timeOfIssue,
+        placeOfService: form.placeOfService,
+        supplierName: form.supplierName,
+        supplierAddress: form.supplierAddress,
+        supplierState: form.supplierState,
+        supplierStateCode: form.supplierStateCode,
+        supplierGSTN: form.supplierGSTN,
+        bankName: form.bankName,
+        accountNo: form.accountNo,
+        accountType: form.accountType,
+        ifsc: form.ifsc,
+        msmeNo: form.msmeNo,
+        receiverName: form.receiverName,
+        receiverAddress: form.receiverAddress,
+        receiverState: form.receiverState,
+        receiverStateCode: form.receiverStateCode,
+        receiverGSTN: form.receiverGSTN,
+        consigneeName: form.consigneeName,
+        consigneeAddress: form.consigneeAddress,
+        consigneeState: form.consigneeState,
+        consigneeStateCode: form.consigneeStateCode,
+        consigneeGSTN: form.consigneeGSTN,
+        poNoDate: form.poNoDate,
+        hsnCode: form.hsnCode,
+        sacCode: form.sacCode,
+        reverseCharge: form.reverseCharge,
+        amountInWords: form.amountInWords,
+        termsOfSale: form.termsOfSale,
+        sgstPct: form.sgstPct,
+        cgstPct: form.cgstPct,
+        igstPct: form.igstPct,
+        tdsPct: form.tdsPct,
+        insurance: form.insurance,
+      },
+      items: form.items,
+      totals,
+    };
+
+    try {
+      const existing = JSON.parse(sessionStorage.getItem("invoices") || "[]");
+      const next = [payload, ...existing.filter((item) => item.invoice?.invoiceNo !== payload.invoice.invoiceNo)];
+      sessionStorage.setItem("invoices", JSON.stringify(next));
+    } catch (error) {
+      console.error("Failed to save invoice list", error);
+    }
+
+    sessionStorage.setItem("invoiceData", JSON.stringify(payload));
+    onNavigate("invoice");
+  };
+
+  return (
+    <div style={{ maxWidth: 1280, margin: "0 auto"}}>
+      <form onSubmit={handleSubmit}>
+        <div className="app-section-title" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", marginBottom: 18, paddingBottom: 12, gap: 16 }}>
+          <div style={{ position: "relative", display: "inline-block" }}>
+            <h1 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 600, color: "#000" }}>GST Invoice Entry</h1>
+            <span aria-hidden="true" />
+          </div>
+          <div style={{ display: "flex", gap: 12, alignItems: "center", flexShrink: 0 }}>
+            <button
+              type="button"
+              className="app-action-btn app-action-btn--secondary"
+              onClick={() => onNavigate("purchase-order")}
+              aria-label="Back to Purchase Order"
+              title="Back to Purchase Order"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M19 12H5M12 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <button type="submit" className="app-action-btn app-action-btn--primary">
+              Save & Open Invoice
+            </button>
+          </div>
+        </div>
+
+        <div style={{ background: "#fff", borderRadius: 12, padding: 20, boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 }}>
+            <label>
+              <div style={{ fontWeight: 600, marginBottom: 6 }}>Company Name</div>
+              <input value={form.companyName} onChange={(e) => updateField("companyName", e.target.value)} style={inputStyle} />
+            </label>
+            <label>
+              <div style={{ fontWeight: 600, marginBottom: 6 }}>Invoice No.</div>
+              <input value={form.invoiceNo} onChange={(e) => updateField("invoiceNo", e.target.value)} style={inputStyle} />
+            </label>
+            <label>
+              <div style={{ fontWeight: 600, marginBottom: 6 }}>Date of Issue</div>
+              <input type="date" value={form.dateOfIssue} onChange={(e) => updateField("dateOfIssue", e.target.value)} style={inputStyle} />
+            </label>
+            <label>
+              <div style={{ fontWeight: 600, marginBottom: 6 }}>Time of Issue</div>
+              <input value={form.timeOfIssue} onChange={(e) => updateField("timeOfIssue", e.target.value)} style={inputStyle} />
+            </label>
+            <label>
+              <div style={{ fontWeight: 600, marginBottom: 6 }}>Place of Service</div>
+              <input value={form.placeOfService} onChange={(e) => updateField("placeOfService", e.target.value)} style={inputStyle} />
+            </label>
+            <label>
+              <div style={{ fontWeight: 600, marginBottom: 6 }}>PO No. / Date</div>
+              <input value={form.poNoDate} onChange={(e) => updateField("poNoDate", e.target.value)} style={inputStyle} />
+            </label>
+          </div>
+
+          <div style={{ marginTop: 24, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 }}>
+            <div style={sectionStyle}>
+              <h3 style={sectionTitleStyle}>Supplier Details</h3>
+              <label>Name<input value={form.supplierName} onChange={(e) => updateField("supplierName", e.target.value)} style={inputStyle} /></label>
+              <label>Address<input value={form.supplierAddress} onChange={(e) => updateField("supplierAddress", e.target.value)} style={inputStyle} /></label>
+              <label>State<input value={form.supplierState} onChange={(e) => updateField("supplierState", e.target.value)} style={inputStyle} /></label>
+              <label>State Code<input value={form.supplierStateCode} onChange={(e) => updateField("supplierStateCode", e.target.value)} style={inputStyle} /></label>
+              <label>GSTN No.<input value={form.supplierGSTN} onChange={(e) => updateField("supplierGSTN", e.target.value)} style={inputStyle} /></label>
+            </div>
+
+            <div style={sectionStyle}>
+              <h3 style={sectionTitleStyle}>Receiver / Consignee</h3>
+              <label>Name<input value={form.receiverName} onChange={(e) => updateField("receiverName", e.target.value)} style={inputStyle} /></label>
+              <label>Address<input value={form.receiverAddress} onChange={(e) => updateField("receiverAddress", e.target.value)} style={inputStyle} /></label>
+              <label>State<input value={form.receiverState} onChange={(e) => updateField("receiverState", e.target.value)} style={inputStyle} /></label>
+              <label>State Code<input value={form.receiverStateCode} onChange={(e) => updateField("receiverStateCode", e.target.value)} style={inputStyle} /></label>
+              <label>GSTN No.<input value={form.receiverGSTN} onChange={(e) => updateField("receiverGSTN", e.target.value)} style={inputStyle} /></label>
+            </div>
+          </div>
+
+          <div style={{ marginTop: 24, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 }}>
+            <label>
+              <div style={{ fontWeight: 600, marginBottom: 6 }}>Bank Name / Branch</div>
+              <input value={form.bankName} onChange={(e) => updateField("bankName", e.target.value)} style={inputStyle} />
+            </label>
+            <label>
+              <div style={{ fontWeight: 600, marginBottom: 6 }}>Account No.</div>
+              <input value={form.accountNo} onChange={(e) => updateField("accountNo", e.target.value)} style={inputStyle} />
+            </label>
+            <label>
+              <div style={{ fontWeight: 600, marginBottom: 6 }}>Account Type</div>
+              <input value={form.accountType} onChange={(e) => updateField("accountType", e.target.value)} style={inputStyle} />
+            </label>
+            <label>
+              <div style={{ fontWeight: 600, marginBottom: 6 }}>IFSC</div>
+              <input value={form.ifsc} onChange={(e) => updateField("ifsc", e.target.value)} style={inputStyle} />
+            </label>
+            <label>
+              <div style={{ fontWeight: 600, marginBottom: 6 }}>MSME No.</div>
+              <input value={form.msmeNo} onChange={(e) => updateField("msmeNo", e.target.value)} style={inputStyle} />
+            </label>
+          </div>
+
+          <div style={{ marginTop: 24 }}>
+            <h3 style={sectionTitleStyle}>Items</h3>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", border: "1px solid #e5e7eb" }}>
+                <thead>
+                  <tr style={{ background: "#f8fafc" }}>
+                    <th style={tdStyle}>Description</th>
+                    <th style={tdStyle}>Qty</th>
+                    <th style={tdStyle}>UOM</th>
+                    <th style={tdStyle}>Rate</th>
+                    <th style={tdStyle}>Amount</th>
+                    <th style={tdStyle}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {form.items.map((item) => (
+                    <tr key={item.id}>
+                      <td style={tdStyle}><input value={item.description} onChange={(e) => updateItem(item.id, "description", e.target.value)} style={inputStyle} /></td>
+                      <td style={tdStyle}><input type="number" min="0" step="0.01" value={item.qty} onChange={(e) => updateItem(item.id, "qty", Number(e.target.value) || 0)} style={inputStyle} /></td>
+                      <td style={tdStyle}><input value={item.uom} onChange={(e) => updateItem(item.id, "uom", e.target.value)} style={inputStyle} /></td>
+                      <td style={tdStyle}><input type="number" min="0" step="0.01" value={item.rate} onChange={(e) => updateItem(item.id, "rate", Number(e.target.value) || 0)} style={inputStyle} /></td>
+                      <td style={tdStyle}>₹{((Number(item.qty) || 0) * (Number(item.rate) || 0)).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                      <td style={tdStyle}>
+                        <button type="button" onClick={() => removeRow(item.id)} disabled={form.items.length === 1} style={{ ...smallButton, opacity: form.items.length === 1 ? 0.5 : 1 }}>
+                          Remove
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div style={{ marginTop: 12 }}>
+              <button type="button" className="gi-btn" onClick={addRow}>+ Add item row</button>
+            </div>
+          </div>
+
+          <div style={{ marginTop: 24, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 }}>
+            <label>
+              <div style={{ fontWeight: 600, marginBottom: 6 }}>HSN Code</div>
+              <input value={form.hsnCode} onChange={(e) => updateField("hsnCode", e.target.value)} style={inputStyle} />
+            </label>
+            <label>
+              <div style={{ fontWeight: 600, marginBottom: 6 }}>SAC Code</div>
+              <input value={form.sacCode} onChange={(e) => updateField("sacCode", e.target.value)} style={inputStyle} />
+            </label>
+            <label>
+              <div style={{ fontWeight: 600, marginBottom: 6 }}>Reverse Charge</div>
+              <select value={form.reverseCharge} onChange={(e) => updateField("reverseCharge", e.target.value)} style={inputStyle}>
+                <option value="No">No</option>
+                <option value="Yes">Yes</option>
+              </select>
+            </label>
+            <label>
+              <div style={{ fontWeight: 600, marginBottom: 6 }}>SGST %</div>
+              <input type="number" step="0.01" value={form.sgstPct} onChange={(e) => updateField("sgstPct", Number(e.target.value) || 0)} style={inputStyle} />
+            </label>
+            <label>
+              <div style={{ fontWeight: 600, marginBottom: 6 }}>CGST %</div>
+              <input type="number" step="0.01" value={form.cgstPct} onChange={(e) => updateField("cgstPct", Number(e.target.value) || 0)} style={inputStyle} />
+            </label>
+            <label>
+              <div style={{ fontWeight: 600, marginBottom: 6 }}>IGST %</div>
+              <input type="number" step="0.01" value={form.igstPct} onChange={(e) => updateField("igstPct", Number(e.target.value) || 0)} style={inputStyle} />
+            </label>
+            <label>
+              <div style={{ fontWeight: 600, marginBottom: 6 }}>TDS %</div>
+              <input type="number" step="0.01" value={form.tdsPct} onChange={(e) => updateField("tdsPct", Number(e.target.value) || 0)} style={inputStyle} />
+            </label>
+            <label>
+              <div style={{ fontWeight: 600, marginBottom: 6 }}>Insurance</div>
+              <input type="number" step="0.01" value={form.insurance} onChange={(e) => updateField("insurance", Number(e.target.value) || 0)} style={inputStyle} />
+            </label>
+          </div>
+
+          <div style={{ marginTop: 24, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 }}>
+            <label>
+              <div style={{ fontWeight: 600, marginBottom: 6 }}>Terms of Sale</div>
+              <textarea value={form.termsOfSale} onChange={(e) => updateField("termsOfSale", e.target.value)} style={{ ...inputStyle, minHeight: 90, resize: "vertical" }} />
+            </label>
+            <label>
+              <div style={{ fontWeight: 600, marginBottom: 6 }}>Amount in Words</div>
+              <textarea value={form.amountInWords} onChange={(e) => updateField("amountInWords", e.target.value)} style={{ ...inputStyle, minHeight: 90, resize: "vertical" }} />
+            </label>
+          </div>
+
+          <div style={{ marginTop: 24, display: "flex", justifyContent: "flex-end", gap: 16, fontWeight: 700 }}>
+            <span>Total Qty: {totals.totalQty}</span>
+            <span>Grand Total: ₹{totals.grandTotal.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          </div>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+const inputStyle = {
+  width: "100%",
+  padding: "10px 12px",
+  borderRadius: 8,
+  border: "1px solid #d1d5db",
+  fontSize: 14,
+  outline: "none",
+  boxSizing: "border-box",
+};
+
+const sectionStyle = {
+  background: "#f8fafc",
+  border: "1px solid #e5e7eb",
+  borderRadius: 10,
+  padding: 16,
+  display: "grid",
+  gap: 10,
+};
+
+const sectionTitleStyle = {
+  margin: "0 0 8px",
+  fontSize: 18,
+};
+
+const tdStyle = {
+  border: "1px solid #e5e7eb",
+  padding: 8,
+  textAlign: "left",
+  verticalAlign: "top",
+};
+
+const smallButton = {
+  padding: "8px 10px",
+  borderRadius: 8,
+  border: "1px solid #d1d5db",
+  background: "#fff",
+  cursor: "pointer",
+};

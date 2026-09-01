@@ -83,9 +83,7 @@ export default function QuotationHistory({ quotationId, onNavigate }) {
           mb: 2,
         }}
       >
-        <Typography className="page-heading page-heading__text" component="h1">
-          Quotation Revision History
-        </Typography>
+        <h1 className="page-heading page-heading__text">Quotation Revision History</h1>
         <button
           className="create-quotation__back-btn"
           onClick={() => onNavigate("created-quotations")}

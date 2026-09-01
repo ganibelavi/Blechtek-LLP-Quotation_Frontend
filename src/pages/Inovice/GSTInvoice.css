@@ -1,0 +1,387 @@
+:root {
+  --ink: #1a1d24;
+  --rule: #b9bdc6;
+  --rule-strong: #1a1d24;
+  --accent: #16406b;
+  --paper: #ffffff;
+  --wash: #f4f6f8;
+  --font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-num: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.gi-page {
+  min-height: 100vh;
+  background: var(--wash);
+  padding: 32px 16px 64px;
+  font-family: var(--font-body);
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.gi-toolbar {
+  width: 100%;
+  max-width: 940px;
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.gi-btn {
+  border: 0;
+  background: #757575;
+  color: #fff;
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  letter-spacing: 0.01em;
+  box-shadow: 0 2px 4px rgba(117, 117, 117, 0.25);
+  transition: all 0.2s ease;
+}
+
+.gi-btn:hover {
+  transform: translateY(-1px);
+}
+
+.gi-btn-secondary {
+  background: #757575;
+  border-color: #757575;
+  color: #fff;
+}
+
+.gi-btn-secondary:hover {
+  background: #616161;
+  box-shadow: 0 4px 8px rgba(117, 117, 117, 0.35);
+}
+
+.gi-btn-primary {
+  background: var(--primary-gradient);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 2px 4px rgba(48, 138, 234, 0.3);
+}
+
+.gi-btn-primary:hover {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(48, 138, 234, 0.35);
+}
+
+.gi-sheet {
+  width: 100%;
+  max-width: 940px;
+  background: var(--paper);
+  border: 1px solid var(--rule-strong);
+  padding: 28px 32px 24px;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+input {
+  font: inherit;
+  color: inherit;
+  border: none;
+  border-bottom: 1px solid var(--rule);
+  background: transparent;
+  padding: 2px 3px;
+  width: 100%;
+  min-width: 0;
+}
+
+input:focus {
+  outline: none;
+  border-bottom: 1.5px solid var(--accent);
+  background: #fafcff;
+}
+
+input[type="number"] {
+  text-align: right;
+}
+
+/* Header */
+.gi-header {
+  display: grid;
+  grid-template-columns: 64px 1fr auto;
+  align-items: center;
+  gap: 16px;
+  border-bottom: 2px solid var(--rule-strong);
+  padding-bottom: 14px;
+  margin-bottom: 12px;
+}
+
+.gi-logo {
+  width: 64px;
+  height: 64px;
+  border: 1px dashed var(--rule);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: #8a8f99;
+  letter-spacing: 0.08em;
+}
+
+.gi-company-name {
+  font-size: 22px;
+  font-weight: 700;
+  border-bottom: none;
+  padding: 0;
+}
+
+.gi-original-tag {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  border: 1px solid var(--rule-strong);
+  padding: 5px 10px;
+  white-space: nowrap;
+  color: var(--accent);
+}
+
+/* Meta rows */
+.gi-row.gi-meta {
+  display: flex;
+  gap: 24px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.gi-cell {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex: 1;
+}
+
+.gi-label {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #444a55;
+}
+
+/* Two-column blocks */
+.gi-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.gi-block {
+  padding: 12px 16px;
+}
+
+.gi-block:first-child {
+  border-right: 1px solid var(--rule);
+}
+
+.gi-block-title {
+  font-weight: 700;
+  font-size: 12px;
+  margin-bottom: 8px;
+  color: var(--accent);
+}
+
+.gi-field {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.gi-field-stack {
+  align-items: flex-start;
+}
+
+.gi-inline-small {
+  max-width: 90px;
+  flex: none;
+}
+
+/* Items table */
+.gi-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 14px;
+  font-size: 12px;
+}
+
+.gi-table th,
+.gi-table td {
+  border: 1px solid var(--rule);
+  padding: 6px 8px;
+  vertical-align: middle;
+}
+
+.gi-table thead th {
+  background: var(--wash);
+  font-weight: 700;
+  text-align: left;
+  font-size: 11px;
+}
+
+.gi-col-sl {
+  width: 46px;
+  text-align: center;
+}
+
+.gi-col-qty {
+  width: 70px;
+}
+
+.gi-col-uom {
+  width: 70px;
+}
+
+.gi-col-rate {
+  width: 120px;
+}
+
+.gi-col-total {
+  width: 120px;
+}
+
+.gi-col-action {
+  width: 32px;
+}
+
+.gi-num {
+  font-family: var(--font-num);
+  text-align: right;
+}
+
+.gi-total-label {
+  font-weight: 700;
+  text-align: right;
+}
+
+.gi-remove {
+  border: none;
+  background: transparent;
+  color: #b3261e;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  padding: 2px;
+}
+
+/* Footer grid: declarations + totals */
+.gi-footer-grid {
+  border-top: none;
+}
+
+.gi-declaration {
+  font-size: 10.5px;
+  color: #555b66;
+  margin: 0 0 10px;
+}
+
+.gi-totals-block {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.gi-totals-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.gi-totals-table td {
+  padding: 5px 4px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.gi-totals-table td:first-child {
+  color: #444a55;
+}
+
+.gi-inline-pct {
+  display: inline-block;
+  width: 46px;
+  text-align: right;
+  padding: 0 2px;
+}
+
+.gi-subtotal-row td {
+  font-weight: 600;
+  border-top: 1px solid var(--rule-strong);
+}
+
+.gi-grand-total-row td {
+  font-weight: 700;
+  font-size: 14px;
+  border-top: 2px solid var(--rule-strong);
+  border-bottom: none;
+  padding-top: 8px;
+}
+
+/* Signatory */
+.gi-signatory {
+  margin-top: 40px;
+  text-align: right;
+  font-size: 12px;
+}
+
+.gi-signatory-space {
+  height: 46px;
+}
+
+.gi-signatory-line {
+  font-weight: 600;
+}
+
+/* Responsive */
+@media (max-width: 700px) {
+  .gi-grid-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .gi-block:first-child {
+    border-right: none;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .gi-row.gi-meta {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .gi-sheet {
+    padding: 18px;
+  }
+}
+
+/* Print */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .gi-page {
+    background: #fff;
+    padding: 0;
+  }
+
+  .gi-sheet {
+    border: none;
+    max-width: 100%;
+    padding: 0;
+  }
+
+  input {
+    border-bottom: none;
+  }
+
+  input:focus {
+    background: transparent;
+  }
+}

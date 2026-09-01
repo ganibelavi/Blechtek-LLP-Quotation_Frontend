@@ -272,9 +272,7 @@ export default function UsersPage() {
           mb: 2,
         }}
       >
-        <Typography className="page-heading page-heading__text" component="h1">
-          Users
-        </Typography>
+        <h1 className="page-heading page-heading__text">Users</h1>
         <Button
           variant="contained"
           startIcon={<img src="/logo/add.png" alt="Add" style={{ width: 20, height: 20 }} />}

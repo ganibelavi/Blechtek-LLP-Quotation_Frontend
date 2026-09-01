@@ -224,7 +224,9 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
     <div className={`create-quotation ${readOnly ? "create-quotation--readonly" : ""}`}>
       <div className="create-quotation__header">
         <div className="create-quotation__title">
-          <h2>{readOnly ? "View quotation" : "New quotation"}</h2>
+          <h2 className="page-heading page-heading__text">
+            {readOnly ? "View Quotation" : "New Quotation"}
+          </h2>
           <p>
             {readOnly
               ? "Review the quotation details and selected modules."
