@@ -10,27 +10,18 @@ import {
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import EntityTable from "../../components/EntityTable";
-
-const readStoredInvoices = () => {
-  try {
-    const raw = sessionStorage.getItem("invoices");
-    return raw ? JSON.parse(raw) : [];
-  } catch (error) {
-    console.error("Failed to read saved invoices", error);
-    return [];
-  }
-};
+import { fetchInvoices, deleteInvoice as deleteInvoiceApi } from "../../services/quotationApi";
 
 export default function CreatedInvoices({ onNavigate }) {
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const loadInvoices = () => {
+  const loadInvoices = async () => {
     try {
       setLoading(true);
-      const rows = readStoredInvoices();
-      setInvoices(rows);
+      const rows = await fetchInvoices();
+      setInvoices(Array.isArray(rows) ? rows : []);
       setError(null);
     } catch (err) {
       setError("Unable to load saved invoices.");
@@ -45,16 +36,26 @@ export default function CreatedInvoices({ onNavigate }) {
   }, []);
 
   const openInvoice = (row) => {
-    sessionStorage.setItem("invoiceData", JSON.stringify(row.data || row));
+    const invoiceData = row.data || row;
+    const normalizedData = invoiceData?.invoice
+      ? invoiceData
+      : {
+          invoice: invoiceData,
+          items: invoiceData?.items || [],
+          totals: invoiceData?.totals || { grandTotal: invoiceData?.totalAmount || 0 },
+          id: invoiceData?.id,
+          invoiceNo: invoiceData?.invoiceNo,
+        };
+
+    sessionStorage.setItem("invoiceData", JSON.stringify(normalizedData));
     sessionStorage.setItem("invoiceBackView", "created-invoices");
     onNavigate("invoice");
   };
 
-  const deleteInvoice = (id) => {
+  const deleteInvoice = async (id) => {
     try {
-      const next = readStoredInvoices().filter((invoice) => invoice.id !== id);
-      sessionStorage.setItem("invoices", JSON.stringify(next));
-      setInvoices(next);
+      await deleteInvoiceApi(id);
+      setInvoices((prev) => prev.filter((invoice) => invoice.id !== id));
     } catch (err) {
       setError("Unable to remove invoice.");
       console.error(err);

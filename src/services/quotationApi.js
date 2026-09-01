@@ -52,6 +52,21 @@ export async function fetchQuotationRevisions(quotationId) {
   return data;
 }
 
+export async function fetchQuotationById(quotationId) {
+  const { data } = await client.get(`/api/quotation/${quotationId}`);
+  return data || null;
+}
+
+export async function fetchPurchaseOrderById(purchaseOrderId) {
+  const { data } = await client.get(`/api/purchase-order/${purchaseOrderId}`);
+  return data;
+}
+
+export async function fetchInvoiceById(invoiceId) {
+  const { data } = await client.get(`/api/invoice/${invoiceId}`);
+  return data;
+}
+
 /**
  * GET /api/quotation/dashboard
  * returns: Dashboard analytics data
@@ -94,6 +109,34 @@ export async function updateQuotation(quotationId, payload) {
 export async function sendQuotationEmail(quotationId, payload) {
   const { data } = await client.post(`/api/quotation/${quotationId}/send-email`, payload);
   return data;
+}
+
+export async function createPurchaseOrder(payload) {
+  const { data } = await client.post("/api/purchase-order", payload);
+  return data;
+}
+
+export async function fetchPurchaseOrders() {
+  const { data } = await client.get("/api/purchase-order");
+  return data;
+}
+
+export async function deletePurchaseOrder(id) {
+  await client.delete(`/api/purchase-order/${id}`);
+}
+
+export async function createInvoice(payload) {
+  const { data } = await client.post("/api/invoice", payload);
+  return data;
+}
+
+export async function fetchInvoices() {
+  const { data } = await client.get("/api/invoice");
+  return data;
+}
+
+export async function deleteInvoice(id) {
+  await client.delete(`/api/invoice/${id}`);
 }
 
 /**

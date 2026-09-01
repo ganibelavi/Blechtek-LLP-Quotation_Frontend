@@ -1,25 +1,45 @@
 import React, { useEffect, useMemo, useState } from "react";
 import SearchDropdown from "../../components/SearchDropdown";
-import { fetchOrganizations } from "../../services/quotationApi";
+import {
+  createInvoice,
+  fetchOrganizations,
+  fetchPurchaseOrderById,
+  fetchQuotationById,
+  fetchQuotations,
+} from "../../services/quotationApi";
 
-const emptyItem = () => ({
+const readStoredPurchaseOrder = () => {
+  try {
+    const raw = sessionStorage.getItem("purchaseOrderData");
+    return raw ? JSON.parse(raw) : null;
+  } catch (error) {
+    console.error("Failed to read purchase order info", error);
+    return null;
+  }
+};
+
+const readStoredQuotation = () => {
+  try {
+    const raw = sessionStorage.getItem("selectedQuotationForPo");
+    return raw ? JSON.parse(raw) : null;
+  } catch (error) {
+    console.error("Failed to read selected quotation info", error);
+    return null;
+  }
+};
+
+const emptyItem = (description = "", isSourceData = false) => ({
   id: Date.now() + Math.random(),
-  description: "",
+  description,
   qty: 1,
   uom: "Nos.",
   rate: 0,
+  isSourceData,
 });
 
 const defaultForm = () => {
-  const po = (() => {
-    try {
-      return JSON.parse(sessionStorage.getItem("purchaseOrderData") || "null");
-    } catch (error) {
-      console.error("Failed to read purchase order info", error);
-      return null;
-    }
-  })();
-
+  const po = readStoredPurchaseOrder();
+  const quotation = readStoredQuotation();
   const poDetails = po?.po || {};
   const itemRows = Array.isArray(po?.items) && po.items.length
     ? po.items.map((item) => ({
@@ -28,10 +48,13 @@ const defaultForm = () => {
         qty: Number(item.qty) || 1,
         uom: item.uom || "Nos.",
         rate: Number(item.rate) || 0,
+        isSourceData: true,
       }))
-    : [emptyItem()];
+    : [emptyItem("", true)];
 
   return {
+    sourcePoId: poDetails.id || po?.id || null,
+    sourceQuotationId: quotation?.quotationId || po?.quotationId || null,
     originalFor: "ORIGINAL FOR RECIPIENT",
     companyName: poDetails.companyName || "",
     invoiceNo: "",
@@ -76,12 +99,133 @@ const defaultForm = () => {
 export default function InvoiceEntryForm({ onNavigate, defaultReturnView = "created-invoices" }) {
   const [form, setForm] = useState(defaultForm);
   const [companyOptions, setCompanyOptions] = useState([]);
+  const [quotationRecords, setQuotationRecords] = useState([]);
+  const isPreloadedSource = Boolean(form.sourcePoId || form.sourceQuotationId);
+  const isItemLocked = (item) => Boolean(item?.isSourceData);
 
   useEffect(() => {
     fetchOrganizations()
       .then(setCompanyOptions)
       .catch(() => setCompanyOptions([]));
+
+    fetchQuotations(1, 500)
+      .then((data) => setQuotationRecords(Array.isArray(data) ? data : []))
+      .catch(() => setQuotationRecords([]));
   }, []);
+
+  useEffect(() => {
+    const rawPo = readStoredPurchaseOrder();
+    const rawQuotation = readStoredQuotation();
+
+    const hydrateSourceData = async () => {
+      const purchaseOrder = rawPo?.po || rawPo;
+      const sourcePoId = purchaseOrder?.id || rawPo?.id || null;
+      const sourceQuotationId = rawQuotation?.quotationId || purchaseOrder?.quotationId || rawPo?.quotationId || null;
+      if (!sourcePoId && !sourceQuotationId) return;
+
+      try {
+        if (sourcePoId) {
+          const remotePurchaseOrder = await fetchPurchaseOrderById(sourcePoId);
+          if (remotePurchaseOrder) {
+            const poPayload = remotePurchaseOrder.po || remotePurchaseOrder;
+            const itemRows = Array.isArray(remotePurchaseOrder.items || poPayload.items)
+              ? (remotePurchaseOrder.items || poPayload.items).map((item) => ({
+                  id: Date.now() + Math.random() + Math.floor(Math.random() * 1000),
+                  description: item.description || "",
+                  qty: Number(item.qty) || 1,
+                  uom: item.uom || "Nos.",
+                  rate: Number(item.rate) || 0,
+                  isSourceData: true,
+                }))
+              : [emptyItem("", true)];
+
+            setForm((prev) => ({
+              ...prev,
+              sourcePoId: remotePurchaseOrder.id || prev.sourcePoId || null,
+              companyName: poPayload.companyName || prev.companyName || "",
+              supplierName: poPayload.supplierName || prev.supplierName || "",
+              supplierAddress: poPayload.supplierAddress || prev.supplierAddress || "",
+              supplierState: poPayload.supplierState || prev.supplierState || "",
+              supplierStateCode: poPayload.supplierStateCode || prev.supplierStateCode || "",
+              supplierGSTN: poPayload.supplierGSTN || prev.supplierGSTN || "",
+              receiverName: poPayload.buyerName || prev.receiverName || "",
+              receiverAddress: poPayload.buyerAddress || prev.receiverAddress || "",
+              receiverState: poPayload.buyerState || prev.receiverState || "",
+              receiverStateCode: poPayload.buyerStateCode || prev.receiverStateCode || "",
+              receiverGSTN: poPayload.buyerGSTN || prev.receiverGSTN || "",
+              consigneeName: poPayload.buyerName || prev.consigneeName || "",
+              consigneeAddress: poPayload.buyerAddress || prev.consigneeAddress || "",
+              consigneeState: poPayload.buyerState || prev.consigneeState || "",
+              consigneeStateCode: poPayload.buyerStateCode || prev.consigneeStateCode || "",
+              consigneeGSTN: poPayload.buyerGSTN || prev.consigneeGSTN || "",
+              poNoDate: poPayload.poNo ? `PO No. ${poPayload.poNo} / ${poPayload.poDate || ""}` : prev.poNoDate || "",
+              items: itemRows,
+            }));
+          }
+        }
+
+        if (sourceQuotationId) {
+          const remoteQuotation = await fetchQuotationById(sourceQuotationId);
+          if (remoteQuotation) {
+            setForm((prev) => ({
+              ...prev,
+              sourceQuotationId: remoteQuotation.quotationId || prev.sourceQuotationId || null,
+              companyName: remoteQuotation.organizationName || prev.companyName || "",
+              supplierName: prev.supplierName || remoteQuotation.organizationName || "",
+              receiverName: prev.receiverName || remoteQuotation.quotationToName || "",
+              receiverAddress: prev.receiverAddress || remoteQuotation.quotationToAddress || "",
+              consigneeName: prev.consigneeName || remoteQuotation.quotationToName || "",
+              consigneeAddress: prev.consigneeAddress || remoteQuotation.quotationToAddress || "",
+              poNoDate: prev.poNoDate || (remoteQuotation.quotationNo ? `Quotation No. ${remoteQuotation.quotationNo}` : ""),
+            }));
+          }
+        }
+      } catch (error) {
+        console.error("Failed to hydrate invoice source data", error);
+      }
+    };
+
+    hydrateSourceData();
+  }, []);
+
+  useEffect(() => {
+    const selectedCompanyName = form.companyName?.trim();
+    if (!selectedCompanyName) return;
+
+    const matchedQuotation = quotationRecords.find(
+      (quotation) =>
+        (quotation.organizationName || "").trim().toLowerCase() ===
+        selectedCompanyName.toLowerCase(),
+    );
+
+    if (!matchedQuotation) return;
+
+    setForm((prev) => {
+      if ((prev.companyName || "").trim().toLowerCase() !== selectedCompanyName.toLowerCase()) {
+        return prev;
+      }
+
+      const nextItems = prev.items.map((item, index) => {
+        if (index !== 0 || item.description) return item;
+        return {
+          ...item,
+          description: (matchedQuotation.modules || []).join(", ") || item.description,
+        };
+      });
+
+      return {
+        ...prev,
+        companyName: matchedQuotation.organizationName || prev.companyName,
+        supplierName: prev.supplierName || matchedQuotation.organizationName || "",
+        receiverName: prev.receiverName || matchedQuotation.quotationToName || "",
+        receiverAddress: prev.receiverAddress || matchedQuotation.quotationToAddress || "",
+        consigneeName: prev.consigneeName || matchedQuotation.quotationToName || "",
+        consigneeAddress: prev.consigneeAddress || matchedQuotation.quotationToAddress || "",
+        poNoDate: prev.poNoDate || (matchedQuotation.quotationNo ? `Quotation No. ${matchedQuotation.quotationNo}` : ""),
+        items: nextItems,
+      };
+    });
+  }, [form.companyName, quotationRecords]);
 
   const totals = useMemo(() => {
     const totalQty = form.items.reduce((sum, item) => sum + (Number(item.qty) || 0), 0);
@@ -122,63 +266,73 @@ export default function InvoiceEntryForm({ onNavigate, defaultReturnView = "crea
     }));
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     const payload = {
-      invoice: {
-        originalFor: form.originalFor,
-        companyName: form.companyName,
-        invoiceNo: form.invoiceNo,
-        dateOfIssue: form.dateOfIssue,
-        timeOfIssue: form.timeOfIssue,
-        placeOfService: form.placeOfService,
-        supplierName: form.supplierName,
-        supplierAddress: form.supplierAddress,
-        supplierState: form.supplierState,
-        supplierStateCode: form.supplierStateCode,
-        supplierGSTN: form.supplierGSTN,
-        bankName: form.bankName,
-        accountNo: form.accountNo,
-        accountType: form.accountType,
-        ifsc: form.ifsc,
-        msmeNo: form.msmeNo,
-        receiverName: form.receiverName,
-        receiverAddress: form.receiverAddress,
-        receiverState: form.receiverState,
-        receiverStateCode: form.receiverStateCode,
-        receiverGSTN: form.receiverGSTN,
-        consigneeName: form.consigneeName,
-        consigneeAddress: form.consigneeAddress,
-        consigneeState: form.consigneeState,
-        consigneeStateCode: form.consigneeStateCode,
-        consigneeGSTN: form.consigneeGSTN,
-        poNoDate: form.poNoDate,
-        hsnCode: form.hsnCode,
-        sacCode: form.sacCode,
-        reverseCharge: form.reverseCharge,
-        amountInWords: form.amountInWords,
-        termsOfSale: form.termsOfSale,
-        sgstPct: form.sgstPct,
-        cgstPct: form.cgstPct,
-        igstPct: form.igstPct,
-        tdsPct: form.tdsPct,
-        insurance: form.insurance,
-      },
-      items: form.items,
-      totals,
+      poId: form.sourcePoId || null,
+      quotationId: form.sourceQuotationId || null,
+      originalFor: form.originalFor,
+      companyName: form.companyName,
+      invoiceNo: form.invoiceNo,
+      dateOfIssue: form.dateOfIssue,
+      timeOfIssue: form.timeOfIssue,
+      placeOfService: form.placeOfService,
+      supplierName: form.supplierName,
+      supplierAddress: form.supplierAddress,
+      supplierState: form.supplierState,
+      supplierStateCode: form.supplierStateCode,
+      supplierGSTN: form.supplierGSTN,
+      bankName: form.bankName,
+      accountNo: form.accountNo,
+      accountType: form.accountType,
+      ifsc: form.ifsc,
+      msmeNo: form.msmeNo,
+      receiverName: form.receiverName,
+      receiverAddress: form.receiverAddress,
+      receiverState: form.receiverState,
+      receiverStateCode: form.receiverStateCode,
+      receiverGSTN: form.receiverGSTN,
+      consigneeName: form.consigneeName,
+      consigneeAddress: form.consigneeAddress,
+      consigneeState: form.consigneeState,
+      consigneeStateCode: form.consigneeStateCode,
+      consigneeGSTN: form.consigneeGSTN,
+      poNoDate: form.poNoDate,
+      hsnCode: form.hsnCode,
+      sacCode: form.sacCode,
+      reverseCharge: form.reverseCharge,
+      amountInWords: form.amountInWords,
+      termsOfSale: form.termsOfSale,
+      sgstPct: Number(form.sgstPct) || 0,
+      cgstPct: Number(form.cgstPct) || 0,
+      igstPct: Number(form.igstPct) || 0,
+      tdsPct: Number(form.tdsPct) || 0,
+      insurance: Number(form.insurance) || 0,
+      totalAmount: totals.grandTotal,
+      items: form.items.map((item) => ({
+        description: item.description,
+        qty: Number(item.qty) || 1,
+        uom: item.uom || "Nos.",
+        rate: Number(item.rate) || 0,
+      })),
     };
 
     try {
-      const existing = JSON.parse(sessionStorage.getItem("invoices") || "[]");
-      const next = [payload, ...existing.filter((item) => item.invoice?.invoiceNo !== payload.invoice.invoiceNo)];
-      sessionStorage.setItem("invoices", JSON.stringify(next));
-    } catch (error) {
-      console.error("Failed to save invoice list", error);
-    }
+      const saved = await createInvoice(payload);
 
-    sessionStorage.setItem("invoiceData", JSON.stringify(payload));
-    onNavigate("invoice");
+      sessionStorage.setItem("invoiceData", JSON.stringify({
+        invoice: payload,
+        items: payload.items,
+        totals,
+        id: saved.id,
+      }));
+
+      onNavigate("invoice");
+    } catch (error) {
+      console.error("Failed to save invoice", error);
+      window.alert("Unable to save invoice to database. Please try again.");
+    }
   };
 
   return (
@@ -218,6 +372,7 @@ export default function InvoiceEntryForm({ onNavigate, defaultReturnView = "crea
                 options={companyOptions}
                 placeholder="Select or type company name"
                 allowFreeText
+                disabled={isPreloadedSource}
               />
             </div>
             <label>
@@ -238,27 +393,27 @@ export default function InvoiceEntryForm({ onNavigate, defaultReturnView = "crea
             </label>
             <label>
               <div style={{ fontWeight: 600, marginBottom: 6 }}>PO No. / Date</div>
-              <input value={form.poNoDate} onChange={(e) => updateField("poNoDate", e.target.value)} style={inputStyle} />
+              <input value={form.poNoDate} onChange={(e) => updateField("poNoDate", e.target.value)} style={inputStyle} readOnly={isPreloadedSource} />
             </label>
           </div>
 
           <div style={{ marginTop: 24, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 }}>
             <div style={sectionStyle}>
               <h3 style={sectionTitleStyle}>Supplier Details</h3>
-              <label>Name<input value={form.supplierName} onChange={(e) => updateField("supplierName", e.target.value)} style={inputStyle} /></label>
-              <label>Address<input value={form.supplierAddress} onChange={(e) => updateField("supplierAddress", e.target.value)} style={inputStyle} /></label>
-              <label>State<input value={form.supplierState} onChange={(e) => updateField("supplierState", e.target.value)} style={inputStyle} /></label>
-              <label>State Code<input value={form.supplierStateCode} onChange={(e) => updateField("supplierStateCode", e.target.value)} style={inputStyle} /></label>
-              <label>GSTN No.<input value={form.supplierGSTN} onChange={(e) => updateField("supplierGSTN", e.target.value)} style={inputStyle} /></label>
+              <label>Name<input value={form.supplierName} onChange={(e) => updateField("supplierName", e.target.value)} style={inputStyle} readOnly={isPreloadedSource} /></label>
+              <label>Address<input value={form.supplierAddress} onChange={(e) => updateField("supplierAddress", e.target.value)} style={inputStyle} readOnly={isPreloadedSource} /></label>
+              <label>State<input value={form.supplierState} onChange={(e) => updateField("supplierState", e.target.value)} style={inputStyle} readOnly={isPreloadedSource} /></label>
+              <label>State Code<input value={form.supplierStateCode} onChange={(e) => updateField("supplierStateCode", e.target.value)} style={inputStyle} readOnly={isPreloadedSource} /></label>
+              <label>GSTN No.<input value={form.supplierGSTN} onChange={(e) => updateField("supplierGSTN", e.target.value)} style={inputStyle} readOnly={isPreloadedSource} /></label>
             </div>
 
             <div style={sectionStyle}>
               <h3 style={sectionTitleStyle}>Receiver / Consignee</h3>
-              <label>Name<input value={form.receiverName} onChange={(e) => updateField("receiverName", e.target.value)} style={inputStyle} /></label>
-              <label>Address<input value={form.receiverAddress} onChange={(e) => updateField("receiverAddress", e.target.value)} style={inputStyle} /></label>
-              <label>State<input value={form.receiverState} onChange={(e) => updateField("receiverState", e.target.value)} style={inputStyle} /></label>
-              <label>State Code<input value={form.receiverStateCode} onChange={(e) => updateField("receiverStateCode", e.target.value)} style={inputStyle} /></label>
-              <label>GSTN No.<input value={form.receiverGSTN} onChange={(e) => updateField("receiverGSTN", e.target.value)} style={inputStyle} /></label>
+              <label>Name<input value={form.receiverName} onChange={(e) => updateField("receiverName", e.target.value)} style={inputStyle} readOnly={isPreloadedSource} /></label>
+              <label>Address<input value={form.receiverAddress} onChange={(e) => updateField("receiverAddress", e.target.value)} style={inputStyle} readOnly={isPreloadedSource} /></label>
+              <label>State<input value={form.receiverState} onChange={(e) => updateField("receiverState", e.target.value)} style={inputStyle} readOnly={isPreloadedSource} /></label>
+              <label>State Code<input value={form.receiverStateCode} onChange={(e) => updateField("receiverStateCode", e.target.value)} style={inputStyle} readOnly={isPreloadedSource} /></label>
+              <label>GSTN No.<input value={form.receiverGSTN} onChange={(e) => updateField("receiverGSTN", e.target.value)} style={inputStyle} readOnly={isPreloadedSource} /></label>
             </div>
           </div>
 
@@ -296,29 +451,20 @@ export default function InvoiceEntryForm({ onNavigate, defaultReturnView = "crea
                     <th style={tdStyle}>UOM</th>
                     <th style={tdStyle}>Rate</th>
                     <th style={tdStyle}>Amount</th>
-                    <th style={tdStyle}>Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {form.items.map((item) => (
                     <tr key={item.id}>
-                      <td style={tdStyle}><input value={item.description} onChange={(e) => updateItem(item.id, "description", e.target.value)} style={inputStyle} /></td>
-                      <td style={tdStyle}><input type="number" min="0" step="0.01" value={item.qty} onChange={(e) => updateItem(item.id, "qty", Number(e.target.value) || 0)} style={inputStyle} /></td>
-                      <td style={tdStyle}><input value={item.uom} onChange={(e) => updateItem(item.id, "uom", e.target.value)} style={inputStyle} /></td>
-                      <td style={tdStyle}><input type="number" min="0" step="0.01" value={item.rate} onChange={(e) => updateItem(item.id, "rate", Number(e.target.value) || 0)} style={inputStyle} /></td>
+                      <td style={tdStyle}><input value={item.description} onChange={(e) => updateItem(item.id, "description", e.target.value)} style={inputStyle} readOnly={isItemLocked(item)} /></td>
+                      <td style={tdStyle}><input type="number" min="0" step="0.01" value={item.qty} onChange={(e) => updateItem(item.id, "qty", Number(e.target.value) || 0)} style={inputStyle} readOnly={isItemLocked(item)} /></td>
+                      <td style={tdStyle}><input value={item.uom} onChange={(e) => updateItem(item.id, "uom", e.target.value)} style={inputStyle} readOnly={isItemLocked(item)} /></td>
+                      <td style={tdStyle}><input type="number" min="0" step="0.01" value={item.rate} onChange={(e) => updateItem(item.id, "rate", Number(e.target.value) || 0)} style={inputStyle} readOnly={isItemLocked(item)} /></td>
                       <td style={tdStyle}>₹{((Number(item.qty) || 0) * (Number(item.rate) || 0)).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                      <td style={tdStyle}>
-                        <button type="button" onClick={() => removeRow(item.id)} disabled={form.items.length === 1} style={{ ...smallButton, opacity: form.items.length === 1 ? 0.5 : 1 }}>
-                          Remove
-                        </button>
-                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            </div>
-            <div style={{ marginTop: 12 }}>
-              <button type="button" className="gi-btn" onClick={addRow}>+ Add item row</button>
             </div>
           </div>
 

@@ -10,27 +10,18 @@ import {
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import EntityTable from "../../components/EntityTable";
-
-const readStoredPurchaseOrders = () => {
-  try {
-    const raw = sessionStorage.getItem("purchaseOrders");
-    return raw ? JSON.parse(raw) : [];
-  } catch (error) {
-    console.error("Failed to read saved purchase orders", error);
-    return [];
-  }
-};
+import { fetchPurchaseOrders, deletePurchaseOrder as deletePurchaseOrderApi } from "../../services/quotationApi";
 
 export default function CreatedPurchaseOrders({ onNavigate }) {
   const [purchaseOrders, setPurchaseOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const loadPurchaseOrders = () => {
+  const loadPurchaseOrders = async () => {
     try {
       setLoading(true);
-      const rows = readStoredPurchaseOrders();
-      setPurchaseOrders(rows);
+      const rows = await fetchPurchaseOrders();
+      setPurchaseOrders(Array.isArray(rows) ? rows : []);
       setError(null);
     } catch (err) {
       setError("Unable to load saved purchase orders.");
@@ -45,16 +36,26 @@ export default function CreatedPurchaseOrders({ onNavigate }) {
   }, []);
 
   const openPurchaseOrder = (row) => {
-    sessionStorage.setItem("purchaseOrderData", JSON.stringify(row.data || row));
+    const purchaseOrderData = row.data || row;
+    const normalizedData = purchaseOrderData?.po
+      ? purchaseOrderData
+      : {
+          po: purchaseOrderData,
+          items: purchaseOrderData?.items || [],
+          totals: purchaseOrderData?.totals || { totalPrice: purchaseOrderData?.totalAmount || 0 },
+          id: purchaseOrderData?.id,
+          poNo: purchaseOrderData?.poNo,
+        };
+
+    sessionStorage.setItem("purchaseOrderData", JSON.stringify(normalizedData));
     sessionStorage.setItem("purchaseOrderBackView", "created-purchase-orders");
     onNavigate("purchase-order");
   };
 
-  const deletePurchaseOrder = (id) => {
+  const deletePurchaseOrder = async (id) => {
     try {
-      const next = readStoredPurchaseOrders().filter((po) => po.id !== id);
-      sessionStorage.setItem("purchaseOrders", JSON.stringify(next));
-      setPurchaseOrders(next);
+      await deletePurchaseOrderApi(id);
+      setPurchaseOrders((prev) => prev.filter((po) => po.id !== id));
     } catch (err) {
       setError("Unable to remove purchase order.");
       console.error(err);

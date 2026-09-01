@@ -1,27 +1,53 @@
 import React, { useEffect, useMemo, useState } from "react";
 import SearchDropdown from "../../components/SearchDropdown";
-import { fetchOrganizations, fetchQuotations } from "../../services/quotationApi";
+import {
+  createPurchaseOrder,
+  fetchOrganizations,
+  fetchQuotationById,
+  fetchQuotations,
+} from "../../services/quotationApi";
 
-const emptyItem = () => ({
+const readStoredQuotation = () => {
+  try {
+    const storedQuotation = sessionStorage.getItem("selectedQuotationForPo");
+    return storedQuotation ? JSON.parse(storedQuotation) : null;
+  } catch (error) {
+    console.error("Failed to read selected quotation info", error);
+    return null;
+  }
+};
+
+const emptyItem = (description = "", isSourceData = false, rate = 0) => ({
   id: Date.now() + Math.random(),
-  description: "",
+  description,
   qty: 1,
   uom: "Nos.",
-  rate: 0,
+  rate,
+  isSourceData,
 });
 
+const buildQuotationItems = (quotation) => {
+  const moduleDetails = Array.isArray(quotation?.moduleDetails) ? quotation.moduleDetails.filter(Boolean) : [];
+  const modules = Array.isArray(quotation?.modules) ? quotation.modules.filter(Boolean) : [];
+
+  if (moduleDetails.length > 0) {
+    return moduleDetails.map((module) =>
+      emptyItem(module.moduleName || module.ModuleName || module.name || "", true, Number(module.price ?? module.Price ?? 0) || 0),
+    );
+  }
+
+  if (modules.length === 0) {
+    return [emptyItem("", true)];
+  }
+
+  return modules.map((module) => emptyItem(module, true, 0));
+};
+
 const defaultForm = () => {
-  const quotation = (() => {
-    try {
-      const storedQuotation = sessionStorage.getItem("selectedQuotationForPo");
-      return storedQuotation ? JSON.parse(storedQuotation) : null;
-    } catch (error) {
-      console.error("Failed to read selected quotation info", error);
-      return null;
-    }
-  })();
+  const quotation = readStoredQuotation();
 
   return {
+    sourceQuotationId: quotation?.quotationId || null,
     companyName: quotation?.organizationName || "",
     poNo: "",
     poDate: new Date().toISOString().slice(0, 10),
@@ -42,15 +68,7 @@ const defaultForm = () => {
     paymentTerms: "",
     expectedDeliveryDate: "",
     notes: "",
-    items: [
-      {
-        id: Date.now(),
-        description: (quotation?.modules || []).join(", ") || "",
-        qty: 1,
-        uom: "Nos.",
-        rate: 0,
-      },
-    ],
+    items: buildQuotationItems(quotation),
   };
 };
 
@@ -58,6 +76,8 @@ export default function PurchaseOrderEntryForm({ onNavigate, defaultReturnView =
   const [form, setForm] = useState(defaultForm);
   const [companyOptions, setCompanyOptions] = useState([]);
   const [quotationRecords, setQuotationRecords] = useState([]);
+  const isQuotationLocked = Boolean(form.sourceQuotationId);
+  const isItemLocked = (item) => Boolean(item?.isSourceData);
 
   useEffect(() => {
     fetchOrganizations()
@@ -70,46 +90,43 @@ export default function PurchaseOrderEntryForm({ onNavigate, defaultReturnView =
   }, []);
 
   useEffect(() => {
-    const selectedQuotation = (() => {
-      try {
-        const stored = sessionStorage.getItem("selectedQuotationForPo");
-        return stored ? JSON.parse(stored) : null;
-      } catch (error) {
-        console.error("Failed to parse selected quotation for PO", error);
-        return null;
-      }
-    })();
+    const selectedQuotation = readStoredQuotation();
 
     if (!selectedQuotation) return;
 
-    const matchedQuotation = quotationRecords.find(
-      (quotation) =>
-        String(quotation.quotationId) === String(selectedQuotation.quotationId) ||
-        ((quotation.organizationName || "").trim().toLowerCase() ===
-          (selectedQuotation.organizationName || "").trim().toLowerCase() &&
-          (quotation.quotationNo || "").trim().toLowerCase() ===
-          (selectedQuotation.quotationNo || "").trim().toLowerCase()),
-    );
+    const hydrateFromQuotation = (quotation) => {
+      setForm((prev) => ({
+        ...prev,
+        sourceQuotationId: quotation.quotationId || prev.sourceQuotationId || null,
+        companyName: quotation.organizationName || prev.companyName || "",
+        quotationRefNo: quotation.quotationNo || prev.quotationRefNo || "",
+        quotationRefDate: quotation.date || prev.quotationRefDate || "",
+        buyerName: quotation.quotationToName || prev.buyerName || "",
+        buyerAddress: quotation.quotationToAddress || prev.buyerAddress || "",
+        supplierName: quotation.organizationName || prev.supplierName || "",
+        items: buildQuotationItems(quotation),
+      }));
+    };
 
-    if (!matchedQuotation) return;
+    const hydrateFromStored = async () => {
+      if (selectedQuotation.quotationId) {
+        try {
+          const remoteQuotation = await fetchQuotationById(selectedQuotation.quotationId);
+          if (remoteQuotation) {
+            hydrateFromQuotation(remoteQuotation);
+            return;
+          }
+        } catch (error) {
+          console.error("Failed to load quotation by id for PO", error);
+        }
+      }
 
-    setForm((prev) => ({
-      ...prev,
-      companyName: matchedQuotation.organizationName || prev.companyName || "",
-      quotationRefNo: prev.quotationRefNo || matchedQuotation.quotationNo || "",
-      quotationRefDate: prev.quotationRefDate || matchedQuotation.date || "",
-      buyerName: prev.buyerName || matchedQuotation.quotationToName || "",
-      buyerAddress: prev.buyerAddress || matchedQuotation.quotationToAddress || "",
-      supplierName: prev.supplierName || matchedQuotation.organizationName || "",
-      items: prev.items.map((item, index) =>
-        index === 0 && !item.description
-          ? { ...item, description: (matchedQuotation.modules || []).join(", ") || item.description }
-          : item,
-      ),
-    }));
+      hydrateFromQuotation(selectedQuotation);
+    };
 
+    hydrateFromStored();
     sessionStorage.removeItem("selectedQuotationForPo");
-  }, [quotationRecords]);
+  }, []);
 
   useEffect(() => {
     const selectedCompanyName = form.companyName?.trim();
@@ -169,10 +186,6 @@ export default function PurchaseOrderEntryForm({ onNavigate, defaultReturnView =
     }));
   };
 
-  const addItem = () => {
-    setForm((prev) => ({ ...prev, items: [...prev.items, emptyItem()] }));
-  };
-
   const removeItem = (id) => {
     setForm((prev) => ({
       ...prev,
@@ -180,11 +193,12 @@ export default function PurchaseOrderEntryForm({ onNavigate, defaultReturnView =
     }));
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     const payload = {
-      id: Date.now(),
+      quotationId: form.sourceQuotationId || null,
+      companyName: form.companyName,
       poNo: form.poNo || `PO-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.floor(Math.random() * 1000)}`,
       poDate: form.poDate || new Date().toISOString().slice(0, 10),
       status: form.status,
@@ -204,13 +218,25 @@ export default function PurchaseOrderEntryForm({ onNavigate, defaultReturnView =
       paymentTerms: form.paymentTerms,
       expectedDeliveryDate: form.expectedDeliveryDate,
       notes: form.notes,
-      companyName: form.companyName,
       totalAmount: totals.totalPrice,
-      data: {
+      items: form.items.map((item) => ({
+        description: item.description,
+        qty: Number(item.qty) || 1,
+        uom: item.uom || "Nos.",
+        rate: Number(item.rate) || 0,
+      })),
+    };
+
+    try {
+      const saved = await createPurchaseOrder(payload);
+
+      sessionStorage.setItem("purchaseOrderData", JSON.stringify({
         po: {
+          id: saved.id || null,
+          quotationId: form.sourceQuotationId || null,
           companyName: form.companyName,
-          poNo: form.poNo || `PO-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.floor(Math.random() * 1000)}`,
-          poDate: form.poDate || new Date().toISOString().slice(0, 10),
+          poNo: saved.poNo || payload.poNo,
+          poDate: form.poDate || payload.poDate,
           status: form.status,
           quotationRefNo: form.quotationRefNo,
           quotationRefDate: form.quotationRefDate,
@@ -229,21 +255,18 @@ export default function PurchaseOrderEntryForm({ onNavigate, defaultReturnView =
           expectedDeliveryDate: form.expectedDeliveryDate,
           notes: form.notes,
         },
-        items: form.items,
+        items: payload.items,
         totals,
-      },
-    };
+        id: saved.id,
+        poNo: saved.poNo || payload.poNo,
+        quotationId: form.sourceQuotationId || null,
+      }));
 
-    try {
-      const existing = JSON.parse(sessionStorage.getItem("purchaseOrders") || "[]");
-      const next = [payload, ...existing.filter((item) => item.poNo !== payload.poNo)];
-      sessionStorage.setItem("purchaseOrders", JSON.stringify(next));
+      onNavigate("purchase-order");
     } catch (error) {
-      console.error("Failed to save purchase order list", error);
+      console.error("Failed to save purchase order", error);
+      window.alert("Unable to save purchase order to database. Please try again.");
     }
-
-    sessionStorage.setItem("purchaseOrderData", JSON.stringify(payload.data));
-    onNavigate("purchase-order");
   };
 
   return (
@@ -277,6 +300,7 @@ export default function PurchaseOrderEntryForm({ onNavigate, defaultReturnView =
                 options={companyOptions}
                 placeholder="Select or type company name"
                 allowFreeText
+                disabled={isQuotationLocked}
               />
             </div>
             <label>
@@ -298,11 +322,11 @@ export default function PurchaseOrderEntryForm({ onNavigate, defaultReturnView =
             </label>
             <label>
               <div style={{ fontWeight: 600, marginBottom: 6 }}>Against Quotation No.</div>
-              <input value={form.quotationRefNo} onChange={(e) => updateField("quotationRefNo", e.target.value)} style={inputStyle} />
+              <input value={form.quotationRefNo} onChange={(e) => updateField("quotationRefNo", e.target.value)} style={inputStyle} readOnly={isQuotationLocked} />
             </label>
             <label>
               <div style={{ fontWeight: 600, marginBottom: 6 }}>Quotation Date</div>
-              <input type="date" value={form.quotationRefDate} onChange={(e) => updateField("quotationRefDate", e.target.value)} style={inputStyle} />
+              <input type="date" value={form.quotationRefDate} onChange={(e) => updateField("quotationRefDate", e.target.value)} style={inputStyle} readOnly={isQuotationLocked} />
             </label>
             <label>
               <div style={{ fontWeight: 600, marginBottom: 6 }}>Expected Delivery</div>
@@ -313,8 +337,8 @@ export default function PurchaseOrderEntryForm({ onNavigate, defaultReturnView =
           <div style={{ marginTop: 24, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 }}>
             <div style={sectionStyle}>
               <h3 style={sectionTitleStyle}>Buyer / Customer</h3>
-              <label>Customer Name<input value={form.buyerName} onChange={(e) => updateField("buyerName", e.target.value)} style={inputStyle} /></label>
-              <label>Address<input value={form.buyerAddress} onChange={(e) => updateField("buyerAddress", e.target.value)} style={inputStyle} /></label>
+              <label>Customer Name<input value={form.buyerName} onChange={(e) => updateField("buyerName", e.target.value)} style={inputStyle} readOnly={isQuotationLocked} /></label>
+              <label>Address<input value={form.buyerAddress} onChange={(e) => updateField("buyerAddress", e.target.value)} style={inputStyle} readOnly={isQuotationLocked} /></label>
               <label>State<input value={form.buyerState} onChange={(e) => updateField("buyerState", e.target.value)} style={inputStyle} /></label>
               <label>State Code<input value={form.buyerStateCode} onChange={(e) => updateField("buyerStateCode", e.target.value)} style={inputStyle} /></label>
               <label>GSTN No.<input value={form.buyerGSTN} onChange={(e) => updateField("buyerGSTN", e.target.value)} style={inputStyle} /></label>
@@ -322,7 +346,7 @@ export default function PurchaseOrderEntryForm({ onNavigate, defaultReturnView =
 
             <div style={sectionStyle}>
               <h3 style={sectionTitleStyle}>Supplier / Company</h3>
-              <label>Supplier Name<input value={form.supplierName} onChange={(e) => updateField("supplierName", e.target.value)} style={inputStyle} /></label>
+              <label>Supplier Name<input value={form.supplierName} onChange={(e) => updateField("supplierName", e.target.value)} style={inputStyle} readOnly={isQuotationLocked} /></label>
               <label>Address<input value={form.supplierAddress} onChange={(e) => updateField("supplierAddress", e.target.value)} style={inputStyle} /></label>
               <label>State<input value={form.supplierState} onChange={(e) => updateField("supplierState", e.target.value)} style={inputStyle} /></label>
               <label>State Code<input value={form.supplierStateCode} onChange={(e) => updateField("supplierStateCode", e.target.value)} style={inputStyle} /></label>
@@ -341,29 +365,20 @@ export default function PurchaseOrderEntryForm({ onNavigate, defaultReturnView =
                     <th style={tdStyle}>UOM</th>
                     <th style={tdStyle}>Rate</th>
                     <th style={tdStyle}>Amount</th>
-                    <th style={tdStyle}>Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {form.items.map((item, index) => (
                     <tr key={item.id}>
-                      <td style={tdStyle}><input value={item.description} onChange={(e) => updateItem(item.id, "description", e.target.value)} style={inputStyle} /></td>
-                      <td style={tdStyle}><input type="number" min="0" step="0.01" value={item.qty} onChange={(e) => updateItem(item.id, "qty", Number(e.target.value) || 0)} style={inputStyle} /></td>
-                      <td style={tdStyle}><input value={item.uom} onChange={(e) => updateItem(item.id, "uom", e.target.value)} style={inputStyle} /></td>
-                      <td style={tdStyle}><input type="number" min="0" step="0.01" value={item.rate} onChange={(e) => updateItem(item.id, "rate", Number(e.target.value) || 0)} style={inputStyle} /></td>
+                      <td style={tdStyle}><input value={item.description} onChange={(e) => updateItem(item.id, "description", e.target.value)} style={inputStyle} readOnly={isItemLocked(item)} /></td>
+                      <td style={tdStyle}><input type="number" min="0" step="0.01" value={item.qty} onChange={(e) => updateItem(item.id, "qty", Number(e.target.value) || 0)} style={inputStyle} readOnly={isItemLocked(item)} /></td>
+                      <td style={tdStyle}><input value={item.uom} onChange={(e) => updateItem(item.id, "uom", e.target.value)} style={inputStyle} readOnly={isItemLocked(item)} /></td>
+                      <td style={tdStyle}><input type="number" min="0" step="0.01" value={item.rate} onChange={(e) => updateItem(item.id, "rate", Number(e.target.value) || 0)} style={inputStyle} readOnly={isItemLocked(item)} /></td>
                       <td style={tdStyle}>₹{((Number(item.qty) || 0) * (Number(item.rate) || 0)).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                      <td style={tdStyle}>
-                        <button type="button" onClick={() => removeItem(item.id)} disabled={form.items.length === 1} style={{ ...smallButton, opacity: form.items.length === 1 ? 0.5 : 1 }}>
-                          Remove
-                        </button>
-                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            </div>
-            <div style={{ marginTop: 12 }}>
-              <button type="button" className="po-btn" onClick={addItem}>+ Add item row</button>
             </div>
           </div>
 

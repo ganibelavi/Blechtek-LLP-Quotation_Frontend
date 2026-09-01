@@ -18,7 +18,10 @@ const resolveApiBaseUrl = () => {
   const envUrl = process.env.REACT_APP_API_BASE_URL?.trim();
   if (envUrl) return envUrl.replace(/\/+$/, "");
 
-  if (typeof window !== "undefined" && window.location.hostname === "localhost") {
+  if (
+    typeof window !== "undefined" &&
+    window.location.hostname === "localhost"
+  ) {
     return "";
   }
 
@@ -34,13 +37,14 @@ const toTableQuotation = (q) => ({
   OrganizationName: q.organizationName,
   ReferenceBy: q.referenceBy,
   QuotationNo: q.quotationNo || "",
-  Date: q.date && !q.date.startsWith("0001-01-01")
-    ? new Date(q.date).toLocaleDateString("en-IN", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      })
-    : "",
+  Date:
+    q.date && !q.date.startsWith("0001-01-01")
+      ? new Date(q.date).toLocaleDateString("en-IN", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        })
+      : "",
   ValidationDate: q.validationDate
     ? new Date(q.validationDate).toLocaleDateString("en-IN", {
         day: "2-digit",
@@ -259,15 +263,15 @@ export default function CreatedQuotation({ onNavigate }) {
             </IconButton>
           </Tooltip>
           <Tooltip title="Create Purchase Order">
-           <IconButton
-             size="small"
-             onClick={(e) => {
-               e.stopPropagation();
-               handleOpenPurchaseOrder(row.originalData);
-             }}
-           >
-             <ReceiptLongIcon fontSize="small" color="success" />
-           </IconButton>
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleOpenPurchaseOrder(row.originalData);
+              }}
+            >
+              <ReceiptLongIcon fontSize="small" color="success" />
+            </IconButton>
           </Tooltip>
           {/* <Tooltip title="Revision History">
             <IconButton
@@ -286,10 +290,15 @@ export default function CreatedQuotation({ onNavigate }) {
                 size="small"
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (row.pdfDownloadUrl) window.open(row.pdfDownloadUrl, "_blank");
+                  if (row.pdfDownloadUrl)
+                    window.open(row.pdfDownloadUrl, "_blank");
                 }}
               >
-                <img src="/logo/download.png" alt="PDF" style={{ width: 18, height: 18 }} />
+                <img
+                  src="/logo/download.png"
+                  alt="PDF"
+                  style={{ width: 18, height: 18 }}
+                />
               </IconButton>
             </span>
           </Tooltip>
@@ -311,7 +320,13 @@ export default function CreatedQuotation({ onNavigate }) {
         <h1 className="page-heading page-heading__text">Quotations</h1>
         <Button
           variant="contained"
-          startIcon={<img src="/logo/add.png" alt="Add" style={{ width: 20, height: 20 }} />}
+          startIcon={
+            <img
+              src="/logo/add.png"
+              alt="Add"
+              style={{ width: 20, height: 20 }}
+            />
+          }
           onClick={handleNewQuotation}
           sx={{ px: 3, py: 1 }}
         >

@@ -64,10 +64,12 @@ function currency(n) {
 }
 
 export default function PurchaseOrder({ initialData, onConvertToInvoice, onBackToQuotation }) {
-  const [po, setPo] = useState({ ...emptyPO, ...(initialData?.po || {}) });
+  const normalizedInitialData = initialData?.po ? initialData : { po: initialData, items: initialData?.items || [] };
+
+  const [po, setPo] = useState({ ...emptyPO, ...(normalizedInitialData?.po || {}) });
   const [items, setItems] = useState(
-    initialData?.items?.length
-      ? initialData.items.map((r) => ({ ...r, id: rowId++ }))
+    normalizedInitialData?.items?.length
+      ? normalizedInitialData.items.map((r) => ({ ...r, id: rowId++ }))
       : [newRow()]
   );
 
@@ -80,7 +82,6 @@ export default function PurchaseOrder({ initialData, onConvertToInvoice, onBackT
     setItems((prev) => prev.map((row) => (row.id === id ? { ...row, [key]: value } : row)));
   };
 
-  const addRow = () => setItems((prev) => [...prev, newRow()]);
   const removeRow = (id) =>
     setItems((prev) => (prev.length > 1 ? prev.filter((r) => r.id !== id) : prev));
 
@@ -109,9 +110,6 @@ export default function PurchaseOrder({ initialData, onConvertToInvoice, onBackT
         <div className="po-toolbar-spacer" />
         <button type="button" className="po-btn po-btn-secondary" onClick={handlePrint}>
           Print / Save PDF
-        </button>
-        <button type="button" className="po-btn po-btn-secondary" onClick={addRow}>
-          + Add item row
         </button>
         <button
           type="button"
@@ -146,6 +144,7 @@ export default function PurchaseOrder({ initialData, onConvertToInvoice, onBackT
             className="po-company-name"
             placeholder="Company Name"
             {...field("companyName")}
+            readOnly
           />
           <div className="po-header-right">
             <div className="po-doc-title">Purchase Order</div>
