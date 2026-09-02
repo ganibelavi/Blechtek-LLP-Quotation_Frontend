@@ -8,7 +8,7 @@ import "./GSTInvoice.css";
  * SGST/CGST/IGST/TDS/Insurance totals, declarations, signatory.
  *
  * Usage: <GSTInvoice /> — drop into any React app. Print via the
- * "Print / Save PDF" button (uses window.print(), styled by the
+ * "Print" button (uses window.print(), styled by the
  * @media print rules in GSTInvoice.css).
  */
 
@@ -179,7 +179,7 @@ export default function GSTInvoice({ initialData, onBackToInvoiceList }) {
           className="gi-btn gi-btn-primary"
           onClick={handlePrint}
         >
-          Print / Save PDF
+          Print
         </button>
         {/* <button type="button" className="gi-btn" onClick={addRow}>
           + Add item row

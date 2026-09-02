@@ -113,7 +113,7 @@ export default function PurchaseOrder({ initialData, onConvertToInvoice, onBackT
       <div className="po-toolbar no-print">
         <div className="po-toolbar-spacer" />
         <button type="button" className="po-btn po-btn-secondary" onClick={handlePrint}>
-          Print / Save PDF
+          Print
         </button>
         <button
           type="button"

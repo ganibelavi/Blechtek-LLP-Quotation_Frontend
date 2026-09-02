@@ -291,24 +291,67 @@ export default function InvoiceEntryForm({ onNavigate, defaultReturnView = "crea
 
     if (!matchedQuotation) return;
 
-    setForm((prev) => {
-      const nextItems = buildQuotationItems(matchedQuotation, moduleCatalog);
+    const loadMatchedQuotation = async () => {
+      const quotationId = normalizeId(
+        matchedQuotation.quotationId ?? matchedQuotation.id,
+      );
 
-      return {
-        ...prev,
-        sourceQuotationId: normalizeId(
-          matchedQuotation.quotationId ?? matchedQuotation.id ?? prev.sourceQuotationId,
-        ),
-        companyName: matchedQuotation.organizationName || prev.companyName,
-        supplierName: matchedQuotation.organizationName || prev.supplierName || "",
-        receiverName: matchedQuotation.quotationToName || prev.receiverName || "",
-        receiverAddress: matchedQuotation.quotationToAddress || prev.receiverAddress || "",
-        consigneeName: matchedQuotation.quotationToName || prev.consigneeName || "",
-        consigneeAddress: matchedQuotation.quotationToAddress || prev.consigneeAddress || "",
-        poNoDate: matchedQuotation.quotationNo ? `Quotation No. ${matchedQuotation.quotationNo}` : prev.poNoDate || "",
-        items: nextItems,
-      };
-    });
+      try {
+        const remoteQuotation = quotationId
+          ? await fetchQuotationById(quotationId)
+          : matchedQuotation;
+
+        const activeQuotation = remoteQuotation || matchedQuotation;
+        const nextItems = buildQuotationItems(activeQuotation, moduleCatalog);
+
+        setForm((prev) => ({
+          ...prev,
+          sourceQuotationId: normalizeId(
+            activeQuotation.quotationId ?? activeQuotation.id ?? prev.sourceQuotationId,
+          ),
+          companyName: activeQuotation.organizationName || prev.companyName,
+          supplierName:
+            activeQuotation.organizationName || prev.supplierName || "",
+          receiverName:
+            activeQuotation.quotationToName || prev.receiverName || "",
+          receiverAddress:
+            activeQuotation.quotationToAddress || prev.receiverAddress || "",
+          consigneeName:
+            activeQuotation.quotationToName || prev.consigneeName || "",
+          consigneeAddress:
+            activeQuotation.quotationToAddress || prev.consigneeAddress || "",
+          poNoDate: activeQuotation.quotationNo
+            ? `Quotation No. ${activeQuotation.quotationNo}`
+            : prev.poNoDate || "",
+          items: nextItems,
+        }));
+      } catch (error) {
+        console.error("Failed to load quotation for invoice company selection", error);
+        setForm((prev) => ({
+          ...prev,
+          sourceQuotationId: normalizeId(
+            matchedQuotation.quotationId ?? matchedQuotation.id ?? prev.sourceQuotationId,
+          ),
+          companyName: matchedQuotation.organizationName || prev.companyName,
+          supplierName:
+            matchedQuotation.organizationName || prev.supplierName || "",
+          receiverName:
+            matchedQuotation.quotationToName || prev.receiverName || "",
+          receiverAddress:
+            matchedQuotation.quotationToAddress || prev.receiverAddress || "",
+          consigneeName:
+            matchedQuotation.quotationToName || prev.consigneeName || "",
+          consigneeAddress:
+            matchedQuotation.quotationToAddress || prev.consigneeAddress || "",
+          poNoDate: matchedQuotation.quotationNo
+            ? `Quotation No. ${matchedQuotation.quotationNo}`
+            : prev.poNoDate || "",
+          items: buildQuotationItems(matchedQuotation, moduleCatalog),
+        }));
+      }
+    };
+
+    loadMatchedQuotation();
   }, [form.companyName, quotationRecords, moduleCatalog]);
 
   const totals = useMemo(() => {
