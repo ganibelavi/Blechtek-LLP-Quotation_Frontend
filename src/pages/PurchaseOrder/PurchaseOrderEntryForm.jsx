@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import SearchDropdown from "../../components/SearchDropdown";
 import {
   createPurchaseOrder,
+  fetchModules,
   fetchOrganizations,
   fetchQuotationById,
   fetchQuotations,
@@ -32,7 +33,41 @@ const emptyItem = (description = "", isSourceData = false, rate = 0) => ({
   isSourceData,
 });
 
-const buildQuotationItems = (quotation) => {
+const getModuleName = (module) => {
+  if (!module) return "";
+  if (typeof module === "string") return module.trim();
+  return (
+    module.moduleName ||
+    module.ModuleName ||
+    module.module ||
+    module.name ||
+    module.Module ||
+    ""
+  ).trim();
+};
+
+const getModulePrice = (module, moduleCatalog = []) => {
+  if (module && typeof module !== "string") {
+    const directPrice = Number(module.price ?? module.Price ?? 0);
+    if (Number.isFinite(directPrice) && directPrice > 0) {
+      return directPrice;
+    }
+  }
+
+  const name = getModuleName(module);
+  if (!name) return 0;
+
+  const normalized = name.toLowerCase();
+  const catalogMatch = moduleCatalog.find((catalogItem) => {
+    const catalogName = (catalogItem?.module ?? catalogItem?.moduleName ?? catalogItem?.ModuleName ?? catalogItem?.name ?? "").trim().toLowerCase();
+    return catalogName === normalized;
+  });
+
+  const catalogPrice = Number(catalogMatch?.price ?? catalogMatch?.Price ?? 0);
+  return Number.isFinite(catalogPrice) ? catalogPrice : 0;
+};
+
+const buildQuotationItems = (quotation, moduleCatalog = []) => {
   const moduleDetails = Array.isArray(quotation?.moduleDetails)
     ? quotation.moduleDetails.filter(Boolean)
     : [];
@@ -40,39 +75,18 @@ const buildQuotationItems = (quotation) => {
     ? quotation.modules.filter(Boolean)
     : [];
 
-  if (moduleDetails.length > 0) {
-    return moduleDetails
-      .map((module) => {
-        const name =
-          module.moduleName ||
-          module.ModuleName ||
-          module.name ||
-          module.module ||
-          "";
-        const price = Number(module.price ?? module.Price ?? 0) || 0;
-        return name ? emptyItem(name, true, price) : null;
-      })
-      .filter(Boolean);
-  }
+  const rows = moduleDetails.length > 0 ? moduleDetails : modules;
 
-  if (modules.length === 0) {
+  if (rows.length === 0) {
     return [emptyItem("", true)];
   }
 
-  return modules
+  return rows
     .map((module) => {
-      if (typeof module === "string") {
-        return module.trim() ? emptyItem(module, true, 0) : null;
-      }
-
-      const name =
-        module.moduleName ||
-        module.ModuleName ||
-        module.name ||
-        module.module ||
-        "";
-      const price = Number(module.price ?? module.Price ?? 0) || 0;
-      return name ? emptyItem(name, true, price) : null;
+      const name = getModuleName(module);
+      if (!name) return null;
+      const price = getModulePrice(module, moduleCatalog);
+      return emptyItem(name, true, price);
     })
     .filter(Boolean);
 };
@@ -102,7 +116,7 @@ const defaultForm = () => {
     paymentTerms: "",
     expectedDeliveryDate: "",
     notes: "",
-    items: buildQuotationItems(quotation),
+    items: buildQuotationItems(quotation, []),
   };
 };
 
@@ -113,10 +127,15 @@ export default function PurchaseOrderEntryForm({
   const [form, setForm] = useState(defaultForm);
   const [companyOptions, setCompanyOptions] = useState([]);
   const [quotationRecords, setQuotationRecords] = useState([]);
+  const [moduleCatalog, setModuleCatalog] = useState([]);
   const isQuotationLocked = Boolean(form.sourceQuotationId);
   const isItemLocked = (item) => Boolean(item?.isSourceData);
 
   useEffect(() => {
+    fetchModules()
+      .then((data) => setModuleCatalog(Array.isArray(data) ? data : []))
+      .catch(() => setModuleCatalog([]));
+
     fetchOrganizations()
       .then(setCompanyOptions)
       .catch(() => setCompanyOptions([]));
@@ -125,6 +144,28 @@ export default function PurchaseOrderEntryForm({
       .then((data) => setQuotationRecords(Array.isArray(data) ? data : []))
       .catch(() => setQuotationRecords([]));
   }, []);
+
+  useEffect(() => {
+    if (!moduleCatalog.length) return;
+
+    setForm((prev) => {
+      const sourceItems = prev.items.filter((item) => item.isSourceData);
+      if (!sourceItems.length) return prev;
+
+      const rebuiltItems = buildQuotationItems(
+        { modules: sourceItems.map((item) => item.description) },
+        moduleCatalog,
+      );
+
+      const hasMissingRate = sourceItems.some(
+        (item) => Number(item.rate) === 0 && item.description,
+      );
+
+      if (!hasMissingRate) return prev;
+
+      return { ...prev, items: rebuiltItems };
+    });
+  }, [moduleCatalog]);
 
   useEffect(() => {
     const selectedQuotation = readStoredQuotation();
@@ -137,12 +178,13 @@ export default function PurchaseOrderEntryForm({
         sourceQuotationId: normalizeId(
           quotation.quotationId || prev.sourceQuotationId || null,
         ),
-        companyName: quotation.organizationName || prev.companyName || "",        quotationRefNo: quotation.quotationNo || prev.quotationRefNo || "",
+        companyName: quotation.organizationName || prev.companyName || "",
+        quotationRefNo: quotation.quotationNo || prev.quotationRefNo || "",
         quotationRefDate: quotation.date || prev.quotationRefDate || "",
         buyerName: quotation.quotationToName || prev.buyerName || "",
         buyerAddress: quotation.quotationToAddress || prev.buyerAddress || "",
         supplierName: quotation.organizationName || prev.supplierName || "",
-        items: buildQuotationItems(quotation),
+        items: buildQuotationItems(quotation, moduleCatalog),
       }));
     };
 
@@ -166,7 +208,7 @@ export default function PurchaseOrderEntryForm({
 
     hydrateFromStored();
     sessionStorage.removeItem("selectedQuotationForPo");
-  }, []);
+  }, [moduleCatalog]);
 
   useEffect(() => {
     const selectedCompanyName = form.companyName?.trim();
@@ -190,7 +232,7 @@ export default function PurchaseOrderEntryForm({
 
       const nextItems = prev.items.some((item) => item.isSourceData)
         ? prev.items
-        : buildQuotationItems(matchedQuotation);
+        : buildQuotationItems(matchedQuotation, moduleCatalog);
 
       return {
         ...prev,
@@ -206,7 +248,7 @@ export default function PurchaseOrderEntryForm({
         items: nextItems,
       };
     });
-  }, [form.companyName, quotationRecords]);
+  }, [form.companyName, quotationRecords, moduleCatalog]);
 
   const totals = useMemo(() => {
     const totalQty = form.items.reduce(
