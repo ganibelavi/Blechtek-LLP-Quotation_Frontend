@@ -28,14 +28,51 @@ const readStoredQuotation = () => {
   }
 };
 
-const emptyItem = (description = "", isSourceData = false) => ({
+const normalizeId = (value) => {
+  if (value === null || value === undefined || value === "") return null;
+  const parsed = Number(value);
+  return Number.isInteger(parsed) ? parsed : null;
+};
+
+const emptyItem = (description = "", isSourceData = false, rate = 0) => ({
   id: Date.now() + Math.random(),
   description,
   qty: 1,
   uom: "Nos.",
-  rate: 0,
+  rate,
   isSourceData,
 });
+
+const buildQuotationItems = (quotation) => {
+  const moduleDetails = Array.isArray(quotation?.moduleDetails) ? quotation.moduleDetails.filter(Boolean) : [];
+  const modules = Array.isArray(quotation?.modules) ? quotation.modules.filter(Boolean) : [];
+
+  if (moduleDetails.length > 0) {
+    return moduleDetails
+      .map((module) => {
+        const name = module.moduleName || module.ModuleName || module.name || module.module || "";
+        const price = Number(module.price ?? module.Price ?? 0) || 0;
+        return name ? emptyItem(name, true, price) : null;
+      })
+      .filter(Boolean);
+  }
+
+  if (modules.length === 0) {
+    return [emptyItem("", true)];
+  }
+
+  return modules
+    .map((module) => {
+      if (typeof module === "string") {
+        return module.trim() ? emptyItem(module, true, 0) : null;
+      }
+
+      const name = module.moduleName || module.ModuleName || module.name || module.module || "";
+      const price = Number(module.price ?? module.Price ?? 0) || 0;
+      return name ? emptyItem(name, true, price) : null;
+    })
+    .filter(Boolean);
+};
 
 const defaultForm = () => {
   const po = readStoredPurchaseOrder();
@@ -53,8 +90,8 @@ const defaultForm = () => {
     : [emptyItem("", true)];
 
   return {
-    sourcePoId: poDetails.id || po?.id || null,
-    sourceQuotationId: quotation?.quotationId || po?.quotationId || null,
+    sourcePoId: normalizeId(poDetails.id || po?.id || null),
+    sourceQuotationId: normalizeId(quotation?.quotationId || po?.quotationId || null),
     originalFor: "ORIGINAL FOR RECIPIENT",
     companyName: poDetails.companyName || "",
     invoiceNo: "",
@@ -119,8 +156,8 @@ export default function InvoiceEntryForm({ onNavigate, defaultReturnView = "crea
 
     const hydrateSourceData = async () => {
       const purchaseOrder = rawPo?.po || rawPo;
-      const sourcePoId = purchaseOrder?.id || rawPo?.id || null;
-      const sourceQuotationId = rawQuotation?.quotationId || purchaseOrder?.quotationId || rawPo?.quotationId || null;
+      const sourcePoId = normalizeId(purchaseOrder?.id || rawPo?.id || null);
+      const sourceQuotationId = normalizeId(rawQuotation?.quotationId || purchaseOrder?.quotationId || rawPo?.quotationId || null);
       if (!sourcePoId && !sourceQuotationId) return;
 
       try {
@@ -141,7 +178,7 @@ export default function InvoiceEntryForm({ onNavigate, defaultReturnView = "crea
 
             setForm((prev) => ({
               ...prev,
-              sourcePoId: remotePurchaseOrder.id || prev.sourcePoId || null,
+              sourcePoId: normalizeId(remotePurchaseOrder.id || prev.sourcePoId || null),
               companyName: poPayload.companyName || prev.companyName || "",
               supplierName: poPayload.supplierName || prev.supplierName || "",
               supplierAddress: poPayload.supplierAddress || prev.supplierAddress || "",
@@ -169,7 +206,7 @@ export default function InvoiceEntryForm({ onNavigate, defaultReturnView = "crea
           if (remoteQuotation) {
             setForm((prev) => ({
               ...prev,
-              sourceQuotationId: remoteQuotation.quotationId || prev.sourceQuotationId || null,
+              sourceQuotationId: normalizeId(remoteQuotation.quotationId || prev.sourceQuotationId || null),
               companyName: remoteQuotation.organizationName || prev.companyName || "",
               supplierName: prev.supplierName || remoteQuotation.organizationName || "",
               receiverName: prev.receiverName || remoteQuotation.quotationToName || "",
@@ -177,6 +214,9 @@ export default function InvoiceEntryForm({ onNavigate, defaultReturnView = "crea
               consigneeName: prev.consigneeName || remoteQuotation.quotationToName || "",
               consigneeAddress: prev.consigneeAddress || remoteQuotation.quotationToAddress || "",
               poNoDate: prev.poNoDate || (remoteQuotation.quotationNo ? `Quotation No. ${remoteQuotation.quotationNo}` : ""),
+              items: prev.items.some((item) => item.isSourceData)
+                ? prev.items
+                : buildQuotationItems(remoteQuotation),
             }));
           }
         }
@@ -205,13 +245,9 @@ export default function InvoiceEntryForm({ onNavigate, defaultReturnView = "crea
         return prev;
       }
 
-      const nextItems = prev.items.map((item, index) => {
-        if (index !== 0 || item.description) return item;
-        return {
-          ...item,
-          description: (matchedQuotation.modules || []).join(", ") || item.description,
-        };
-      });
+      const nextItems = prev.items.some((item) => item.isSourceData)
+        ? prev.items
+        : buildQuotationItems(matchedQuotation);
 
       return {
         ...prev,
@@ -270,8 +306,8 @@ export default function InvoiceEntryForm({ onNavigate, defaultReturnView = "crea
     event.preventDefault();
 
     const payload = {
-      poId: form.sourcePoId || null,
-      quotationId: form.sourceQuotationId || null,
+      poId: normalizeId(form.sourcePoId),
+      quotationId: normalizeId(form.sourceQuotationId),
       originalFor: form.originalFor,
       companyName: form.companyName,
       invoiceNo: form.invoiceNo,

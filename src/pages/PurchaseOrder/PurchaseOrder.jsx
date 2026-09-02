@@ -64,6 +64,8 @@ function currency(n) {
 }
 
 export default function PurchaseOrder({ initialData, onConvertToInvoice, onBackToQuotation }) {
+  const isViewOnly = true;
+
   const normalizedInitialData = initialData?.po ? initialData : { po: initialData, items: initialData?.items || [] };
 
   const [po, setPo] = useState({ ...emptyPO, ...(normalizedInitialData?.po || {}) });
@@ -75,6 +77,8 @@ export default function PurchaseOrder({ initialData, onConvertToInvoice, onBackT
 
   const field = (key) => ({
     value: po[key],
+    readOnly: isViewOnly,
+    disabled: isViewOnly,
     onChange: (e) => setPo((prev) => ({ ...prev, [key]: e.target.value })),
   });
 
@@ -115,8 +119,8 @@ export default function PurchaseOrder({ initialData, onConvertToInvoice, onBackT
           type="button"
           className="po-btn po-btn-primary"
           onClick={handleConvertToInvoice}
-          disabled={!canConvert}
-          title={canConvert ? "" : "Only open or partially fulfilled POs can be invoiced"}
+          disabled={isViewOnly || !canConvert}
+          title={isViewOnly ? "View-only mode" : canConvert ? "" : "Only open or partially fulfilled POs can be invoiced"}
         >
           Convert to Invoice
         </button>
@@ -242,7 +246,6 @@ export default function PurchaseOrder({ initialData, onConvertToInvoice, onBackT
               <th className="po-col-uom">UOM</th>
               <th className="po-col-rate">Rate per unit (₹)</th>
               <th className="po-col-total">Total (₹)</th>
-              <th className="po-col-action no-print"></th>
             </tr>
           </thead>
           <tbody>
@@ -252,6 +255,8 @@ export default function PurchaseOrder({ initialData, onConvertToInvoice, onBackT
                 <td>
                   <input
                     value={row.description}
+                    readOnly={isViewOnly}
+                    disabled={isViewOnly}
                     onChange={(e) => updateItem(row.id, "description", e.target.value)}
                     placeholder="Item description"
                   />
@@ -261,12 +266,16 @@ export default function PurchaseOrder({ initialData, onConvertToInvoice, onBackT
                     type="number"
                     min="0"
                     value={row.qty}
+                    readOnly={isViewOnly}
+                    disabled={isViewOnly}
                     onChange={(e) => updateItem(row.id, "qty", e.target.value)}
                   />
                 </td>
                 <td className="po-col-uom">
                   <input
                     value={row.uom}
+                    readOnly={isViewOnly}
+                    disabled={isViewOnly}
                     onChange={(e) => updateItem(row.id, "uom", e.target.value)}
                   />
                 </td>
@@ -275,21 +284,13 @@ export default function PurchaseOrder({ initialData, onConvertToInvoice, onBackT
                     type="number"
                     min="0"
                     value={row.rate}
+                    readOnly={isViewOnly}
+                    disabled={isViewOnly}
                     onChange={(e) => updateItem(row.id, "rate", e.target.value)}
                   />
                 </td>
                 <td className="po-col-total po-num">
                   {currency((Number(row.qty) || 0) * (Number(row.rate) || 0))}
-                </td>
-                <td className="po-col-action no-print">
-                  <button
-                    type="button"
-                    className="po-remove"
-                    onClick={() => removeRow(row.id)}
-                    aria-label="Remove row"
-                  >
-                    ✕
-                  </button>
                 </td>
               </tr>
             ))}
@@ -301,7 +302,6 @@ export default function PurchaseOrder({ initialData, onConvertToInvoice, onBackT
               <td></td>
               <td></td>
               <td className="po-col-total po-num">₹ {currency(totals.totalPrice)}</td>
-              <td className="no-print"></td>
             </tr>
           </tfoot>
         </table>

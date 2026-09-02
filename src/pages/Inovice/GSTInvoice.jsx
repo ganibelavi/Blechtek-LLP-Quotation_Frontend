@@ -77,6 +77,8 @@ function currency(n) {
 }
 
 export default function GSTInvoice({ initialData, onBackToInvoiceList }) {
+  const isViewOnly = true;
+
   const normalizedInitialData = initialData?.invoice
     ? initialData
     : { invoice: initialData, items: initialData?.items || [] };
@@ -98,6 +100,8 @@ export default function GSTInvoice({ initialData, onBackToInvoiceList }) {
 
   const field = (key) => ({
     value: invoice[key],
+    readOnly: isViewOnly,
+    disabled: isViewOnly,
     onChange: (e) => setInvoice((prev) => ({ ...prev, [key]: e.target.value })),
   });
 
@@ -363,7 +367,6 @@ export default function GSTInvoice({ initialData, onBackToInvoiceList }) {
               <th className="gi-col-uom">UOM</th>
               <th className="gi-col-rate">Rate per unit (₹)</th>
               <th className="gi-col-total">Total (₹)</th>
-              <th className="gi-col-action no-print"></th>
             </tr>
           </thead>
           <tbody>
@@ -373,6 +376,8 @@ export default function GSTInvoice({ initialData, onBackToInvoiceList }) {
                 <td>
                   <input
                     value={row.description}
+                    readOnly={isViewOnly}
+                    disabled={isViewOnly}
                     onChange={(e) =>
                       updateItem(row.id, "description", e.target.value)
                     }
@@ -384,12 +389,16 @@ export default function GSTInvoice({ initialData, onBackToInvoiceList }) {
                     type="number"
                     min="0"
                     value={row.qty}
+                    readOnly={isViewOnly}
+                    disabled={isViewOnly}
                     onChange={(e) => updateItem(row.id, "qty", e.target.value)}
                   />
                 </td>
                 <td className="gi-col-uom">
                   <input
                     value={row.uom}
+                    readOnly={isViewOnly}
+                    disabled={isViewOnly}
                     onChange={(e) => updateItem(row.id, "uom", e.target.value)}
                   />
                 </td>
@@ -398,21 +407,13 @@ export default function GSTInvoice({ initialData, onBackToInvoiceList }) {
                     type="number"
                     min="0"
                     value={row.rate}
+                    readOnly={isViewOnly}
+                    disabled={isViewOnly}
                     onChange={(e) => updateItem(row.id, "rate", e.target.value)}
                   />
                 </td>
                 <td className="gi-col-total gi-num">
                   {currency((Number(row.qty) || 0) * (Number(row.rate) || 0))}
-                </td>
-                <td className="gi-col-action no-print">
-                  <button
-                    type="button"
-                    className="gi-remove"
-                    onClick={() => removeRow(row.id)}
-                    aria-label="Remove row"
-                  >
-                    ✕
-                  </button>
                 </td>
               </tr>
             ))}
@@ -428,7 +429,6 @@ export default function GSTInvoice({ initialData, onBackToInvoiceList }) {
               <td className="gi-col-total gi-num">
                 {currency(totals.totalPrice)}
               </td>
-              <td className="no-print"></td>
             </tr>
           </tfoot>
         </table>
