@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
-import { fetchDashboardData } from "../services/quotationApi";
+import {
+  fetchDashboardData,
+  fetchPurchaseOrders,
+  fetchInvoices,
+} from "../services/quotationApi";
 import {
   Box,
   Paper,
@@ -36,16 +40,69 @@ function formatCurrency(value) {
   return `${Number(value).toLocaleString("en-IN")}`;
 }
 
+function getNumericValue(value) {
+  if (value === null || value === undefined || value === "") return 0;
+  const asNumber = Number(String(value).replace(/[^0-9.-]/g, ""));
+  return Number.isFinite(asNumber) ? asNumber : 0;
+}
+
+function getNestedValue(record, path) {
+  return path.split(".").reduce((acc, key) => acc?.[key], record);
+}
+
+function buildMonthlyTrend(entries, dateKeys, amountKeys) {
+  const grouped = new Map();
+
+  (entries || []).forEach((entry) => {
+    const rawDate = dateKeys
+      .map((key) => getNestedValue(entry, key))
+      .find((value) => value !== null && value !== undefined && value !== "");
+
+    if (!rawDate) return;
+
+    const date = new Date(rawDate);
+    if (Number.isNaN(date.getTime())) return;
+
+    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    const monthLabel = date.toLocaleString("en-US", {
+      month: "short",
+      year: "2-digit",
+    });
+
+    const amount = amountKeys
+      .map((key) => getNestedValue(entry, key))
+      .reduce((sum, value) => sum + getNumericValue(value), 0);
+
+    if (!grouped.has(monthKey)) {
+      grouped.set(monthKey, { month: monthLabel, revenue: 0, count: 0 });
+    }
+
+    const current = grouped.get(monthKey);
+    current.revenue += amount;
+    current.count += 1;
+  });
+
+  return [...grouped.values()].sort((a, b) => a.month.localeCompare(b.month));
+}
+
 export default function DashboardPage({ onNavigate }) {
   const [data, setData] = useState(null);
+  const [purchaseOrders, setPurchaseOrders] = useState([]);
+  const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const loadDashboard = async () => {
     try {
       setLoading(true);
-      const result = await fetchDashboardData();
-      setData(result);
+      const [dashboardResult, poRows, invoiceRows] = await Promise.all([
+        fetchDashboardData(),
+        fetchPurchaseOrders(),
+        fetchInvoices(),
+      ]);
+      setData(dashboardResult);
+      setPurchaseOrders(Array.isArray(poRows) ? poRows : []);
+      setInvoices(Array.isArray(invoiceRows) ? invoiceRows : []);
       setError(null);
     } catch (err) {
       setError(
@@ -137,35 +194,92 @@ export default function DashboardPage({ onNavigate }) {
     {
       label: "Total Quotations",
       value: data.totalQuotations ?? 0,
-    icon: <img src="/logo/report.png" alt="Total Quotations" style={{ width: 28, height: 28 }} />,
+      icon: <img src="/logo/report.png" alt="Total Quotations" style={{ width: 28, height: 28 }} />,
       color: "primary",
     },
     {
       label: "Organizations",
       value: data.totalOrganizations ?? 0,
-    icon: <img src="/logo/industry.png" alt="Organizations" style={{ width: 28, height: 28 }} />,
+      icon: <img src="/logo/industry.png" alt="Organizations" style={{ width: 28, height: 28 }} />,
       color: "secondary",
     },
     {
       label: "Modules",
       value: data.totalModules ?? 0,
-    icon: <img src="/logo/report.png" alt="Modules" style={{ width: 28, height: 28 }} />,
+      icon: <img src="/logo/report.png" alt="Modules" style={{ width: 28, height: 28 }} />,
       color: "primary",
     },
     {
       label: "Quotation Value",
       value: formatCurrency(data.totalQuotedAmount ?? 0),
-    icon: <img src="/logo/speedometer.png" alt="Quotation Value" style={{ width: 28, height: 28 }} />,
+      icon: <img src="/logo/speedometer.png" alt="Quotation Value" style={{ width: 28, height: 28 }} />,
       color: "primary",
+    },
+    // {
+    //   label: "Active Pipeline",
+    //   value:
+    //     data.statusBreakdown?.find((s) => s.status === "Valid")?.count ?? 0,
+    //   icon: <img src="/logo/users.png" alt="Active Pipeline" style={{ width: 28, height: 28 }} />,
+    //   color: "primary",
+    // },
+  ];
+
+  const totalPurchaseOrderValue = purchaseOrders.reduce((sum, order) => {
+    const amount =
+      getNumericValue(order.totalAmount) ||
+      getNumericValue(order.totals?.grandTotal) ||
+      getNumericValue(order.totals?.totalPrice) ||
+      getNumericValue(order.amount);
+    return sum + amount;
+  }, 0);
+
+  const totalInvoiceValue = invoices.reduce((sum, invoice) => {
+    const amount =
+      getNumericValue(invoice.totalAmount) ||
+      getNumericValue(invoice.totals?.grandTotal) ||
+      getNumericValue(invoice.totals?.totalPrice) ||
+      getNumericValue(invoice.amount);
+    return sum + amount;
+  }, 0);
+
+  const poInvoiceCards = [
+    {
+      label: "Total Purchase Orders",
+      value: purchaseOrders.length,
+      icon: <img src="/logo/clipboard.png" alt="Total Purchase Orders" style={{ width: 28, height: 28 }} />,
+      color: "info",
     },
     {
-      label: "Active Pipeline",
-      value:
-        data.statusBreakdown?.find((s) => s.status === "Valid")?.count ?? 0,
-    icon: <img src="/logo/users.png" alt="Active Pipeline" style={{ width: 28, height: 28 }} />,
-      color: "primary",
+      label: "Purchase Order Value",
+      value: `₹${formatCurrency(totalPurchaseOrderValue)}`,
+      icon: <img src="/logo/report.png" alt="Purchase Order Value" style={{ width: 28, height: 28 }} />,
+      color: "info",
+    },
+    {
+      label: "Total Invoices",
+      value: invoices.length,
+      icon: <img src="/logo/calculator.png" alt="Total Invoices" style={{ width: 28, height: 28 }} />,
+      color: "info",
+    },
+    {
+      label: "Invoice Value",
+      value: `₹${formatCurrency(totalInvoiceValue)}`,
+      icon: <img src="/logo/speedometer.png" alt="Invoice Value" style={{ width: 28, height: 28 }} />,
+      color: "info",
     },
   ];
+
+  const poMonthlyTrend = buildMonthlyTrend(
+    purchaseOrders,
+    ["poDate", "dateOfIssue", "generatedAt", "createdAt"],
+    ["totalAmount", "totals.grandTotal", "totals.totalPrice", "amount"],
+  );
+
+  const invoiceMonthlyTrend = buildMonthlyTrend(
+    invoices,
+    ["dateOfIssue", "poDate", "generatedAt", "createdAt"],
+    ["totalAmount", "totals.grandTotal", "totals.totalPrice", "amount"],
+  );
 
   const recentColumns = [
     {
@@ -317,6 +431,47 @@ export default function DashboardPage({ onNavigate }) {
         {statCards.map((card, index) => (
           <DataCard key={index} {...card} borderRadius={2} />
         ))}
+      </Box>
+
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+          gap: 3,
+          mb: 4,
+        }}
+      >
+        {poInvoiceCards.map((card, index) => (
+          <DataCard key={`po-invoice-${index}`} {...card} borderRadius={2} />
+        ))}
+      </Box>
+
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", lg: "repeat(2, minmax(0, 1fr))" },
+          gap: 3,
+          alignItems: "stretch",
+          mb: 4,
+        }}
+      >
+        <Paper {...chartContainerStyle}>
+          <Typography variant="h6" fontWeight={700} gutterBottom sx={{ mb: 2 }}>
+            Purchase Order Trend
+          </Typography>
+          <Box sx={{ flex: 1, minHeight: 300 }}>
+            <TrendChart data={poMonthlyTrend} />
+          </Box>
+        </Paper>
+
+        <Paper {...chartContainerStyle}>
+          <Typography variant="h6" fontWeight={700} gutterBottom sx={{ mb: 2 }}>
+            Invoice Trend
+          </Typography>
+          <Box sx={{ flex: 1, minHeight: 300 }}>
+            <TrendChart data={invoiceMonthlyTrend} />
+          </Box>
+        </Paper>
       </Box>
 
       <Box
