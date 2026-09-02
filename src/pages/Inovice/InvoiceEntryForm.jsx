@@ -3,8 +3,8 @@ import SearchDropdown from "../../components/SearchDropdown";
 import {
   createInvoice,
   fetchModules,
-  fetchOrganizations,
   fetchPurchaseOrderById,
+  fetchPurchaseOrderCompanies,
   fetchQuotationById,
   fetchQuotations,
 } from "../../services/quotationApi";
@@ -170,7 +170,7 @@ export default function InvoiceEntryForm({ onNavigate, defaultReturnView = "crea
       .then((data) => setModuleCatalog(Array.isArray(data) ? data : []))
       .catch(() => setModuleCatalog([]));
 
-    fetchOrganizations()
+    fetchPurchaseOrderCompanies()
       .then(setCompanyOptions)
       .catch(() => setCompanyOptions([]));
 

@@ -160,6 +160,16 @@ export async function fetchOrganizations() {
   return organizations.sort();
 }
 
+export async function fetchPurchaseOrderCompanies() {
+  const { data } = await client.get("/api/purchase-order");
+  const companies = [...new Set(
+    data
+      .map((po) => po.companyName || po.buyerName || po.supplierName || po.po?.companyName || po.po?.buyerName || po.po?.supplierName)
+      .filter(Boolean),
+  )];
+  return companies.sort();
+}
+
 /**
  * Fetch unique reference by names from quotation history
  * Returns a list of unique reference by names
