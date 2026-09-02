@@ -27,8 +27,8 @@
 
 .search-dropdown__input {
   width: 100%;
-  padding: 10px 12px;
-  font-size: 14px;
+  padding: 5px 10px;
+  font-size: 13px;
   color: var(--text-900, #111827);
   background: var(--surface, #fff);
   border: 1px solid var(--border, #d1d5db);

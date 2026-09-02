@@ -656,10 +656,10 @@ export default function InvoiceEntryForm({ onNavigate, defaultReturnView = "crea
 
 const inputStyle = {
   width: "100%",
-  padding: "10px 12px",
+  padding: "6px 10px",
   borderRadius: 8,
   border: "1px solid #d1d5db",
-  fontSize: 14,
+  fontSize: 13,
   outline: "none",
   boxSizing: "border-box",
 };
