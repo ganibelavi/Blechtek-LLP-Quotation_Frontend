@@ -11,13 +11,13 @@ import {
 } from "recharts";
 
 export default function TopOrganizationsBar({ data }) {
-  const chartData = (data || []).slice(0, 8).map((d) => {
+  const chartData = (data || []).slice(0, 5).map((d) => {
     const organizationName = d.organization ?? d.Organization ?? "";
     const shortOrg = organizationName.length > 5 ? organizationName.substring(0, 5) + "..." : organizationName;
     return {
       org: shortOrg,
       fullOrg: organizationName,
-      count: Number(d.quoteCount ?? d.QuoteCount ?? d.count ?? d.Count ?? 0),
+      count: Math.max(0, Number(d.quoteCount ?? d.QuoteCount ?? d.count ?? d.Count ?? 0) || 0),
     };
   });
 
@@ -50,6 +50,7 @@ export default function TopOrganizationsBar({ data }) {
           fontSize={11}
           tickLine={false}
           axisLine={{ stroke: "#e0e0e0" }}
+          domain={[0, (dataMax) => Math.max(1, dataMax || 1)]}
           tickFormatter={(value) => (value >= 1000 ? `${(value / 1000).toFixed(0)}k` : Math.floor(value))}
         />
         <Label value="No. of Quotes" angle={-90} position="insideLeft" offset={-30} fontSize={12} fill="#64748b" fontWeight={600} />

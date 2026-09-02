@@ -11,13 +11,13 @@ import {
 } from "recharts";
 
 export default function UserQuotationBar({ data }) {
-  const chartData = (data || []).slice(0, 8).map((d) => {
+  const chartData = (data || []).slice(0, 5).map((d) => {
     const userName = d.user ?? d.User ?? "Unknown";
     const shortUser = userName.length > 5 ? userName.substring(0, 5) + "..." : userName;
     return {
       user: shortUser,
       fullUser: userName,
-      quoteCount: Number(d.quoteCount ?? d.QuoteCount ?? 0),
+      quoteCount: Math.max(0, Number(d.quoteCount ?? d.QuoteCount ?? 0) || 0),
     };
   });
 
@@ -50,6 +50,7 @@ export default function UserQuotationBar({ data }) {
           fontSize={11}
           tickLine={false}
           axisLine={{ stroke: "#e0e0e0" }}
+          domain={[0, (dataMax) => Math.max(1, dataMax || 1)]}
           tickFormatter={(value) => (value >= 1000 ? `${(value / 1000).toFixed(0)}k` : Math.floor(value))}
         />
         <Label value="No. of Quotations" angle={-90} position="insideLeft" offset={-30} fontSize={12} fill="#64748b" fontWeight={600} />

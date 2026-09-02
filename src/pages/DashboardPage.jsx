@@ -281,6 +281,73 @@ export default function DashboardPage({ onNavigate }) {
     ["totalAmount", "totals.grandTotal", "totals.totalPrice", "amount"],
   );
 
+  const normalizeDocumentStatus = (value) => {
+    const normalized = String(value ?? "").trim().toLowerCase();
+
+    if (["approved", "approved and issued", "completed", "paid", "closed", "valid", "success"].includes(normalized)) {
+      return "Approved";
+    }
+
+    if (["cancelled", "canceled", "rejected", "void", "failed"].includes(normalized)) {
+      return "Cancelled";
+    }
+
+    if (["draft", "pending", "in progress", "in-progress", "created", "issued"].includes(normalized)) {
+      return "Pending";
+    }
+
+    return normalized ? normalized.charAt(0).toUpperCase() + normalized.slice(1) : "Pending";
+  };
+
+  const purchaseOrderStatusData = Object.entries(
+    purchaseOrders.reduce((acc, order) => {
+      const status = normalizeDocumentStatus(order.status || order.poStatus || order.state || order.stage || "Pending");
+      acc[status] = (acc[status] || 0) + 1;
+      return acc;
+    }, {}),
+  ).map(([status, count]) => ({ status, count }));
+
+  const invoiceStatusData = Object.entries(
+    invoices.reduce((acc, invoice) => {
+      const status = normalizeDocumentStatus(invoice.status || invoice.invoiceStatus || invoice.paymentStatus || invoice.billStatus || "Pending");
+      acc[status] = (acc[status] || 0) + 1;
+      return acc;
+    }, {}),
+  ).map(([status, count]) => ({ status, count }));
+
+  const companyValueAggregator = (records, keys) => {
+    const bucket = new Map();
+
+    records.forEach((record) => {
+      const companyName = keys
+        .map((key) => getNestedValue(record, key))
+        .find((value) => value !== null && value !== undefined && value !== "");
+
+      if (!companyName) return;
+
+      const current = bucket.get(companyName) || 0;
+      bucket.set(companyName, current + 1);
+    });
+
+    return [...bucket.entries()]
+      .map(([organization, count]) => ({
+        organization,
+        quoteCount: Math.max(0, Number(count) || 0),
+      }))
+      .sort((a, b) => b.quoteCount - a.quoteCount)
+      .slice(0, 5);
+  };
+
+  const topPurchaseOrderCompanies = companyValueAggregator(
+    purchaseOrders,
+    ["companyName", "buyerName", "supplierName", "po.companyName", "po.buyerName", "po.supplierName"],
+  );
+
+  const topInvoiceCompanies = companyValueAggregator(
+    invoices,
+    ["companyName", "receiverName", "supplierName", "invoice.companyName", "invoice.receiverName", "invoice.supplierName"],
+  );
+
   const recentColumns = [
     {
       key: "srNo",
@@ -470,6 +537,62 @@ export default function DashboardPage({ onNavigate }) {
           </Typography>
           <Box sx={{ flex: 1, minHeight: 300 }}>
             <TrendChart data={invoiceMonthlyTrend} />
+          </Box>
+        </Paper>
+      </Box>
+
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))" },
+          gap: 3,
+          alignItems: "stretch",
+          mb: 4,
+        }}
+      >
+        <Paper {...chartContainerStyle}>
+          <Typography variant="h6" fontWeight={700} gutterBottom sx={{ mb: 2 }}>
+            Purchase Order Status
+          </Typography>
+          <Box sx={{ flex: 1, minHeight: 300 }}>
+            <StatusPie data={purchaseOrderStatusData} />
+          </Box>
+        </Paper>
+
+        <Paper {...chartContainerStyle}>
+          <Typography variant="h6" fontWeight={700} gutterBottom sx={{ mb: 2 }}>
+            Invoice Status
+          </Typography>
+          <Box sx={{ flex: 1, minHeight: 300 }}>
+            <StatusPie data={invoiceStatusData} />
+          </Box>
+        </Paper>
+      </Box>
+
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))" },
+          gap: 3,
+          alignItems: "stretch",
+          mb: 4,
+        }}
+      >
+        <Paper {...chartContainerStyle}>
+          <Typography variant="h6" fontWeight={700} gutterBottom sx={{ mb: 2 }}>
+            Top Purchase Order Companies
+          </Typography>
+          <Box sx={{ flex: 1, minHeight: 300 }}>
+            <TopOrganizationsBar data={topPurchaseOrderCompanies} />
+          </Box>
+        </Paper>
+
+        <Paper {...chartContainerStyle}>
+          <Typography variant="h6" fontWeight={700} gutterBottom sx={{ mb: 2 }}>
+            Top Invoice Companies
+          </Typography>
+          <Box sx={{ flex: 1, minHeight: 300 }}>
+            <TopOrganizationsBar data={topInvoiceCompanies} />
           </Box>
         </Paper>
       </Box>

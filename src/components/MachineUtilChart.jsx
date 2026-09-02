@@ -10,13 +10,13 @@ import {
 } from "recharts";
 
 export default function MachineUtilChart({ data }) {
-  const chartData = (data || []).slice(0, 8).map((d) => {
+  const chartData = (data || []).slice(0, 5).map((d) => {
     const machineName = d.machine ?? d.Machine ?? "";
     const shortMachine = machineName.length > 5 ? machineName.substring(0, 5) + "..." : machineName;
     return {
       machine: shortMachine,
       fullMachine: machineName,
-      utilization: Number(d.utilization ?? d.Utilization ?? d.usage ?? d.Usage ?? d.count ?? d.Count ?? 0),
+      utilization: Math.max(0, Number(d.utilization ?? d.Utilization ?? d.usage ?? d.Usage ?? d.count ?? d.Count ?? 0) || 0),
     };
   });
 
@@ -49,6 +49,7 @@ export default function MachineUtilChart({ data }) {
           fontSize={11}
           tickLine={false}
           axisLine={{ stroke: "#e0e0e0" }}
+          domain={[0, (dataMax) => Math.max(1, dataMax || 1)]}
           tickFormatter={(value) => `${value}%`}
         />
         <Label value="Utilization (%)" angle={-90} position="insideLeft" offset={-30} fontSize={12} fill="#64748b" fontWeight={600} />
