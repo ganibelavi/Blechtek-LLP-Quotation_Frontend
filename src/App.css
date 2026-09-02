@@ -146,6 +146,7 @@
 }
 
 @media print {
+
   html,
   body {
     background: #fff !important;
@@ -169,7 +170,7 @@
     background: #fff !important;
   }
 
-  .app-main > *:not(.po-page):not(.gi-page) {
+  .app-main>*:not(.po-page):not(.gi-page) {
     display: none !important;
   }
 

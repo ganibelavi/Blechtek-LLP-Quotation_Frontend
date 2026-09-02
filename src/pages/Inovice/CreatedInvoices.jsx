@@ -6,16 +6,26 @@ import {
   Alert,
   IconButton,
   Tooltip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
 } from "@mui/material";
 import VisibilityIcon from "@mui/icons-material/Visibility";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import DeleteIcon from "@mui/icons-material/Delete";
 import EntityTable from "../../components/EntityTable";
 import { fetchInvoices, deleteInvoice as deleteInvoiceApi } from "../../services/quotationApi";
+import {
+  dialogPrimaryActionSx,
+  dialogSecondaryActionSx,
+} from "../../styles/modalActionButtonStyles";
 
 export default function CreatedInvoices({ onNavigate }) {
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [invoiceToDelete, setInvoiceToDelete] = useState(null);
 
   const loadInvoices = async () => {
     try {
@@ -52,14 +62,30 @@ export default function CreatedInvoices({ onNavigate }) {
     onNavigate("invoice");
   };
 
-  const deleteInvoice = async (id) => {
+  const handleRemoveInvoice = (row) => {
+    setInvoiceToDelete(row);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmRemoveInvoice = async () => {
+    if (!invoiceToDelete) return;
+
     try {
-      await deleteInvoiceApi(id);
-      setInvoices((prev) => prev.filter((invoice) => invoice.id !== id));
+      await deleteInvoiceApi(invoiceToDelete.id);
+      setInvoices((prev) => prev.filter((invoice) => invoice.id !== invoiceToDelete.id));
+      setDeleteDialogOpen(false);
+      setInvoiceToDelete(null);
     } catch (err) {
       setError("Unable to remove invoice.");
       console.error(err);
+      setDeleteDialogOpen(false);
+      setInvoiceToDelete(null);
     }
+  };
+
+  const handleCloseDeleteDialog = () => {
+    setDeleteDialogOpen(false);
+    setInvoiceToDelete(null);
   };
 
   const columns = [
@@ -90,12 +116,12 @@ export default function CreatedInvoices({ onNavigate }) {
         <Box sx={{ display: "flex", gap: 0.5 }}>
           <Tooltip title="Open Invoice">
             <IconButton size="small" onClick={() => openInvoice(row)}>
-              <VisibilityIcon fontSize="small" color="primary" />
+              <VisibilityIcon fontSize="small" />
             </IconButton>
           </Tooltip>
           <Tooltip title="Delete Invoice">
-            <IconButton size="small" onClick={() => deleteInvoice(row.id)}>
-              <DeleteOutlineIcon fontSize="small" color="error" />
+            <IconButton size="small" onClick={() => handleRemoveInvoice(row)}>
+              <DeleteIcon fontSize="small" />
             </IconButton>
           </Tooltip>
         </Box>
@@ -145,6 +171,54 @@ export default function CreatedInvoices({ onNavigate }) {
       ) : (
         <EntityTable title="" columns={columns} rows={rows} />
       )}
+
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleCloseDeleteDialog}
+        maxWidth="xs"
+        fullWidth
+        sx={{
+          "& .MuiDialog-container": {
+            alignItems: "flex-start",
+            paddingTop: "1vh",
+          },
+        }}
+        PaperProps={{ sx: { borderRadius: 1 } }}
+      >
+        <DialogTitle
+          sx={{
+            color: "white",
+            background: "linear-gradient(120deg, #308aea 0%, #48cae4 100%)",
+            py: 1.5,
+          }}
+        >
+          Confirm Delete Invoice
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" sx={{ mt: 1, fontSize: "14px" }}>
+            Are you sure you want to delete the invoice{" "}
+            <strong>
+              {invoiceToDelete ? `Invoice No. ${invoiceToDelete.invoiceNo || invoiceToDelete.id}` : ""}
+            </strong>
+            ? This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ p: 3, pt: 0 }}>
+          <Button
+            onClick={handleCloseDeleteDialog}
+            sx={dialogSecondaryActionSx}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleConfirmRemoveInvoice}
+            variant="contained"
+            sx={dialogPrimaryActionSx}
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

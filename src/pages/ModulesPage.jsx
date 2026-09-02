@@ -15,6 +15,10 @@ import {
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import {
+  dialogPrimaryActionSx,
+  dialogSecondaryActionSx,
+} from "../styles/modalActionButtonStyles";
 
 const emptyModule = { pillar: "", moduleName: "", price: "" };
 
@@ -343,17 +347,15 @@ export default function ModulesPage() {
         <DialogActions sx={{ p: 3, pt: 0 }}>
           <Button
             onClick={handleCloseDeleteDialog}
-            sx={{
-              bgcolor: "#757575",
-              color: "white",
-              "&:hover": { bgcolor: "#757575" },
-              textTransform: "none",
-              borderRadius: 2,
-            }}
+            sx={dialogSecondaryActionSx}
           >
             Cancel
           </Button>
-          <Button onClick={handleConfirmRemoveModule} variant="contained">
+          <Button
+            onClick={handleConfirmRemoveModule}
+            variant="contained"
+            sx={dialogPrimaryActionSx}
+          >
             Delete
           </Button>
         </DialogActions>

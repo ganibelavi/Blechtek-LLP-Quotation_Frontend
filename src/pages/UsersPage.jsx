@@ -27,6 +27,10 @@ import {
   Alert,
 } from "@mui/material";
 import CustomSnackbar from "../components/CustomSnackbar";
+import {
+  dialogPrimaryActionSx,
+  dialogSecondaryActionSx,
+} from "../styles/modalActionButtonStyles";
 
 const emptyUser = {
   firstName: "",
@@ -463,17 +467,15 @@ export default function UsersPage() {
         <DialogActions sx={{ p: 3, pt: 0 }}>
           <Button
             onClick={handleCloseDeleteDialog}
-            sx={{
-              bgcolor: "#757575",
-              color: "white",
-              "&:hover": { bgcolor: "#757575" },
-              textTransform: "none",
-              borderRadius: 2,
-            }}
+            sx={dialogSecondaryActionSx}
           >
             Cancel
           </Button>
-          <Button onClick={handleConfirmRemoveUser} variant="contained">
+          <Button
+            onClick={handleConfirmRemoveUser}
+            variant="contained"
+            sx={dialogPrimaryActionSx}
+          >
             Delete
           </Button>
         </DialogActions>

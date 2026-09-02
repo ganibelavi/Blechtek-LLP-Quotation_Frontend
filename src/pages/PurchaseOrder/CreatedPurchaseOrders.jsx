@@ -6,16 +6,29 @@ import {
   Alert,
   IconButton,
   Tooltip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
 } from "@mui/material";
 import VisibilityIcon from "@mui/icons-material/Visibility";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import DeleteIcon from "@mui/icons-material/Delete";
 import EntityTable from "../../components/EntityTable";
-import { fetchPurchaseOrders, deletePurchaseOrder as deletePurchaseOrderApi } from "../../services/quotationApi";
+import {
+  fetchPurchaseOrders,
+  deletePurchaseOrder as deletePurchaseOrderApi,
+} from "../../services/quotationApi";
+import {
+  dialogPrimaryActionSx,
+  dialogSecondaryActionSx,
+} from "../../styles/modalActionButtonStyles";
 
 export default function CreatedPurchaseOrders({ onNavigate }) {
   const [purchaseOrders, setPurchaseOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [purchaseOrderToDelete, setPurchaseOrderToDelete] = useState(null);
 
   const loadPurchaseOrders = async () => {
     try {
@@ -42,7 +55,9 @@ export default function CreatedPurchaseOrders({ onNavigate }) {
       : {
           po: purchaseOrderData,
           items: purchaseOrderData?.items || [],
-          totals: purchaseOrderData?.totals || { totalPrice: purchaseOrderData?.totalAmount || 0 },
+          totals: purchaseOrderData?.totals || {
+            totalPrice: purchaseOrderData?.totalAmount || 0,
+          },
           id: purchaseOrderData?.id,
           poNo: purchaseOrderData?.poNo,
         };
@@ -52,14 +67,32 @@ export default function CreatedPurchaseOrders({ onNavigate }) {
     onNavigate("purchase-order");
   };
 
-  const deletePurchaseOrder = async (id) => {
+  const handleRemovePurchaseOrder = (row) => {
+    setPurchaseOrderToDelete(row);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmRemovePurchaseOrder = async () => {
+    if (!purchaseOrderToDelete) return;
+
     try {
-      await deletePurchaseOrderApi(id);
-      setPurchaseOrders((prev) => prev.filter((po) => po.id !== id));
+      await deletePurchaseOrderApi(purchaseOrderToDelete.id);
+      setPurchaseOrders((prev) =>
+        prev.filter((po) => po.id !== purchaseOrderToDelete.id),
+      );
+      setDeleteDialogOpen(false);
+      setPurchaseOrderToDelete(null);
     } catch (err) {
       setError("Unable to remove purchase order.");
       console.error(err);
+      setDeleteDialogOpen(false);
+      setPurchaseOrderToDelete(null);
     }
+  };
+
+  const handleCloseDeleteDialog = () => {
+    setDeleteDialogOpen(false);
+    setPurchaseOrderToDelete(null);
   };
 
   const columns = [
@@ -72,7 +105,12 @@ export default function CreatedPurchaseOrders({ onNavigate }) {
     },
     { key: "poNo", label: "PO No.", sortable: true, minWidth: 150 },
     { key: "buyerName", label: "Customer", sortable: true, minWidth: 180 },
-    { key: "quotationRefNo", label: "Quotation No.", sortable: true, minWidth: 180 },
+    {
+      key: "quotationRefNo",
+      label: "Quotation No.",
+      sortable: true,
+      minWidth: 180,
+    },
     { key: "poDate", label: "PO Date", sortable: true, minWidth: 140 },
     { key: "totalAmount", label: "Amount", sortable: true, minWidth: 140 },
     {
@@ -84,12 +122,15 @@ export default function CreatedPurchaseOrders({ onNavigate }) {
         <Box sx={{ display: "flex", gap: 0.5 }}>
           <Tooltip title="Open PO">
             <IconButton size="small" onClick={() => openPurchaseOrder(row)}>
-              <VisibilityIcon fontSize="small" color="primary" />
+              <VisibilityIcon fontSize="small" />
             </IconButton>
           </Tooltip>
           <Tooltip title="Delete PO">
-            <IconButton size="small" onClick={() => deletePurchaseOrder(row.id)}>
-              <DeleteOutlineIcon fontSize="small" color="error" />
+            <IconButton
+              size="small"
+              onClick={() => handleRemovePurchaseOrder(row)}
+            >
+              <DeleteIcon fontSize="small" />
             </IconButton>
           </Tooltip>
         </Box>
@@ -103,18 +144,30 @@ export default function CreatedPurchaseOrders({ onNavigate }) {
     buyerName: po.buyerName || "-",
     quotationRefNo: po.quotationRefNo || "-",
     poDate: po.poDate || "-",
-    totalAmount: po.totalAmount ? `₹${Number(po.totalAmount).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "₹0.00",
+    totalAmount: po.totalAmount
+      ? `₹${Number(po.totalAmount).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+      : "₹0.00",
     data: po.data || po,
   }));
 
   return (
     <Box>
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 2,
+        }}
+      >
         <h1 className="page-heading page-heading__text">Purchase Orders</h1>
         <Button
           variant="contained"
           onClick={() => {
-            sessionStorage.setItem("purchaseOrderBackView", "created-purchase-orders");
+            sessionStorage.setItem(
+              "purchaseOrderBackView",
+              "created-purchase-orders",
+            );
             onNavigate("purchase-order-entry");
           }}
           sx={{ px: 3, py: 1 }}
@@ -136,6 +189,56 @@ export default function CreatedPurchaseOrders({ onNavigate }) {
       ) : (
         <EntityTable title="" columns={columns} rows={rows} />
       )}
+
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleCloseDeleteDialog}
+        maxWidth="xs"
+        fullWidth
+        sx={{
+          "& .MuiDialog-container": {
+            alignItems: "flex-start",
+            paddingTop: "1vh",
+          },
+        }}
+        PaperProps={{ sx: { borderRadius: 1 } }}
+      >
+        <DialogTitle
+          sx={{
+            color: "white",
+            background: "linear-gradient(120deg, #308aea 0%, #48cae4 100%)",
+            py: 1.5,
+          }}
+        >
+          Confirm Delete Purchase Order
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" sx={{ mt: 1, fontSize: "14px" }}>
+            Are you sure you want to delete the purchase order{" "}
+            <strong>
+              {purchaseOrderToDelete
+                ? `PO No. ${purchaseOrderToDelete.poNo || purchaseOrderToDelete.id}`
+                : ""}
+            </strong>
+            ? This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ p: 3, pt: 0 }}>
+          <Button
+            onClick={handleCloseDeleteDialog}
+            sx={dialogSecondaryActionSx}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleConfirmRemovePurchaseOrder}
+            variant="contained"
+            sx={dialogPrimaryActionSx}
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
