@@ -223,28 +223,21 @@ export default function PurchaseOrderEntryForm({
     if (!matchedQuotation) return;
 
     setForm((prev) => {
-      if (
-        (prev.companyName || "").trim().toLowerCase() !==
-        selectedCompanyName.toLowerCase()
-      ) {
-        return prev;
-      }
-
-      const nextItems = prev.items.some((item) => item.isSourceData)
-        ? prev.items
-        : buildQuotationItems(matchedQuotation, moduleCatalog);
+      const nextItems = buildQuotationItems(matchedQuotation, moduleCatalog);
 
       return {
         ...prev,
+        sourceQuotationId: normalizeId(
+          matchedQuotation.quotationId ?? matchedQuotation.id ?? prev.sourceQuotationId,
+        ),
         companyName: matchedQuotation.organizationName || prev.companyName,
-        quotationRefNo:
-          prev.quotationRefNo || matchedQuotation.quotationNo || "",
-        quotationRefDate: prev.quotationRefDate || matchedQuotation.date || "",
-        buyerName: prev.buyerName || matchedQuotation.quotationToName || "",
+        quotationRefNo: matchedQuotation.quotationNo || prev.quotationRefNo || "",
+        quotationRefDate: matchedQuotation.date || prev.quotationRefDate || "",
+        buyerName: matchedQuotation.quotationToName || prev.buyerName || "",
         buyerAddress:
-          prev.buyerAddress || matchedQuotation.quotationToAddress || "",
+          matchedQuotation.quotationToAddress || prev.buyerAddress || "",
         supplierName:
-          prev.supplierName || matchedQuotation.organizationName || "",
+          matchedQuotation.organizationName || prev.supplierName || "",
         items: nextItems,
       };
     });

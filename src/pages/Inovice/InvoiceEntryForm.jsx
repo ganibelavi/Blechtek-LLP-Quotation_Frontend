@@ -292,23 +292,20 @@ export default function InvoiceEntryForm({ onNavigate, defaultReturnView = "crea
     if (!matchedQuotation) return;
 
     setForm((prev) => {
-      if ((prev.companyName || "").trim().toLowerCase() !== selectedCompanyName.toLowerCase()) {
-        return prev;
-      }
-
-      const nextItems = prev.items.some((item) => item.isSourceData)
-        ? prev.items
-        : buildQuotationItems(matchedQuotation, moduleCatalog);
+      const nextItems = buildQuotationItems(matchedQuotation, moduleCatalog);
 
       return {
         ...prev,
+        sourceQuotationId: normalizeId(
+          matchedQuotation.quotationId ?? matchedQuotation.id ?? prev.sourceQuotationId,
+        ),
         companyName: matchedQuotation.organizationName || prev.companyName,
-        supplierName: prev.supplierName || matchedQuotation.organizationName || "",
-        receiverName: prev.receiverName || matchedQuotation.quotationToName || "",
-        receiverAddress: prev.receiverAddress || matchedQuotation.quotationToAddress || "",
-        consigneeName: prev.consigneeName || matchedQuotation.quotationToName || "",
-        consigneeAddress: prev.consigneeAddress || matchedQuotation.quotationToAddress || "",
-        poNoDate: prev.poNoDate || (matchedQuotation.quotationNo ? `Quotation No. ${matchedQuotation.quotationNo}` : ""),
+        supplierName: matchedQuotation.organizationName || prev.supplierName || "",
+        receiverName: matchedQuotation.quotationToName || prev.receiverName || "",
+        receiverAddress: matchedQuotation.quotationToAddress || prev.receiverAddress || "",
+        consigneeName: matchedQuotation.quotationToName || prev.consigneeName || "",
+        consigneeAddress: matchedQuotation.quotationToAddress || prev.consigneeAddress || "",
+        poNoDate: matchedQuotation.quotationNo ? `Quotation No. ${matchedQuotation.quotationNo}` : prev.poNoDate || "",
         items: nextItems,
       };
     });
