@@ -76,7 +76,7 @@ function currency(n) {
   });
 }
 
-export default function GSTInvoice({ initialData, onBackToInvoiceList }) {
+export default function GSTInvoice({ initialData, onBackToInvoiceList, onNavigate }) {
   const isViewOnly = true;
 
   const normalizedInitialData = initialData?.invoice
@@ -150,7 +150,23 @@ export default function GSTInvoice({ initialData, onBackToInvoiceList }) {
     invoice.insurance,
   ]);
 
-  const handlePrint = () => window.print();
+  const handlePrint = () => {
+    sessionStorage.setItem(
+      "invoicePrintData",
+      JSON.stringify({ invoice, items, totals }),
+    );
+    if (initialData?.id || initialData?.invoice?.id || invoice?.id) {
+      sessionStorage.setItem(
+        "invoicePrintId",
+        String(initialData?.id ?? initialData?.invoice?.id ?? invoice?.id),
+      );
+    }
+    if (typeof onNavigate === "function") {
+      onNavigate("invoice-print");
+      return;
+    }
+    window.print();
+  };
 
   return (
     <div className="gi-page">

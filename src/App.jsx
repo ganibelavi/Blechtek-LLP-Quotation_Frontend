@@ -11,11 +11,13 @@ import EditQuotation from "./pages/EditQuotation";
 import QuotationHistory from "./pages/QuotationHistory";
 import AllQuotationRevisions from "./pages/AllQuotationRevisions";
 import PurchaseOrder from "./pages/PurchaseOrder/PurchaseOrder";
+import PurchaseOrderPrint from "./pages/PurchaseOrder/PurchaseOrderPrint";
 import PurchaseOrderEntryForm from "./pages/PurchaseOrder/PurchaseOrderEntryForm";
 import CreatedPurchaseOrders from "./pages/PurchaseOrder/CreatedPurchaseOrders";
 import CreatedInvoices from "./pages/Inovice/CreatedInvoices";
 import InvoiceEntryForm from "./pages/Inovice/InvoiceEntryForm";
 import GSTInvoice from "./pages/Inovice/GSTInvoice";
+import GSTInvoicePrint from "./pages/Inovice/GSTInvoicePrint";
 import { useAuth } from "./context/AuthContext";
 import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
@@ -73,6 +75,7 @@ export default function App() {
       "quotation-history": "Quotation revision history",
       "all-revisions": "All Quotation Revisions",
       "purchase-order": "Purchase Order",
+      "purchase-order-print": "Purchase Order Print Preview",
       "purchase-order-entry": "Purchase Order Entry",
       "created-purchase-orders": "Purchase Orders",
       "created-invoices": "GST Invoices",
@@ -83,6 +86,7 @@ export default function App() {
       quotation: "Quotation preview",
       // "invoice-entry": "GST Invoice Entry",
       invoice: "GST Invoice",
+      "invoice-print": "GST Invoice Print Preview",
     }[view] || "";
 
   const menuItems = [
@@ -273,10 +277,12 @@ export default function App() {
               "quotation-history",
               "all-revisions",
               "purchase-order",
+              "purchase-order-print",
               "purchase-order-entry",
               "created-purchase-orders",
               "created-invoices",
               "invoice",
+              "invoice-print",
             ].includes(view) && (
               <div className="app-section-title">
                 <h1>{pageTitle}</h1>
@@ -342,19 +348,27 @@ export default function App() {
                   return (
                     <PurchaseOrder
                       initialData={getPurchaseOrderInitialData()}
+                      onNavigate={navigate}
                       onConvertToInvoice={() => {
                         sessionStorage.setItem(
-                          "invoiceBackView",
-                          "purchase-order",
+                        "invoiceBackView",
+                        "purchase-order",
                         );
                         navigate("invoice-entry");
                       }}
                       onBackToQuotation={() =>
                         navigate(
-                          sessionStorage.getItem("purchaseOrderBackView") ||
+                        sessionStorage.getItem("purchaseOrderBackView") ||
                             "created-purchase-orders",
                         )
                       }
+                    />
+                  );
+                case "purchase-order-print":
+                  return (
+                    <PurchaseOrderPrint
+                      initialData={getPurchaseOrderInitialData()}
+                      onBack={() => navigate("purchase-order")}
                     />
                   );
                 case "created-invoices":
@@ -373,10 +387,17 @@ export default function App() {
                   return (
                     <GSTInvoice
                       initialData={getInvoiceInitialData()}
+                      onNavigate={navigate}
                       onBackToInvoiceList={() => navigate("created-invoices")}
                     />
                   );
-                case "create":
+                case "invoice-print":
+                  return (
+                    <GSTInvoicePrint
+                      initialData={getInvoiceInitialData()}
+                      onBack={() => navigate("invoice")}
+                    />
+                  );                case "create":
                 default:
                   return <CreateQuotation onNavigate={navigate} />;
               }

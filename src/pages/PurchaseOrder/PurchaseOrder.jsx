@@ -1,20 +1,6 @@
 import React, { useState, useMemo } from "react";
 import "./PurchaseOrder.css";
 
-/**
- * Purchase Order — editable, printable PO page.
- * Mirrors the layout/style of the GSTInvoice component:
- * buyer/supplier details, a reference line back to the source
- * quotation, an editable item table, delivery/payment terms,
- * a status badge, and a "Convert to Invoice" action.
- *
- * Usage: <PurchaseOrder initialData={...} onConvertToInvoice={fn} />
- * - initialData: optional object to pre-fill the form (e.g. copied
- *   over from an accepted quotation). Shape matches `emptyPO` below.
- * - onConvertToInvoice(poData): called when the user clicks
- *   "Convert to Invoice" — wire this to your API call / route push.
- */
-
 let rowId = 1;
 const newRow = () => ({
   id: rowId++,
@@ -60,19 +46,32 @@ const STATUS_LABEL = {
 
 function currency(n) {
   const v = Number.isFinite(n) ? n : 0;
-  return v.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return v.toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 }
 
-export default function PurchaseOrder({ initialData, onConvertToInvoice, onBackToQuotation }) {
+export default function PurchaseOrder({
+  initialData,
+  onConvertToInvoice,
+  onBackToQuotation,
+  onNavigate,
+}) {
   const isViewOnly = true;
 
-  const normalizedInitialData = initialData?.po ? initialData : { po: initialData, items: initialData?.items || [] };
+  const normalizedInitialData = initialData?.po
+    ? initialData
+    : { po: initialData, items: initialData?.items || [] };
 
-  const [po, setPo] = useState({ ...emptyPO, ...(normalizedInitialData?.po || {}) });
+  const [po, setPo] = useState({
+    ...emptyPO,
+    ...(normalizedInitialData?.po || {}),
+  });
   const [items, setItems] = useState(
     normalizedInitialData?.items?.length
       ? normalizedInitialData.items.map((r) => ({ ...r, id: rowId++ }))
-      : [newRow()]
+      : [newRow()],
   );
 
   const field = (key) => ({
@@ -83,22 +82,42 @@ export default function PurchaseOrder({ initialData, onConvertToInvoice, onBackT
   });
 
   const updateItem = (id, key, value) => {
-    setItems((prev) => prev.map((row) => (row.id === id ? { ...row, [key]: value } : row)));
+    setItems((prev) =>
+      prev.map((row) => (row.id === id ? { ...row, [key]: value } : row)),
+    );
   };
 
   const removeRow = (id) =>
-    setItems((prev) => (prev.length > 1 ? prev.filter((r) => r.id !== id) : prev));
+    setItems((prev) =>
+      prev.length > 1 ? prev.filter((r) => r.id !== id) : prev,
+    );
 
   const totals = useMemo(() => {
     const totalQty = items.reduce((s, r) => s + (Number(r.qty) || 0), 0);
     const totalPrice = items.reduce(
       (s, r) => s + (Number(r.qty) || 0) * (Number(r.rate) || 0),
-      0
+      0,
     );
     return { totalQty, totalPrice };
   }, [items]);
 
-  const handlePrint = () => window.print();
+  const handlePrint = () => {
+    sessionStorage.setItem(
+      "purchaseOrderPrintData",
+      JSON.stringify({ po, items, totals }),
+    );
+    if (initialData?.id || initialData?.po?.id || po?.id) {
+      sessionStorage.setItem(
+        "purchaseOrderPrintId",
+        String(initialData?.id ?? initialData?.po?.id ?? po?.id),
+      );
+    }
+    if (typeof onNavigate === "function") {
+      onNavigate("purchase-order-print");
+      return;
+    }
+    window.print();
+  };
 
   const handleConvertToInvoice = () => {
     if (typeof onConvertToInvoice === "function") {
@@ -106,13 +125,18 @@ export default function PurchaseOrder({ initialData, onConvertToInvoice, onBackT
     }
   };
 
-  const canConvert = po.status === "open" || po.status === "partially_fulfilled";
+  const canConvert =
+    po.status === "open" || po.status === "partially_fulfilled";
 
   return (
     <div className="po-page">
       <div className="po-toolbar no-print">
         <div className="po-toolbar-spacer" />
-        <button type="button" className="po-btn po-btn-secondary" onClick={handlePrint}>
+        <button
+          type="button"
+          className="po-btn po-btn-secondary"
+          onClick={handlePrint}
+        >
           Print
         </button>
         <button
@@ -120,11 +144,22 @@ export default function PurchaseOrder({ initialData, onConvertToInvoice, onBackT
           className="po-btn po-btn-primary"
           onClick={handleConvertToInvoice}
           disabled={isViewOnly || !canConvert}
-          title={isViewOnly ? "View-only mode" : canConvert ? "" : "Only open or partially fulfilled POs can be invoiced"}
+          title={
+            isViewOnly
+              ? "View-only mode"
+              : canConvert
+                ? ""
+                : "Only open or partially fulfilled POs can be invoiced"
+          }
         >
           Convert to Invoice
         </button>
-         <button type="button" className="po-btn po-btn-secondary" onClick={onBackToQuotation} aria-label="Back to previous page">
+        <button
+          type="button"
+          className="po-btn po-btn-secondary"
+          onClick={onBackToQuotation}
+          aria-label="Back to previous page"
+        >
           <svg
             className="po-link-btn__icon"
             viewBox="0 0 24 24"
@@ -178,7 +213,10 @@ export default function PurchaseOrder({ initialData, onConvertToInvoice, onBackT
         <div className="po-row po-meta po-ref-row">
           <div className="po-cell">
             <span className="po-label">Against Quotation No.:</span>
-            <input {...field("quotationRefNo")} placeholder="e.g. QT/2025/001" />
+            <input
+              {...field("quotationRefNo")}
+              placeholder="e.g. QT/2025/001"
+            />
           </div>
           <div className="po-cell">
             <span className="po-label">Quotation Dated:</span>
@@ -257,7 +295,9 @@ export default function PurchaseOrder({ initialData, onConvertToInvoice, onBackT
                     value={row.description}
                     readOnly={isViewOnly}
                     disabled={isViewOnly}
-                    onChange={(e) => updateItem(row.id, "description", e.target.value)}
+                    onChange={(e) =>
+                      updateItem(row.id, "description", e.target.value)
+                    }
                     placeholder="Item description"
                   />
                 </td>
@@ -297,11 +337,15 @@ export default function PurchaseOrder({ initialData, onConvertToInvoice, onBackT
           </tbody>
           <tfoot>
             <tr>
-              <td colSpan={2} className="po-total-label">Total</td>
+              <td colSpan={2} className="po-total-label">
+                Total
+              </td>
               <td className="po-col-qty po-num">{totals.totalQty}</td>
               <td></td>
               <td></td>
-              <td className="po-col-total po-num">₹ {currency(totals.totalPrice)}</td>
+              <td className="po-col-total po-num">
+                ₹ {currency(totals.totalPrice)}
+              </td>
             </tr>
           </tfoot>
         </table>
@@ -311,23 +355,34 @@ export default function PurchaseOrder({ initialData, onConvertToInvoice, onBackT
           <div className="po-block">
             <div className="po-field po-field-stack">
               <span className="po-label">Delivery Terms:</span>
-              <input {...field("deliveryTerms")} placeholder="e.g. Within 15 days of PO" />
+              <input
+                {...field("deliveryTerms")}
+                placeholder="e.g. Within 15 days of PO"
+              />
             </div>
             <div className="po-field po-field-stack">
               <span className="po-label">Payment Terms:</span>
-              <input {...field("paymentTerms")} placeholder="e.g. 30 days from invoice date" />
+              <input
+                {...field("paymentTerms")}
+                placeholder="e.g. 30 days from invoice date"
+              />
             </div>
           </div>
           <div className="po-block">
             <div className="po-field po-field-stack">
               <span className="po-label">Notes:</span>
-              <input {...field("notes")} placeholder="Any additional instructions" />
+              <input
+                {...field("notes")}
+                placeholder="Any additional instructions"
+              />
             </div>
           </div>
         </div>
 
         <div className="po-signatory">
-          <div className="po-signatory-line">For {po.buyerName || "Buyer Name"}</div>
+          <div className="po-signatory-line">
+            For {po.buyerName || "Buyer Name"}
+          </div>
           <div className="po-signatory-space" />
           <div className="po-signatory-line">Authorised Signatory</div>
         </div>
