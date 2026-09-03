@@ -1,9 +1,15 @@
-import { Box, Paper } from "@mui/material";
+import { Box } from "@mui/material";
 
-import UsersPage from "./UsersPage";
-import ModulesPage from "./ModulesPage";
+import UsersPage from "./Settings/Masters/UsersPage";
+import ModulesPage from "./Settings/Masters/ModulesPage";
 import CreatedQuotation from "./CreatedQuotation";
 import QuotationPdfView from "./QuotationPdfView";
+import CustomersPage from "./Settings/Masters/CustomersPage";
+import SuppliersPage from "./Settings/Masters/SuppliersPage";
+import CompanyProfilePage from "./Settings/Masters/CompanyProfilePage";
+import BankAccountsPage from "./Settings/Masters/BankAccountsPage";
+import GstRatesPage from "./Settings/Masters/GstRatesPage";
+import TermsTemplatesPage from "./Settings/Masters/TermsTemplatesPage";
 
 export default function SettingsPage({ onNavigate, initialTab = "users", quotationDetail = null }) {
   const renderContent = () => {
@@ -17,6 +23,18 @@ export default function SettingsPage({ onNavigate, initialTab = "users", quotati
         return <ModulesPage onNavigate={onNavigate} showSidebar={false} />;
       case "created-quotations":
         return <CreatedQuotation onNavigate={onNavigate} />;
+      case "customers":
+        return <CustomersPage />;
+      case "suppliers":
+        return <SuppliersPage />;
+      case "company-profile":
+        return <CompanyProfilePage />;
+      case "bank-accounts":
+        return <BankAccountsPage />;
+      case "gst-rates":
+        return <GstRatesPage />;
+      case "terms-templates":
+        return <TermsTemplatesPage />;
       default:
         return <UsersPage onNavigate={onNavigate} showSidebar={false} />;
     }
@@ -25,6 +43,7 @@ export default function SettingsPage({ onNavigate, initialTab = "users", quotati
   return (
     <Box sx={{ width: "100%", height: "100%", overflow: "hidden" }}>
       <Box
+        className="masters-page"
       sx={{
         width: "100%",
         display: "flex",
@@ -32,20 +51,16 @@ export default function SettingsPage({ onNavigate, initialTab = "users", quotati
         minWidth: 0,
         }}
       >
-        <Paper
-          elevation={0}
-          className="glass"
+        <Box
           sx={{
             flex: 1,
-            p: { xs: 2, md: 4 },
+            p: 0,
             overflowY: "auto",
             overflowX: "hidden",
-            border: "1px solid #d8d2c6",
-            boxShadow: "0 4px 20px rgba(0, 0, 0, 0.15)",
           }}
         >
           {renderContent()}
-        </Paper>
+        </Box>
       </Box>
     </Box>
   );

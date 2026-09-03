@@ -4,8 +4,8 @@ import {
   createUser,
   updateUser,
   deleteUser,
-} from "../services/userApi";
-import EntityTable from "../components/EntityTable";
+} from "../../../services/userApi";
+import EntityTable from "../../../components/EntityTable";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import EditIcon from "@mui/icons-material/Edit";
@@ -26,11 +26,11 @@ import {
   Typography,
   Alert,
 } from "@mui/material";
-import CustomSnackbar from "../components/CustomSnackbar";
+import CustomSnackbar from "../../../components/CustomSnackbar";
 import {
   dialogPrimaryActionSx,
   dialogSecondaryActionSx,
-} from "../styles/modalActionButtonStyles";
+} from "../../../styles/modalActionButtonStyles";
 
 const emptyUser = {
   firstName: "",

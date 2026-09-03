@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import EntityTable from "../components/EntityTable";
-import CustomSnackbar from "../components/CustomSnackbar";
+import EntityTable from "../../../components/EntityTable";
+import CustomSnackbar from "../../../components/CustomSnackbar";
 import {
   Box,
   Button,
@@ -18,7 +18,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import {
   dialogPrimaryActionSx,
   dialogSecondaryActionSx,
-} from "../styles/modalActionButtonStyles";
+} from "../../../styles/modalActionButtonStyles";
 
 const emptyModule = { pillar: "", moduleName: "", price: "" };
 

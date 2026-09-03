@@ -5,8 +5,8 @@ import DashboardPage from "./pages/DashboardPage";
 import QuotationPdfView from "./pages/QuotationPdfView";
 import LoginPage from "./pages/LoginPage";
 import SettingsPage from "./pages/SettingsPage";
-import UsersPage from "./pages/UsersPage";
-import ModulesPage from "./pages/ModulesPage";
+import UsersPage from "./pages/Settings/Masters/UsersPage";
+import ModulesPage from "./pages/Settings/Masters/ModulesPage";
 import EditQuotation from "./pages/EditQuotation";
 import QuotationHistory from "./pages/QuotationHistory";
 import AllQuotationRevisions from "./pages/AllQuotationRevisions";
@@ -21,6 +21,7 @@ import GSTInvoicePrint from "./pages/Inovice/GSTInvoicePrint";
 import { useAuth } from "./context/AuthContext";
 import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 // Use local icons from public/logo instead of @mui/icons-material in topbar buttons
 import "./App.css";
 
@@ -28,6 +29,7 @@ export default function App() {
   const { user, logout } = useAuth();
   const [view, setView] = useState("dashboard");
   const [settingsInitialTab, setSettingsInitialTab] = useState("users");
+  const [settingsExpanded, setSettingsExpanded] = useState(false);
   const [editQuotationId, setEditQuotationId] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
@@ -100,8 +102,17 @@ export default function App() {
     },
     { label: "Revision History", icon: "audit.png", view: "all-revisions" },
     { label: "GST Invoice", icon: "calculator.png", view: "created-invoices" },
-    { label: "Users", icon: "users.png", view: "users" },
-    { label: "Modules", icon: "processes.png", view: "modules" },
+    { label: "Settings", icon: "settings.png", view: "settings" },
+  ];
+  const masterItems = [
+    ["users", "Users"],
+    ["modules", "Modules"],
+    ["customers", "Customers"],
+    ["suppliers", "Suppliers"],
+    ["company-profile", "Company Profile"],
+    ["bank-accounts", "Bank Accounts"],
+    ["gst-rates", "GST Rates"],
+    ["terms-templates", "Terms Templates"],
   ];
 
   return (
@@ -221,7 +232,7 @@ export default function App() {
                 <img src="/logo/sidebar.png" alt="" aria-hidden="true" />
               </IconButton>
             </div>
-            <div className="app-sidebar__heading">Workspace</div>
+            {/* <div className="app-sidebar__heading">Workspace</div> */}
             <nav className="app-sidebar__nav">
               {menuItems.map((item) => {
                 const activeView =
@@ -236,7 +247,7 @@ export default function App() {
                     : item.view === "all-revisions"
                       ? view === "all-revisions"
                       : item.view === "settings"
-                        ? ["settings", "users", "modules"].includes(view)
+                        ? ["settings", "users", "modules", "customers", "suppliers", "company-profile", "bank-accounts", "gst-rates", "terms-templates"].includes(view)
                         : item.view === "created-invoices"
                           ? [
                               "created-invoices",
@@ -245,21 +256,49 @@ export default function App() {
                             ].includes(view)
                           : view === item.view;
                 return (
-                  <button
-                    type="button"
-                    key={item.view}
-                    className={`app-sidebar__item ${activeView ? "app-sidebar__item--active" : ""}`}
-                    onClick={() => navigate(item.view)}
-                  >
-                    <span className="app-sidebar__icon">
-                      <img
-                        src={`/logo/${item.icon}`}
-                        alt=""
-                        aria-hidden="true"
-                      />
-                    </span>
-                    <span className="app-sidebar__label">{item.label}</span>
-                  </button>
+                  <React.Fragment key={item.view}>
+                    <button
+                      type="button"
+                      className={`app-sidebar__item ${activeView ? "app-sidebar__item--active" : ""}`}
+                      onClick={() => {
+                        if (item.view === "settings") {
+                          setSettingsExpanded((expanded) => !expanded);
+                          navigate("settings", settingsInitialTab);
+                        } else {
+                          navigate(item.view);
+                        }
+                      }}
+                    >
+                      <span className="app-sidebar__icon">
+                        <img
+                          src={`/logo/${item.icon}`}
+                          alt=""
+                          aria-hidden="true"
+                        />
+                      </span>
+                      <span className="app-sidebar__label">{item.label}</span>
+                      {item.view === "settings" && (
+                        <KeyboardArrowDownIcon
+                          className={`app-sidebar__settings-arrow ${settingsExpanded ? "app-sidebar__settings-arrow--open" : ""}`}
+                          aria-hidden="true"
+                        />
+                      )}
+                    </button>
+                    {item.view === "settings" && settingsExpanded && !sidebarCollapsed && (
+                      <div className="app-sidebar__submenu">
+                        {masterItems.map(([tab, label]) => (
+                          <button
+                            type="button"
+                            key={tab}
+                            className={`app-sidebar__submenu-item ${settingsInitialTab === tab ? "app-sidebar__submenu-item--active" : ""}`}
+                            onClick={() => navigate("settings", tab)}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </React.Fragment>
                 );
               })}
             </nav>
