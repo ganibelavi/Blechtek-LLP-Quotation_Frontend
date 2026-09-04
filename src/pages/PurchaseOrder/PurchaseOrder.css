@@ -57,7 +57,7 @@
 
 .po-brand small {
     display: block;
-    color: #aabbd0;
+    /* color: #aabbd0; */
     font-size: 10px;
     margin-top: 2px
 }
@@ -73,9 +73,9 @@
 }
 
 .po-eyebrow {
-    color: #8da4bd;
-    font: 700 9px var(--po-mono);
-    letter-spacing: .13em;
+    /* color: #8da4bd; */
+    /* font: 700 9px var(--po-mono);
+    letter-spacing: .13em; */
     text-transform: uppercase
 }
 
@@ -112,20 +112,10 @@
     color: #9a2b2b
 }
 
-.po-icon-btn {
-    width: 30px;
-    height: 30px;
-    border: 1px solid #58728e;
-    background: transparent;
-    color: #fff;
-    cursor: pointer;
-    font-size: 17px
-}
-
 .po-workspace {
     display: grid;
     grid-template-columns: 280px minmax(0, 1fr);
-    max-width: 1600px;
+    /* max-width: 1600px; */
     /* margin: 0 auto; */
     min-height: calc(100vh - 64px)
 }
@@ -151,10 +141,11 @@
 }
 
 .po-count {
-    background: #e9eef5;
+    background: rgb(115, 232, 115);
     border-radius: 99px;
     padding: 4px 8px;
-    font: 700 10px var(--po-mono)
+    font: 700 10px var(--po-mono);
+    color: #fff;
 }
 
 .po-search {
@@ -190,8 +181,8 @@
     border: 0;
     background: transparent;
     color: var(--po-muted);
-    padding: 5px 7px;
-    font: 600 10px var(--po-mono);
+    padding: 5px 4px;
+    font: 600 11px var(--po-mono);
     cursor: pointer
 }
 
@@ -268,15 +259,6 @@
     font-size: 11px
 }
 
-.po-upload-trigger {
-    border: 1px dashed #a8b4c2;
-    background: #fff;
-    padding: 10px;
-    color: var(--po-blue);
-    font: 700 10px var(--po-mono);
-    cursor: pointer
-}
-
 .po-detail-panel {
     padding: 1rem;
     min-width: 0
@@ -288,8 +270,8 @@
     align-items: flex-start;
     gap: 20px;
     border-bottom: 1px solid var(--po-rule);
-    padding-bottom: 20px;
-    margin-bottom: 20px
+    padding-bottom: 10px;
+    margin-bottom: 10px
 }
 
 .po-detail-header h1 {
@@ -306,25 +288,6 @@
 .po-detail-actions {
     display: flex;
     gap: 8px
-}
-
-.po-btn {
-    border: 1px solid #cbd2dc;
-    background: #fff;
-    padding: 9px 12px;
-    color: var(--po-ink);
-    font: 700 10px var(--po-mono);
-    cursor: pointer
-}
-
-.po-btn:hover {
-    background: #f3f6fa
-}
-
-.po-btn-primary {
-    background: var(--po-blue);
-    border-color: var(--po-blue);
-    color: #fff
 }
 
 .po-verification-grid {
@@ -388,7 +351,7 @@
 .po-party-block label {
     display: block;
     color: var(--po-muted);
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 600
 }
 
@@ -434,7 +397,7 @@
 }
 
 .po-party-block h4 {
-    font: 700 10px var(--po-mono);
+    /* font: 700 10px var(--po-mono); */
     text-transform: uppercase;
     color: #526579;
     margin: 0 0 2px
@@ -447,14 +410,15 @@
 .po-table {
     width: 100%;
     border-collapse: collapse;
+    table-layout: fixed;
     font-size: 11px
 }
 
 .po-table th {
-    background: #f5f7fa;
-    color: #657284;
+    background: #65aadb;
+    color: white;
     text-align: left;
-    font: 700 9px var(--po-mono);
+    /* font: 700 9px var(--po-mono); */
     letter-spacing: .04em;
     text-transform: uppercase
 }
@@ -465,15 +429,35 @@
     padding: 5px 6px
 }
 
-.po-table td:nth-child(2),
+.po-table th:nth-child(1),
+.po-table td:nth-child(1) {
+    width: 46%
+}
+
+.po-table th:nth-child(2),
+.po-table td:nth-child(2) {
+    width: 10%
+}
+
+.po-table th:nth-child(3),
+.po-table td:nth-child(3) {
+    width: 8%
+}
+
+.po-table th:nth-child(4),
 .po-table td:nth-child(4) {
-    width: 80px
+    width: 14%
+}
+
+.po-table th:nth-child(5),
+.po-table td:nth-child(5) {
+    width: 22%
 }
 
 .po-table td:nth-child(5) {
     white-space: nowrap;
     text-align: right;
-    font: 600 10px var(--po-mono)
+    /* font: 600 10px var(--po-mono) */
 }
 
 .po-table input {
@@ -483,19 +467,6 @@
     min-height: 23px
 }
 
-.po-remove {
-    border: 0;
-    background: transparent;
-    color: #9aa4b2;
-    font-size: 17px;
-    cursor: pointer
-}
-
-.po-remove:disabled {
-    opacity: .25;
-    cursor: default
-}
-
 .po-total-row {
     display: flex;
     justify-content: flex-end;
@@ -503,7 +474,7 @@
     padding-top: 12px;
     margin-top: 8px;
     border-top: 2px solid var(--po-ink);
-    font: 10px var(--po-mono)
+    /* font: 10px var(--po-mono) */
 }
 
 .po-total-row b {
@@ -775,17 +746,10 @@
     font-size: 13px;
 }
 
-.po-btn,
 .po-filter-row button,
-.po-upload-trigger,
 .po-queue-item {
     font-family: var(--font-body);
-    font-size: 13px;
-}
-
-.po-btn-primary {
-    background: var(--primary-gradient);
-    border-color: transparent;
+    /* font-size: 13px; */
 }
 
 .po-filter-row button.active {

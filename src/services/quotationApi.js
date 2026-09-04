@@ -121,6 +121,11 @@ export async function fetchPurchaseOrders() {
   return data;
 }
 
+export async function updatePurchaseOrderVerification(id, payload) {
+  const { data } = await client.patch(`/api/purchase-order/${id}/verification`, payload);
+  return data;
+}
+
 export async function deletePurchaseOrder(id) {
   await client.delete(`/api/purchase-order/${id}`);
 }

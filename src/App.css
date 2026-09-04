@@ -146,6 +146,10 @@
   box-sizing: border-box;
 }
 
+.app-main--po {
+  padding: 0 !important;
+}
+
 @media print {
 
   html,
@@ -496,6 +500,10 @@
 
   .app-main {
     padding: 14px 10px;
+  }
+
+  .app-main--po {
+    padding: 0 !important;
   }
 }
 

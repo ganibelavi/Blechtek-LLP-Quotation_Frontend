@@ -213,7 +213,9 @@ export default function App() {
       </header>
 
       {!user ? (
-        <main className="app-main">
+        <main
+          className={`app-main ${view === "purchase-order-entry" ? "app-main--po" : ""}`}
+        >
           <LoginPage />
         </main>
       ) : (
@@ -247,7 +249,17 @@ export default function App() {
                     : item.view === "all-revisions"
                       ? view === "all-revisions"
                       : item.view === "settings"
-                        ? ["settings", "users", "modules", "customers", "suppliers", "company-profile", "bank-accounts", "gst-rates", "terms-templates"].includes(view)
+                        ? [
+                            "settings",
+                            "users",
+                            "modules",
+                            "customers",
+                            "suppliers",
+                            "company-profile",
+                            "bank-accounts",
+                            "gst-rates",
+                            "terms-templates",
+                          ].includes(view)
                         : item.view === "created-invoices"
                           ? [
                               "created-invoices",
@@ -284,26 +296,30 @@ export default function App() {
                         />
                       )}
                     </button>
-                    {item.view === "settings" && settingsExpanded && !sidebarCollapsed && (
-                      <div className="app-sidebar__submenu">
-                        {masterItems.map(([tab, label]) => (
-                          <button
-                            type="button"
-                            key={tab}
-                            className={`app-sidebar__submenu-item ${settingsInitialTab === tab ? "app-sidebar__submenu-item--active" : ""}`}
-                            onClick={() => navigate("settings", tab)}
-                          >
-                            {label}
-                          </button>
-                        ))}
-                      </div>
-                    )}
+                    {item.view === "settings" &&
+                      settingsExpanded &&
+                      !sidebarCollapsed && (
+                        <div className="app-sidebar__submenu">
+                          {masterItems.map(([tab, label]) => (
+                            <button
+                              type="button"
+                              key={tab}
+                              className={`app-sidebar__submenu-item ${settingsInitialTab === tab ? "app-sidebar__submenu-item--active" : ""}`}
+                              onClick={() => navigate("settings", tab)}
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                   </React.Fragment>
                 );
               })}
             </nav>
           </aside>
-          <main className="app-main">
+          <main
+            className={`app-main ${view === "purchase-order-entry" ? "app-main--po" : ""}`}
+          >
             {![
               "create",
               "created-quotations",
@@ -375,7 +391,9 @@ export default function App() {
                   return (
                     <PurchaseOrderEntryForm
                       onNavigate={navigate}
-                      purchaseOrderId={sessionStorage.getItem("purchaseOrderId")}
+                      purchaseOrderId={sessionStorage.getItem(
+                        "purchaseOrderId",
+                      )}
                       defaultReturnView={
                         sessionStorage.getItem("purchaseOrderBackView") ||
                         "created-purchase-orders"
@@ -391,14 +409,14 @@ export default function App() {
                       onNavigate={navigate}
                       onConvertToInvoice={() => {
                         sessionStorage.setItem(
-                        "invoiceBackView",
-                        "purchase-order",
+                          "invoiceBackView",
+                          "purchase-order",
                         );
                         navigate("invoice-entry");
                       }}
                       onBackToQuotation={() =>
                         navigate(
-                        sessionStorage.getItem("purchaseOrderBackView") ||
+                          sessionStorage.getItem("purchaseOrderBackView") ||
                             "created-purchase-orders",
                         )
                       }
@@ -437,7 +455,8 @@ export default function App() {
                       initialData={getInvoiceInitialData()}
                       onBack={() => navigate("invoice")}
                     />
-                  );                case "create":
+                  );
+                case "create":
                 default:
                   return <CreateQuotation onNavigate={navigate} />;
               }
