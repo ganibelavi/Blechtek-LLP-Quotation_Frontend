@@ -166,6 +166,12 @@ export async function fetchCustomers() {
   return Array.isArray(data) ? data : [];
 }
 
+/** GET /api/suppliers reads the database-backed Suppliers master table. */
+export async function fetchSuppliers() {
+  const { data } = await client.get("/api/suppliers");
+  return Array.isArray(data) ? data : [];
+}
+
 export async function fetchPurchaseOrderCompanies() {
   const { data } = await client.get("/api/purchase-order");
   const companies = [...new Set(

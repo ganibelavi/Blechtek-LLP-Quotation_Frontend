@@ -9,16 +9,16 @@ import {
   MenuItem,
   TextField,
 } from "@mui/material";
-import SearchDropdown from "../../components/SearchDropdown";
 import "./PurchaseOrder.css";
 import {
   createPurchaseOrder,
   fetchModules,
-  fetchOrganizations,
   fetchQuotationById,
   fetchQuotations,
   fetchPurchaseOrders,
   fetchPurchaseOrderById,
+  fetchCustomers,
+  fetchSuppliers,
 } from "../../services/quotationApi";
 import {
   dialogPrimaryActionSx,
@@ -39,6 +39,11 @@ const normalizeId = (value) => {
   if (value === null || value === undefined || value === "") return null;
   const parsed = Number(value);
   return Number.isInteger(parsed) ? parsed : null;
+};
+
+const normalizeQuotationId = (value) => {
+  if (value === null || value === undefined || value === "") return null;
+  return String(value);
 };
 
 const normalizeDateInput = (value) => {
@@ -117,7 +122,7 @@ const defaultForm = () => {
   const quotation = readStoredQuotation();
 
   return {
-    sourceQuotationId: normalizeId(quotation?.quotationId),
+    sourceQuotationId: normalizeQuotationId(quotation?.quotationId),
     companyName: quotation?.organizationName || "",
     poNo: "",
     poDate: new Date().toISOString().slice(0, 10),
@@ -157,10 +162,12 @@ export default function PurchaseOrderEntryForm({
   defaultReturnView = "created-purchase-orders",
 }) {
   const [form, setForm] = useState(defaultForm);
-  const [companyOptions, setCompanyOptions] = useState([]);
   const [quotationRecords, setQuotationRecords] = useState([]);
   const [purchaseOrderRecords, setPurchaseOrderRecords] = useState([]);
   const [moduleCatalog, setModuleCatalog] = useState([]);
+  const [customerRecords, setCustomerRecords] = useState([]);
+  const [supplierRecords, setSupplierRecords] = useState([]);
+  const [selectedQuotationForPo] = useState(readStoredQuotation);
   const isQuotationLocked = Boolean(form.sourceQuotationId);
   const isItemLocked = (item) => Boolean(item?.isSourceData);
 
@@ -173,7 +180,7 @@ export default function PurchaseOrderEntryForm({
         if (!purchaseOrder) return;
         setForm((prev) => ({
           ...prev,
-          sourceQuotationId: normalizeId(purchaseOrder.quotationId),
+          sourceQuotationId: normalizeQuotationId(purchaseOrder.quotationId),
           companyName: purchaseOrder.companyName || prev.companyName,
           poNo: purchaseOrder.poNo || prev.poNo,
           poDate: normalizeDateInput(purchaseOrder.poDate) || prev.poDate,
@@ -217,13 +224,17 @@ export default function PurchaseOrderEntryForm({
       .then((data) => setModuleCatalog(Array.isArray(data) ? data : []))
       .catch(() => setModuleCatalog([]));
 
-    fetchOrganizations()
-      .then(setCompanyOptions)
-      .catch(() => setCompanyOptions([]));
-
     fetchQuotations(1, 500)
       .then((data) => setQuotationRecords(Array.isArray(data) ? data : []))
       .catch(() => setQuotationRecords([]));
+
+    fetchCustomers()
+      .then((data) => setCustomerRecords(Array.isArray(data) ? data : []))
+      .catch(() => setCustomerRecords([]));
+
+    fetchSuppliers()
+      .then((data) => setSupplierRecords(Array.isArray(data) ? data : []))
+      .catch(() => setSupplierRecords([]));
 
     fetchPurchaseOrders()
       .then((data) => setPurchaseOrderRecords(Array.isArray(data) ? data : []))
@@ -253,31 +264,51 @@ export default function PurchaseOrderEntryForm({
   }, [moduleCatalog]);
 
   useEffect(() => {
-    const selectedQuotation = readStoredQuotation();
+    const selectedQuotation = selectedQuotationForPo;
 
     if (!selectedQuotation) return;
 
     const hydrateFromQuotation = (quotation) => {
+      const quotationOrganization = quotation.organizationName || "";
+      const quotationCustomerName = quotation.quotationToName || "";
+      const customer = customerRecords.find((record) => {
+        const contactName = (record.contactName || "").trim().toLowerCase();
+        const customerName = (record.name || "").trim().toLowerCase();
+        const selectedName = quotationCustomerName.trim().toLowerCase();
+        return selectedName && (contactName === selectedName || customerName === selectedName);
+      });
+      const supplier = supplierRecords.find((record) =>
+        (record.name || "").trim().toLowerCase() === quotationOrganization.trim().toLowerCase(),
+      ) || supplierRecords[0];
+
       setForm((prev) => ({
         ...prev,
-        sourceQuotationId: normalizeId(
+        sourceQuotationId: normalizeQuotationId(
           quotation.quotationId || prev.sourceQuotationId || null,
         ),
-        companyName: quotation.organizationName || prev.companyName || "",
+        companyName: quotationOrganization || prev.companyName || "",
         quotationRefNo: quotation.quotationNo || prev.quotationRefNo || "",
         quotationRefDate: quotation.date || prev.quotationRefDate || "",
-        buyerName: quotation.quotationToName || prev.buyerName || "",
-        buyerAddress: quotation.quotationToAddress || prev.buyerAddress || "",
-        supplierName: quotation.organizationName || prev.supplierName || "",
+        buyerName: customer?.contactName || customer?.name || quotationCustomerName || prev.buyerName || "",
+        buyerAddress: customer?.address || quotation.quotationToAddress || prev.buyerAddress || "",
+        buyerState: customer?.state || prev.buyerState || "",
+        buyerStateCode: customer?.stateCode || prev.buyerStateCode || "",
+        buyerGSTN: customer?.gstn || prev.buyerGSTN || "",
+        supplierName: supplier?.name || quotationOrganization || prev.supplierName || "",
+        supplierAddress: supplier?.address || prev.supplierAddress || "",
+        supplierState: supplier?.state || prev.supplierState || "",
+        supplierStateCode: supplier?.stateCode || prev.supplierStateCode || "",
+        supplierGSTN: supplier?.gstn || prev.supplierGSTN || "",
         items: buildQuotationItems(quotation, moduleCatalog),
       }));
     };
 
     const hydrateFromStored = async () => {
-      if (normalizeId(selectedQuotation.quotationId)) {
+      const quotationIdentifier = selectedQuotation.quotationId ?? selectedQuotation.id;
+      if (quotationIdentifier) {
         try {
           const remoteQuotation = await fetchQuotationById(
-            normalizeId(selectedQuotation.quotationId),
+            quotationIdentifier,
           );
           if (remoteQuotation) {
             hydrateFromQuotation(remoteQuotation);
@@ -293,40 +324,43 @@ export default function PurchaseOrderEntryForm({
 
     hydrateFromStored();
     sessionStorage.removeItem("selectedQuotationForPo");
-  }, [moduleCatalog]);
+  }, [moduleCatalog, customerRecords, supplierRecords, selectedQuotationForPo]);
 
   useEffect(() => {
-    const selectedCompanyName = form.companyName?.trim();
-    if (!selectedCompanyName) return;
-
-    const matchedQuotation = quotationRecords.find(
-      (quotation) =>
-        (quotation.organizationName || "").trim().toLowerCase() ===
-        selectedCompanyName.toLowerCase(),
-    );
-
-    if (!matchedQuotation) return;
+    if (!form.sourceQuotationId) return;
 
     setForm((prev) => {
-      const nextItems = buildQuotationItems(matchedQuotation, moduleCatalog);
+      const customerName = (prev.buyerName || "").trim().toLowerCase();
+      const supplierName = (prev.supplierName || "").trim().toLowerCase();
+      const customer = customerRecords.find((record) =>
+        (record.contactName || "").trim().toLowerCase() === customerName ||
+        (record.name || "").trim().toLowerCase() === customerName,
+      );
+      const supplier = supplierRecords.find((record) =>
+        (record.name || "").trim().toLowerCase() === supplierName,
+      ) || supplierRecords[0];
+
+      if (!customer && !supplier) return prev;
 
       return {
         ...prev,
-        sourceQuotationId: normalizeId(
-          matchedQuotation.quotationId ?? matchedQuotation.id ?? prev.sourceQuotationId,
-        ),
-        companyName: matchedQuotation.organizationName || prev.companyName,
-        quotationRefNo: matchedQuotation.quotationNo || prev.quotationRefNo || "",
-        quotationRefDate: matchedQuotation.date || prev.quotationRefDate || "",
-        buyerName: matchedQuotation.quotationToName || prev.buyerName || "",
-        buyerAddress:
-          matchedQuotation.quotationToAddress || prev.buyerAddress || "",
-        supplierName:
-          matchedQuotation.organizationName || prev.supplierName || "",
-        items: nextItems,
+        ...(customer ? {
+          buyerName: customer.contactName || customer.name || prev.buyerName,
+          buyerAddress: customer.address || prev.buyerAddress,
+          buyerState: customer.state || prev.buyerState,
+          buyerStateCode: customer.stateCode || prev.buyerStateCode,
+          buyerGSTN: customer.gstn || prev.buyerGSTN,
+        } : {}),
+        ...(supplier ? {
+          supplierName: supplier.name || prev.supplierName,
+          supplierAddress: supplier.address || prev.supplierAddress,
+          supplierState: supplier.state || prev.supplierState,
+          supplierStateCode: supplier.stateCode || prev.supplierStateCode,
+          supplierGSTN: supplier.gstn || prev.supplierGSTN,
+        } : {}),
       };
     });
-  }, [form.companyName, quotationRecords, moduleCatalog]);
+  }, [form.sourceQuotationId, customerRecords, supplierRecords]);
 
   const totals = useMemo(() => {
     const totalQty = form.items.reduce(
@@ -367,7 +401,7 @@ export default function PurchaseOrderEntryForm({
     event.preventDefault();
 
     const payload = {
-      quotationId: normalizeId(form.sourceQuotationId),
+      quotationId: form.sourceQuotationId,
       companyName: form.companyName,
       poNo:
         form.poNo ||
@@ -416,7 +450,7 @@ export default function PurchaseOrderEntryForm({
         JSON.stringify({
           po: {
             id: saved.id || null,
-            quotationId: normalizeId(form.sourceQuotationId),
+            quotationId: form.sourceQuotationId,
             companyName: form.companyName,
             poNo: saved.poNo || payload.poNo,
             poDate: form.poDate || payload.poDate,
@@ -451,11 +485,11 @@ export default function PurchaseOrderEntryForm({
           totals,
           id: saved.id,
           poNo: saved.poNo || payload.poNo,
-          quotationId: normalizeId(form.sourceQuotationId),
+          quotationId: form.sourceQuotationId,
         }),
       );
 
-      onNavigate("purchase-order");
+      window.alert("Purchase order saved successfully.");
     } catch (error) {
       console.error("Failed to save purchase order", error);
       window.alert(
@@ -505,26 +539,43 @@ export default function PurchaseOrderEntryForm({
   const selectQueueEntry = (entry) => {
     if (entry.current || !entry.source) return;
     const purchaseOrder = entry.source;
+    const customerName = (purchaseOrder.quotationToName || purchaseOrder.buyerName || "").trim().toLowerCase();
+    const customer = customerRecords.find((record) =>
+      (record.contactName || "").trim().toLowerCase() === customerName ||
+      (record.name || "").trim().toLowerCase() === customerName,
+    );
+    const organizationName = (purchaseOrder.organizationName || purchaseOrder.companyName || "").trim().toLowerCase();
+    const supplier = supplierRecords.find((record) =>
+      (record.name || "").trim().toLowerCase() === organizationName,
+    ) || supplierRecords[0];
+
     setForm((prev) => ({
       ...prev,
-      sourceQuotationId: normalizeId(purchaseOrder.quotationId),
-      companyName: purchaseOrder.companyName || prev.companyName,
+      sourceQuotationId: normalizeQuotationId(purchaseOrder.quotationId),
+      companyName: purchaseOrder.companyName || purchaseOrder.organizationName || prev.companyName,
       poNo: purchaseOrder.poNo || prev.poNo,
       poDate: purchaseOrder.poDate || prev.poDate,
       status: purchaseOrder.status || prev.status,
       verificationStatus: purchaseOrder.verificationStatus || "pending",
-      quotationRefNo: purchaseOrder.quotationRefNo || prev.quotationRefNo,
-      quotationRefDate: purchaseOrder.quotationRefDate || prev.quotationRefDate,
-      buyerName: purchaseOrder.buyerName || prev.buyerName,
-      buyerAddress: purchaseOrder.buyerAddress || prev.buyerAddress,
-      supplierName: purchaseOrder.supplierName || prev.supplierName,
+      quotationRefNo: purchaseOrder.quotationRefNo || purchaseOrder.quotationNo || prev.quotationRefNo,
+      quotationRefDate: purchaseOrder.quotationRefDate || purchaseOrder.date || prev.quotationRefDate,
+      buyerName: customer?.contactName || customer?.name || purchaseOrder.buyerName || purchaseOrder.quotationToName || prev.buyerName,
+      buyerAddress: customer?.address || purchaseOrder.buyerAddress || purchaseOrder.quotationToAddress || prev.buyerAddress,
+      buyerState: customer?.state || purchaseOrder.buyerState || prev.buyerState,
+      buyerStateCode: customer?.stateCode || purchaseOrder.buyerStateCode || prev.buyerStateCode,
+      buyerGSTN: customer?.gstn || purchaseOrder.buyerGSTN || prev.buyerGSTN,
+      supplierName: supplier?.name || purchaseOrder.supplierName || prev.supplierName,
+      supplierAddress: supplier?.address || purchaseOrder.supplierAddress || prev.supplierAddress,
+      supplierState: supplier?.state || purchaseOrder.supplierState || prev.supplierState,
+      supplierStateCode: supplier?.stateCode || purchaseOrder.supplierStateCode || prev.supplierStateCode,
+      supplierGSTN: supplier?.gstn || purchaseOrder.supplierGSTN || prev.supplierGSTN,
       deliveryTerms: purchaseOrder.deliveryTerms || prev.deliveryTerms,
       paymentTerms: purchaseOrder.paymentTerms || prev.paymentTerms,
       receivedFromEmail: purchaseOrder.receivedFromEmail || prev.receivedFromEmail,
       attachmentUrl: purchaseOrder.attachmentUrl || prev.attachmentUrl,
       items: Array.isArray(purchaseOrder.items) && purchaseOrder.items.length > 0
         ? purchaseOrder.items.map((item) => ({ ...item, isSourceData: true }))
-        : prev.items,
+        : buildQuotationItems(purchaseOrder, moduleCatalog),
     }));
   };
 
@@ -532,11 +583,21 @@ export default function PurchaseOrderEntryForm({
     setIntakeForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleEmailPoIntake = (event) => {
+  const handleEmailPoIntake = async (event) => {
     event.preventDefault();
-    const quotation = quotationRecords.find(
-      (record) => normalizeId(record.quotationId ?? record.id) === normalizeId(intakeForm.quotationId),
+    const quotationIdentifier = intakeForm.quotationId;
+    const quotationRecord = quotationRecords.find(
+      (record) => String(record.quotationId ?? record.id) === String(quotationIdentifier),
     );
+    let quotation = quotationRecord;
+
+    if (quotationIdentifier) {
+      try {
+        quotation = await fetchQuotationById(quotationIdentifier) || quotationRecord;
+      } catch (error) {
+        console.error("Failed to load selected quotation for PO", error);
+      }
+    }
 
     if (quotation) {
       selectQueueEntry({
@@ -582,11 +643,11 @@ export default function PurchaseOrderEntryForm({
         </aside>
 
         <section className="po-detail-panel">
-          <div className="po-detail-header"><div><span className="po-eyebrow">SELECTED RECORD</span><h1>{form.poNo || "New purchase order"}</h1><p>{form.companyName || "No company selected"} · {form.poDate || "Date pending"}</p></div><div className="po-detail-actions"><button type="button" className="po-btn" onClick={() => setShowUpload(true)}>New Purchase Order</button><button type="submit" form="po-entry-form" className="po-btn po-btn-primary">Save &amp; open PO</button></div></div>
+          <div className="po-detail-header"><div><span className="po-eyebrow">SELECTED RECORD</span><h1>{form.poNo || "New purchase order"}</h1><p>{form.companyName || "No company selected"} · {form.poDate || "Date pending"}</p></div><div className="po-detail-actions"><button type="button" className="po-btn" onClick={() => setShowUpload(true)}>New Purchase Order</button><button type="submit" form="po-entry-form" className="po-btn po-btn-primary">Save</button></div></div>
           <div className="po-verification-grid">
             <div className="po-form-column">
               <form id="po-entry-form" onSubmit={handleSubmit}>
-                <section className="po-card"><div className="po-card-title"><span>01</span><h3>Order identity</h3></div><div className="po-fields po-fields-3"><SearchDropdown name="companyName" label="Company name" value={form.companyName} onChange={(value) => updateField("companyName", value)} options={companyOptions} placeholder="Select or type company" allowFreeText disabled={isQuotationLocked} /><label>PO number<input value={form.poNo} onChange={(e) => updateField("poNo", e.target.value)} /></label><label>PO date<input type="date" value={form.poDate} onChange={(e) => updateField("poDate", e.target.value)} /></label><label>Status<select className={`po-status-select po-status-${form.status}`} value={form.status} onChange={(e) => updateField("status", e.target.value)}><option value="open">Open</option><option value="partially_fulfilled">Partially fulfilled</option><option value="fulfilled">Fulfilled</option><option value="cancelled">Cancelled</option></select></label><label>Quotation reference<input value={form.quotationRefNo} onChange={(e) => updateField("quotationRefNo", e.target.value)} readOnly={isQuotationLocked} /></label><label>Quotation date<input type="date" value={form.quotationRefDate} onChange={(e) => updateField("quotationRefDate", e.target.value)} readOnly={isQuotationLocked} /></label><label>Expected delivery<input type="date" value={form.expectedDeliveryDate} onChange={(e) => updateField("expectedDeliveryDate", e.target.value)} /></label></div></section>
+                <section className="po-card"><div className="po-card-title"><span>01</span><h3>Order identity</h3></div><div className="po-fields po-fields-3"><label>Company name<input value={form.companyName} readOnly /></label><label>PO number<input value={form.poNo} onChange={(e) => updateField("poNo", e.target.value)} /></label><label>PO date<input type="date" value={form.poDate} onChange={(e) => updateField("poDate", e.target.value)} /></label><label>Status<select className={`po-status-select po-status-${form.status}`} value={form.status} onChange={(e) => updateField("status", e.target.value)}><option value="open">Open</option><option value="partially_fulfilled">Partially fulfilled</option><option value="fulfilled">Fulfilled</option><option value="cancelled">Cancelled</option></select></label><label>Quotation reference<input value={form.quotationRefNo} onChange={(e) => updateField("quotationRefNo", e.target.value)} readOnly={isQuotationLocked} /></label><label>Quotation date<input type="date" value={form.quotationRefDate} onChange={(e) => updateField("quotationRefDate", e.target.value)} readOnly={isQuotationLocked} /></label><label>Expected delivery<input type="date" value={form.expectedDeliveryDate} onChange={(e) => updateField("expectedDeliveryDate", e.target.value)} /></label></div></section>
                 <section className="po-card"><div className="po-card-title"><span>02</span><h3>Parties</h3></div><div className="po-party-grid"><PartyBlock title="Buyer / customer" fields={[["Customer name","buyerName"],["Address","buyerAddress"],["State","buyerState"],["State code","buyerStateCode"],["GSTN no.","buyerGSTN"]]} form={form} updateField={updateField} locked={isQuotationLocked} /><PartyBlock title="Supplier / company" fields={[["Supplier name","supplierName"],["Address","supplierAddress"],["State","supplierState"],["State code","supplierStateCode"],["GSTN no.","supplierGSTN"]]} form={form} updateField={updateField} locked={isQuotationLocked} /></div></section>
                 <section className="po-card"><div className="po-card-title"><span>03</span><h3>Line items</h3><em>{form.items.length} items</em></div><div className="po-table-wrap"><table className="po-table"><thead><tr><th>Description</th><th>Qty</th><th>UOM</th><th>Rate</th><th>Amount</th><th /></tr></thead><tbody>{form.items.map((item) => <tr key={item.id}><td><input value={item.description} onChange={(e) => updateItem(item.id, "description", e.target.value)} readOnly={isItemLocked(item)} /></td><td><input type="number" min="0" step="0.01" value={item.qty} onChange={(e) => updateItem(item.id, "qty", Number(e.target.value) || 0)} readOnly={isItemLocked(item)} /></td><td><input value={item.uom} onChange={(e) => updateItem(item.id, "uom", e.target.value)} readOnly={isItemLocked(item)} /></td><td><input type="number" min="0" step="0.01" value={item.rate} onChange={(e) => updateItem(item.id, "rate", Number(e.target.value) || 0)} readOnly={isItemLocked(item)} /></td><td className="po-amount">{formatMoney((Number(item.qty) || 0) * (Number(item.rate) || 0))}</td><td><button type="button" className="po-remove" onClick={() => removeItem(item.id)} disabled={isItemLocked(item) || form.items.length === 1}>×</button></td></tr>)}</tbody></table></div><div className="po-total-row"><span>Total quantity <b>{totals.totalQty}</b></span><span>Total amount <b>{formatMoney(totals.totalPrice)}</b></span></div></section>
                 <section className="po-card"><div className="po-card-title"><span>04</span><h3>Terms &amp; notes</h3></div><div className="po-fields po-fields-3"><label>Delivery terms<textarea value={form.deliveryTerms} onChange={(e) => updateField("deliveryTerms", e.target.value)} /></label><label>Payment terms<textarea value={form.paymentTerms} onChange={(e) => updateField("paymentTerms", e.target.value)} /></label><label>Notes<textarea value={form.notes} onChange={(e) => updateField("notes", e.target.value)} /></label></div></section>
