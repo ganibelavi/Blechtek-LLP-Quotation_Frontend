@@ -20,7 +20,14 @@ import {
   dialogSecondaryActionSx,
 } from "../../../styles/modalActionButtonStyles";
 
-const emptyModule = { pillar: "", moduleName: "", price: "" };
+const emptyModule = {
+  pillar: "",
+  moduleName: "",
+  price: "",
+  hsnCode: "",
+  sacCode: "",
+  reverseChargeDefault: false,
+};
 
 const toTableModule = (module) => ({
   Id: module.id ?? module.Id,
@@ -32,6 +39,10 @@ const toTableModule = (module) => ({
     module.Module ??
     "",
   Price: module.price ?? module.Price ?? null,
+  HsnCode: module.hsnCode ?? module.HsnCode ?? "",
+  SacCode: module.sacCode ?? module.SacCode ?? "",
+  ReverseChargeDefault:
+    module.reverseChargeDefault ?? module.ReverseChargeDefault ?? false,
 });
 
 export default function ModulesPage() {
@@ -73,6 +84,9 @@ export default function ModulesPage() {
       pillar: module.Pillar,
       moduleName: module.ModuleName,
       price: module.Price ?? module.price ?? "",
+      hsnCode: module.HsnCode ?? module.hsnCode ?? "",
+      sacCode: module.SacCode ?? module.sacCode ?? "",
+      reverseChargeDefault: module.ReverseChargeDefault ?? false,
     });
     setIsDialogOpen(true);
   };
@@ -97,6 +111,9 @@ export default function ModulesPage() {
       pillar: form.pillar,
       moduleName: form.moduleName,
       price: form.price === "" ? null : Number(form.price),
+      hsnCode: form.hsnCode || null,
+      sacCode: form.sacCode || null,
+      reverseChargeDefault: form.reverseChargeDefault,
     };
 
     if (editingModuleId === null) {
@@ -197,6 +214,15 @@ export default function ModulesPage() {
     { key: "Pillar", label: "Pillar", sortable: true, minWidth: 160 },
     { key: "ModuleName", label: "Module Name", sortable: true, minWidth: 220 },
     { key: "Price", label: "Price", sortable: true, minWidth: 120 },
+    { key: "HsnCode", label: "Hsn Code", sortable: true, minWidth: 120 },
+    { key: "SacCode", label: "Sac Code", sortable: true, minWidth: 120 },
+    {
+      key: "ReverseChargeDefault",
+      label: "Reverse Charge Default",
+      sortable: true,
+      minWidth: 160,
+      render: ({ row }) => (row.ReverseChargeDefault ? "Yes" : "No"),
+    },
     {
       key: "actions",
       label: "Actions",
@@ -302,6 +328,32 @@ export default function ModulesPage() {
               onChange={updateField}
               inputProps={{ min: 0, step: "0.01" }}
             />
+            <TextField
+              label="HSN Code"
+              name="hsnCode"
+              value={form.hsnCode}
+              onChange={updateField}
+            />
+            <TextField
+              label="SAC Code"
+              name="sacCode"
+              value={form.sacCode}
+              onChange={updateField}
+            />
+            <label>
+              <input
+                type="checkbox"
+                name="reverseChargeDefault"
+                checked={form.reverseChargeDefault}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    reverseChargeDefault: event.target.checked,
+                  }))
+                }
+              />
+              Reverse charge default
+            </label>
           </Box>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
