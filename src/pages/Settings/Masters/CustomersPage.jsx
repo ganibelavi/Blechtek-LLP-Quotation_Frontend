@@ -5,6 +5,9 @@ const fields = [
   { name: "state", label: "State" },
   { name: "stateCode", label: "State Code" },
   { name: "gstn", label: "GSTN" },
+  { name: "contactName", label: "Contact Name" },
+  { name: "contactNumber", label: "Contact Number" },
+  { name: "email", label: "Email", type: "email" },
 ];
 export default function CustomersPage() {
   return (

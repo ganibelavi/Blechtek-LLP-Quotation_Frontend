@@ -50,21 +50,9 @@ export default function CreatedPurchaseOrders({ onNavigate }) {
 
   const openPurchaseOrder = (row) => {
     const purchaseOrderData = row.data || row;
-    const normalizedData = purchaseOrderData?.po
-      ? purchaseOrderData
-      : {
-          po: purchaseOrderData,
-          items: purchaseOrderData?.items || [],
-          totals: purchaseOrderData?.totals || {
-            totalPrice: purchaseOrderData?.totalAmount || 0,
-          },
-          id: purchaseOrderData?.id,
-          poNo: purchaseOrderData?.poNo,
-        };
-
-    sessionStorage.setItem("purchaseOrderData", JSON.stringify(normalizedData));
     sessionStorage.setItem("purchaseOrderBackView", "created-purchase-orders");
-    onNavigate("purchase-order");
+    sessionStorage.setItem("purchaseOrderId", String(purchaseOrderData.id));
+    onNavigate("purchase-order-entry");
   };
 
   const handleRemovePurchaseOrder = (row) => {
@@ -164,6 +152,7 @@ export default function CreatedPurchaseOrders({ onNavigate }) {
         <Button
           variant="contained"
           onClick={() => {
+            sessionStorage.removeItem("purchaseOrderId");
             sessionStorage.setItem(
               "purchaseOrderBackView",
               "created-purchase-orders",

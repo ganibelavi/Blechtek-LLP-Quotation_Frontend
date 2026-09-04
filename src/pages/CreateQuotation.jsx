@@ -6,6 +6,7 @@ import {
   fetchNextQuotationNo,
   fetchOrganizations,
   fetchReferences,
+  fetchCustomers,
 } from "../services/quotationApi";
 import "./CreateQuotation.css";
 import "../components/QuotationForm.css";
@@ -37,6 +38,7 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
   const [modules, setModules] = useState([]);
   const [organizations, setOrganizations] = useState([]);
   const [references, setReferences] = useState([]);
+  const [customers, setCustomers] = useState([]);
   const [values, setValues] = useState(initialValues);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
@@ -92,6 +94,10 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
       .then(setReferences)
       .catch(() => setReferences([]));
 
+    fetchCustomers()
+      .then(setCustomers)
+      .catch(() => setCustomers([]));
+
     // Fetch the next quotation number
     fetchNextQuotationNo()
       .then((quotationNo) => {
@@ -120,6 +126,30 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
     setValues((v) => ({
       ...v,
       quotationTo: { ...v.quotationTo, [field]: value },
+    }));
+  };
+
+  const handleCustomerChange = (contactName) => {
+    const selectedCustomer = customers.find(
+      (customer) =>
+        (customer.contactName || "").trim().toLowerCase() ===
+        contactName.trim().toLowerCase(),
+    );
+
+    if (!selectedCustomer) {
+      handleQuotationToChange("name", contactName);
+      return;
+    }
+
+    setValues((v) => ({
+      ...v,
+      quotationTo: {
+        ...v.quotationTo,
+        name: selectedCustomer.contactName || contactName,
+        address: selectedCustomer.address || "",
+        contactNo: selectedCustomer.contactNumber || "",
+        email: selectedCustomer.email || "",
+      },
     }));
   };
 
@@ -375,17 +405,18 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
               <h3 className="q-form__heading">Quotation to</h3>
               <div className="q-form__row">
                 <div className="q-field">
-                  <label htmlFor="contactName">Contact name</label>
-                  <input
-                    id="contactName"
-                    type="text"
-                    placeholder="e.g. Rakesh Sharma"
-                    value={values.quotationTo.name}
-                    onChange={(e) =>
-                      handleQuotationToChange("name", e.target.value)
-                    }
-                    disabled={readOnly}
-                  />
+                <SearchDropdown
+                  name="contactName"
+                  label="Contact name"
+                  value={values.quotationTo.name}
+                  onChange={handleCustomerChange}
+                  options={customers
+                    .map((customer) => customer.contactName)
+                    .filter(Boolean)}
+                  placeholder="Select customer contact"
+                  allowFreeText
+                  disabled={readOnly}
+                />
                   {errors.contactName && (
                     <span className="q-field__error">{errors.contactName}</span>
                   )}

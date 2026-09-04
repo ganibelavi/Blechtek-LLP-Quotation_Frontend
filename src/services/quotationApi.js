@@ -160,6 +160,12 @@ export async function fetchOrganizations() {
   return organizations.sort();
 }
 
+/** GET /api/customers reads the database-backed Customers master table. */
+export async function fetchCustomers() {
+  const { data } = await client.get("/api/customers");
+  return Array.isArray(data) ? data : [];
+}
+
 export async function fetchPurchaseOrderCompanies() {
   const { data } = await client.get("/api/purchase-order");
   const companies = [...new Set(

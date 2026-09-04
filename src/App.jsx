@@ -375,6 +375,7 @@ export default function App() {
                   return (
                     <PurchaseOrderEntryForm
                       onNavigate={navigate}
+                      purchaseOrderId={sessionStorage.getItem("purchaseOrderId")}
                       defaultReturnView={
                         sessionStorage.getItem("purchaseOrderBackView") ||
                         "created-purchase-orders"
