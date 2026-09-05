@@ -74,6 +74,19 @@
   background: transparent;
 }
 
+.invoice-entry-readonly-fields {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.invoice-entry-readonly-fields input,
+.invoice-entry-readonly-fields textarea,
+.invoice-entry-readonly-fields select {
+  cursor: default;
+}
+
 .invoice-entry-section {
   padding: 17px;
 }

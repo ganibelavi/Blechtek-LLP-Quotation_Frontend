@@ -324,8 +324,24 @@ const defaultForm = () => {
 export default function InvoiceEntryForm({
   onNavigate,
   defaultReturnView = "created-invoices",
+  initialData,
+  viewOnly = false,
 }) {
-  const [form, setForm] = useState(defaultForm);
+  const [form, setForm] = useState(() => {
+    const baseForm = defaultForm();
+    const sourceData = initialData?.invoice
+      ? initialData
+      : { invoice: initialData, items: initialData?.items || [] };
+    const sourceItems = Array.isArray(sourceData?.items) && sourceData.items.length
+      ? sourceData.items.map((item) => ({ ...item, id: item.id || Date.now() + Math.random() }))
+      : baseForm.items;
+    return {
+      ...baseForm,
+      ...(sourceData?.invoice || {}),
+      items: sourceItems,
+      sourceInvoiceId: normalizeId(sourceData?.id || sourceData?.invoice?.id),
+    };
+  });
   const [companyOptions, setCompanyOptions] = useState([]);
   const [quotationRecords, setQuotationRecords] = useState([]);
   const [moduleCatalog, setModuleCatalog] = useState([]);
@@ -372,13 +388,14 @@ export default function InvoiceEntryForm({
   }, []);
 
   useEffect(() => {
+    if (viewOnly) return;
     if (form.sourceInvoiceId || form.invoiceNo) return;
     fetchNextInvoiceNo()
       .then((invoiceNo) =>
         setForm((prev) => (prev.invoiceNo ? prev : { ...prev, invoiceNo })),
       )
       .catch((error) => console.error("Failed to load next invoice number", error));
-  }, [form.sourceInvoiceId, form.invoiceNo]);
+  }, [form.sourceInvoiceId, form.invoiceNo, viewOnly]);
 
   const poQuotationIds = useMemo(
     () =>
@@ -543,6 +560,7 @@ export default function InvoiceEntryForm({
   };
 
   useEffect(() => {
+    if (viewOnly) return;
     if (!moduleCatalog.length) return;
 
     setForm((prev) => {
@@ -562,9 +580,10 @@ export default function InvoiceEntryForm({
 
       return { ...prev, items: rebuiltItems };
     });
-  }, [moduleCatalog]);
+  }, [moduleCatalog, viewOnly]);
 
   useEffect(() => {
+    if (viewOnly) return;
     const rawPo = readStoredPurchaseOrder();
     const rawQuotation = readStoredQuotation();
 
@@ -677,9 +696,10 @@ export default function InvoiceEntryForm({
     };
 
     hydrateSourceData();
-  }, [moduleCatalog]);
+  }, [moduleCatalog, viewOnly]);
 
   useEffect(() => {
+    if (viewOnly) return;
     const selectedCompanyName = form.companyName?.trim();
     if (!selectedCompanyName) return;
 
@@ -759,7 +779,7 @@ export default function InvoiceEntryForm({
     };
 
     loadMatchedQuotation();
-  }, [form.companyName, quotationRecords, moduleCatalog]);
+  }, [form.companyName, quotationRecords, moduleCatalog, viewOnly]);
 
   const totals = useMemo(() => {
     const totalQty = form.items.reduce(
@@ -918,6 +938,19 @@ export default function InvoiceEntryForm({
     }
   };
 
+  const handleGenerateInvoice = () => {
+    sessionStorage.setItem(
+      "invoiceData",
+      JSON.stringify({
+        invoice: { ...form, amountInWords },
+        items: form.items,
+        totals,
+        id: form.sourceInvoiceId,
+      }),
+    );
+    onNavigate("invoice");
+  };
+
   return (
     <div className="invoice-entry-page po-page">
         <div className="po-topbar invoice-entry-header">
@@ -1006,7 +1039,7 @@ export default function InvoiceEntryForm({
                 <p>{form.companyName || "No company selected"} · {form.dateOfIssue || "Date pending"}</p>
               </div>
               <div className="po-detail-actions">
-                <button
+                {!viewOnly && <button
                   type="button"
                   className="app-action-btn app-action-btn--secondary"
                   onClick={() => {
@@ -1015,18 +1048,25 @@ export default function InvoiceEntryForm({
                   }}
                 >
                   New Invoice
-                </button>
-                <button
+                </button>}
+                {!viewOnly ? <button
                   type="submit"
                   form="invoice-entry-form"
                   className="app-action-btn app-action-btn--primary"
                 >
                   Save
-                </button>
+                </button> : <button
+                  type="button"
+                  className="app-action-btn app-action-btn--primary"
+                  onClick={handleGenerateInvoice}
+                >
+                  Generate Invoice
+                </button>}
               </div>
             </div>
             <form id="invoice-entry-form" onSubmit={handleSubmit}>
         <div className="invoice-entry-card">
+          <fieldset disabled={viewOnly} className="invoice-entry-readonly-fields">
           <section className="invoice-entry-section invoice-entry-identity">
             <div>
               <SearchDropdown
@@ -1472,6 +1512,7 @@ export default function InvoiceEntryForm({
               })}
             </span>
           </div>
+          </fieldset>
         </div>
             </form>
           </section>

@@ -408,6 +408,7 @@ export default function App() {
                       initialData={getPurchaseOrderInitialData()}
                       onNavigate={navigate}
                       onConvertToInvoice={() => {
+                        sessionStorage.removeItem("invoiceViewOnly");
                         sessionStorage.setItem(
                           "invoiceBackView",
                           "purchase-order",
@@ -435,6 +436,8 @@ export default function App() {
                   return (
                     <InvoiceEntryForm
                       onNavigate={navigate}
+                      initialData={getInvoiceInitialData()}
+                      viewOnly={sessionStorage.getItem("invoiceViewOnly") === "true"}
                       defaultReturnView={
                         sessionStorage.getItem("invoiceBackView") ||
                         "created-invoices"

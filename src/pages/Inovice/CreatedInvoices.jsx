@@ -59,7 +59,8 @@ export default function CreatedInvoices({ onNavigate }) {
 
     sessionStorage.setItem("invoiceData", JSON.stringify(normalizedData));
     sessionStorage.setItem("invoiceBackView", "created-invoices");
-    onNavigate("invoice");
+    sessionStorage.setItem("invoiceViewOnly", "true");
+    onNavigate("invoice-entry");
   };
 
   const handleRemoveInvoice = (row) => {
@@ -150,6 +151,7 @@ export default function CreatedInvoices({ onNavigate }) {
           variant="contained"
           onClick={() => {
             sessionStorage.setItem("invoiceBackView", "created-invoices");
+            sessionStorage.removeItem("invoiceViewOnly");
             onNavigate("invoice-entry");
           }}
           sx={{ px: 3, py: 1 }}
