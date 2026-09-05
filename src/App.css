@@ -150,6 +150,10 @@
   padding: 0 !important;
 }
 
+.app-main--invoice {
+  padding: 0 !important;
+}
+
 @media print {
 
   html,
@@ -503,6 +507,10 @@
   }
 
   .app-main--po {
+    padding: 0 !important;
+  }
+
+  .app-main--invoice {
     padding: 0 !important;
   }
 }

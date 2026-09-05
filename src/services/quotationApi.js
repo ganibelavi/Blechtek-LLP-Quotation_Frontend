@@ -23,6 +23,13 @@ export async function fetchModules() {
     pillar: module.pillar ?? module.Pillar ?? "",
     module: module.moduleName ?? module.ModuleName ?? module.module ?? module.Module ?? "",
     price: module.price ?? module.Price ?? null,
+    hsnCode: module.hsnCode ?? module.HsnCode ?? module.hsn_code ?? "",
+    sacCode: module.sacCode ?? module.SacCode ?? module.sac_code ?? "",
+    reverseChargeDefault:
+      module.reverseChargeDefault ??
+      module.ReverseChargeDefault ??
+      module.reverse_charge_default ??
+      false,
   }));
 }
 
@@ -174,6 +181,26 @@ export async function fetchCustomers() {
 /** GET /api/suppliers reads the database-backed Suppliers master table. */
 export async function fetchSuppliers() {
   const { data } = await client.get("/api/suppliers");
+  return Array.isArray(data) ? data : [];
+}
+
+export async function fetchCompanyProfiles() {
+  const { data } = await client.get("/api/company-profile");
+  return Array.isArray(data) ? data : [];
+}
+
+export async function fetchBankAccounts() {
+  const { data } = await client.get("/api/company-bank-accounts");
+  return Array.isArray(data) ? data : [];
+}
+
+export async function fetchGstRates() {
+  const { data } = await client.get("/api/gst-rates");
+  return Array.isArray(data) ? data : [];
+}
+
+export async function fetchTermsTemplates() {
+  const { data } = await client.get("/api/terms-templates");
   return Array.isArray(data) ? data : [];
 }
 

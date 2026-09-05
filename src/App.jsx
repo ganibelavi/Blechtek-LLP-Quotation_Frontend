@@ -214,7 +214,7 @@ export default function App() {
 
       {!user ? (
         <main
-          className={`app-main ${view === "purchase-order-entry" ? "app-main--po" : ""}`}
+          className={`app-main ${view === "purchase-order-entry" ? "app-main--po" : view === "invoice-entry" ? "app-main--invoice" : ""}`}
         >
           <LoginPage />
         </main>
@@ -318,7 +318,7 @@ export default function App() {
             </nav>
           </aside>
           <main
-            className={`app-main ${view === "purchase-order-entry" ? "app-main--po" : ""}`}
+            className={`app-main ${view === "purchase-order-entry" ? "app-main--po" : view === "invoice-entry" ? "app-main--invoice" : ""}`}
           >
             {![
               "create",
