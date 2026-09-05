@@ -123,6 +123,11 @@ export async function createPurchaseOrder(payload) {
   return data;
 }
 
+export async function fetchNextPurchaseOrderNo() {
+  const { data } = await client.get("/api/purchase-order/next-number");
+  return data.poNo;
+}
+
 export async function fetchPurchaseOrders() {
   const { data } = await client.get("/api/purchase-order");
   return data;
@@ -140,6 +145,11 @@ export async function deletePurchaseOrder(id) {
 export async function createInvoice(payload) {
   const { data } = await client.post("/api/invoice", payload);
   return data;
+}
+
+export async function fetchNextInvoiceNo() {
+  const { data } = await client.get("/api/invoice/next-number");
+  return data.invoiceNo;
 }
 
 export async function fetchInvoices() {

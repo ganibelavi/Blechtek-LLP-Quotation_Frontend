@@ -126,7 +126,8 @@ export default function PurchaseOrder({
   };
 
   const canConvert =
-    po.status === "open" || po.status === "partially_fulfilled";
+    (po.status === "open" || po.status === "partially_fulfilled") &&
+    String(po.verificationStatus || "").toLowerCase() === "verified";
 
   return (
     <div className="po-page">
@@ -149,7 +150,7 @@ export default function PurchaseOrder({
               ? "View-only mode"
               : canConvert
                 ? ""
-                : "Only open or partially fulfilled POs can be invoiced"
+                : "Only verified, open, or partially fulfilled POs can be invoiced"
           }
         >
           Convert to Invoice

@@ -94,6 +94,11 @@
   margin-top: 14px;
 }
 
+.invoice-entry-notes {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+
 .invoice-entry-party-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -294,7 +299,8 @@
 
   .invoice-entry-party-grid,
   .invoice-entry-identity,
-  .invoice-entry-fields {
+  .invoice-entry-fields,
+  .invoice-entry-notes {
     grid-template-columns: 1fr;
   }
 }

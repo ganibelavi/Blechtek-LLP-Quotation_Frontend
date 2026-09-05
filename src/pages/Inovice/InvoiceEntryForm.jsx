@@ -9,6 +9,7 @@ import {
   fetchQuotationById,
   fetchQuotations,
   fetchInvoices,
+  fetchNextInvoiceNo,
   fetchPurchaseOrders,
   fetchCompanyProfiles,
   fetchBankAccounts,
@@ -370,10 +371,28 @@ export default function InvoiceEntryForm({
     fetchTermsTemplates().then(setTermsTemplates).catch(() => setTermsTemplates([]));
   }, []);
 
+  useEffect(() => {
+    if (form.sourceInvoiceId || form.invoiceNo) return;
+    fetchNextInvoiceNo()
+      .then((invoiceNo) =>
+        setForm((prev) => (prev.invoiceNo ? prev : { ...prev, invoiceNo })),
+      )
+      .catch((error) => console.error("Failed to load next invoice number", error));
+  }, [form.sourceInvoiceId, form.invoiceNo]);
+
   const poQuotationIds = useMemo(
     () =>
       new Set(
         purchaseOrders
+          .filter(
+            (po) =>
+              String(
+                po.verificationStatus ??
+                  po.VerificationStatus ??
+                  po.po?.verificationStatus ??
+                  "",
+              ).toLowerCase() === "verified",
+          )
           .map((po) => po.quotationId ?? po.quotation?.quotationId)
           .filter(Boolean)
           .map(String),
@@ -397,7 +416,13 @@ export default function InvoiceEntryForm({
     const quotationId = String(quotation.quotationId ?? quotation.id);
     const linkedPoSummary = purchaseOrders.find(
       (record) =>
-        String(record.quotationId ?? record.po?.quotationId ?? "") === quotationId,
+        String(record.quotationId ?? record.po?.quotationId ?? "") === quotationId &&
+        String(
+          record.verificationStatus ??
+            record.VerificationStatus ??
+            record.po?.verificationStatus ??
+            "",
+        ).toLowerCase() === "verified",
     );
     const linkedPoId = normalizeId(linkedPoSummary?.id ?? linkedPoSummary?.po?.id);
     const linkedPo = linkedPoId
@@ -801,7 +826,6 @@ export default function InvoiceEntryForm({
     event.preventDefault();
     const requiredFields = [
       ["Company name", form.companyName],
-      ["Invoice number", form.invoiceNo],
       ["Date of issue", form.dateOfIssue],
       ["Supplier name", form.supplierName],
       ["Receiver name", form.receiverName],
@@ -1018,12 +1042,13 @@ export default function InvoiceEntryForm({
             </div>
             <label>
               <div style={{ fontWeight: 600, marginBottom: 6 }}>
-                Invoice No. <RequiredMark />
+                Invoice No.
               </div>
               <input
                 value={form.invoiceNo}
                 onChange={(e) => updateField("invoiceNo", e.target.value)}
                 className="invoice-entry-control"
+                readOnly
               />
             </label>
             <label>

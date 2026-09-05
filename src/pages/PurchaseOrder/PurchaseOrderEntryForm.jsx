@@ -16,6 +16,7 @@ import {
   fetchQuotationById,
   fetchQuotations,
   fetchPurchaseOrders,
+  fetchNextPurchaseOrderNo,
   fetchPurchaseOrderById,
   fetchCustomers,
   fetchSuppliers,
@@ -247,6 +248,13 @@ export default function PurchaseOrderEntryForm({
   }, [purchaseOrderId]);
 
   useEffect(() => {
+    if (purchaseOrderId || form.poNo) return;
+    fetchNextPurchaseOrderNo()
+      .then((poNo) => setForm((prev) => (prev.poNo ? prev : { ...prev, poNo })))
+      .catch((error) => console.error("Failed to load next purchase order number", error));
+  }, [purchaseOrderId, form.poNo]);
+
+  useEffect(() => {
     fetchModules()
       .then((data) => setModuleCatalog(Array.isArray(data) ? data : []))
       .catch(() => setModuleCatalog([]));
@@ -440,13 +448,17 @@ export default function PurchaseOrderEntryForm({
     event.preventDefault();
     const requiredFields = [
       ["Company name", form.companyName],
-      ["PO number", form.poNo || "generated"],
       ["PO date", form.poDate],
       ["Buyer name", form.buyerName],
       ["Supplier name", form.supplierName],
     ];
-    const missingField = requiredFields.find(([, value]) => !String(value || "").trim());
-    if (missingField || form.items.some((item) => !String(item.description || "").trim())) {
+    const missingField = requiredFields.find(
+      ([, value]) => !String(value || "").trim(),
+    );
+    if (
+      missingField ||
+      form.items.some((item) => !String(item.description || "").trim())
+    ) {
       setSnackbar({
         open: true,
         message: missingField
@@ -460,9 +472,7 @@ export default function PurchaseOrderEntryForm({
     const payload = {
       quotationId: form.sourceQuotationId,
       companyName: form.companyName,
-      poNo:
-        form.poNo ||
-        `PO-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.floor(Math.random() * 1000)}`,
+      poNo: form.poNo,
       poDate: form.poDate || new Date().toISOString().slice(0, 10),
       status: form.status,
       poDirection: form.poDirection,
@@ -711,7 +721,8 @@ export default function PurchaseOrderEntryForm({
     if (!activePurchaseOrderId) {
       setSnackbar({
         open: true,
-        message: "Save the purchase order before updating its verification status.",
+        message:
+          "Save the purchase order before updating its verification status.",
         severity: "warning",
       });
       return;
@@ -994,10 +1005,11 @@ export default function PurchaseOrderEntryForm({
                       <input value={form.companyName} readOnly />
                     </label>
                     <label>
-                      PO number <RequiredMark />
+                      PO number
                       <input
                         value={form.poNo}
                         onChange={(e) => updateField("poNo", e.target.value)}
+                        readOnly
                       />
                     </label>
                     <label>
@@ -1100,7 +1112,9 @@ export default function PurchaseOrderEntryForm({
                     <table className="po-table">
                       <thead>
                         <tr>
-                          <th>Description <RequiredMark /></th>
+                          <th>
+                            Description <RequiredMark />
+                          </th>
                           <th>Qty</th>
                           <th>UOM</th>
                           <th>Rate</th>
@@ -1386,7 +1400,11 @@ export default function PurchaseOrderEntryForm({
 }
 
 function RequiredMark() {
-  return <span className="required-mark" aria-label="required">*</span>;
+  return (
+    <span className="required-mark" aria-label="required">
+      *
+    </span>
+  );
 }
 
 function PartyBlock({ title, fields, form, updateField, locked }) {
