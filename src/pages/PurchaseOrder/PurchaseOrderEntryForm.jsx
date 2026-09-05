@@ -254,6 +254,13 @@ export default function PurchaseOrderEntryForm({
       .catch((error) => console.error("Failed to load next purchase order number", error));
   }, [purchaseOrderId, form.poNo]);
 
+  // Sync intakeForm.poNo with auto-generated form.poNo
+  useEffect(() => {
+    if (form.poNo) {
+      setIntakeForm((prev) => ({ ...prev, poNo: form.poNo }));
+    }
+  }, [form.poNo]);
+
   useEffect(() => {
     fetchModules()
       .then((data) => setModuleCatalog(Array.isArray(data) ? data : []))
@@ -613,8 +620,8 @@ export default function PurchaseOrderEntryForm({
   const [showUpload, setShowUpload] = useState(false);
   const [intakeForm, setIntakeForm] = useState({
     quotationId: "",
-    poNo: "",
-    poDate: "",
+    poNo: form.poNo || "", // Pre-fill with auto-generated PO number
+    poDate: new Date().toISOString().slice(0, 10),
     receivedFromEmail: "",
     attachmentUrl: "",
   });
@@ -771,6 +778,14 @@ export default function PurchaseOrderEntryForm({
     setIntakeForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  // Check if all required intake fields are filled
+  const isIntakeFormValid = Boolean(
+    intakeForm.quotationId &&
+    intakeForm.poDate &&
+    intakeForm.receivedFromEmail &&
+    intakeForm.attachmentUrl
+  );
+
   const handleEmailPoIntake = async (event) => {
     event.preventDefault();
     const quotationIdentifier = intakeForm.quotationId;
@@ -807,6 +822,11 @@ export default function PurchaseOrderEntryForm({
       receivedAt: new Date().toISOString(),
     }));
     setShowUpload(false);
+    setSnackbar({
+      open: true,
+      message: "Purchase order created successfully from email intake.",
+      severity: "success",
+    });
   };
 
   const formatMoney = (value) =>
@@ -1278,11 +1298,12 @@ export default function PurchaseOrderEntryForm({
                   select
                   fullWidth
                   size="small"
-                  label="Link to quotation"
+                  label="Link to quotation *"
                   value={intakeForm.quotationId}
                   onChange={(e) =>
                     updateIntakeField("quotationId", e.target.value)
                   }
+                  required
                 >
                   <MenuItem value="">Select quotation...</MenuItem>
                   {quotationRecords.map((quotation, index) => (
@@ -1306,35 +1327,39 @@ export default function PurchaseOrderEntryForm({
                     size="small"
                     label="PO number"
                     value={intakeForm.poNo}
-                    onChange={(e) => updateIntakeField("poNo", e.target.value)}
-                    placeholder="e.g. XYZ/PO/2026/04"
+                    readOnly
+                    InputProps={{
+                      style: { backgroundColor: "#f5f5f5" },
+                    }}
                   />
                   <TextField
                     size="small"
-                    label="PO date"
+                    label="PO date *"
                     type="date"
                     value={intakeForm.poDate}
                     onChange={(e) =>
                       updateIntakeField("poDate", e.target.value)
                     }
                     InputLabelProps={{ shrink: true }}
+                    required
                   />
                 </Box>
                 <TextField
                   size="small"
-                  label="Received from (email)"
+                  label="Received from (email) *"
                   type="email"
                   value={intakeForm.receivedFromEmail}
                   onChange={(e) =>
                     updateIntakeField("receivedFromEmail", e.target.value)
                   }
                   placeholder="procurement@client.com"
+                  required
                 />
                 <Box>
                   <Box
                     sx={{ color: "text.secondary", fontSize: "13px", mb: 0.75 }}
                   >
-                    Attachment
+                    Attachment *
                   </Box>
                   <Box
                     component="label"
@@ -1359,6 +1384,7 @@ export default function PurchaseOrderEntryForm({
                       hidden
                       type="file"
                       accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
+                      required
                       onChange={(e) =>
                         updateIntakeField(
                           "attachmentUrl",
@@ -1383,6 +1409,7 @@ export default function PurchaseOrderEntryForm({
               form="po-intake-form"
               variant="contained"
               sx={dialogPrimaryActionSx}
+              disabled={!isIntakeFormValid}
             >
               Add to review queue
             </Button>

@@ -413,7 +413,7 @@
   padding: 40px 20px;
   text-align: center;
   color: var(--text-500);
-  font-size: 14px;
+  font-size: 13px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
@@ -430,7 +430,7 @@
 
 .q-result__title {
   margin: 0 0 4px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--text-dark);
 }

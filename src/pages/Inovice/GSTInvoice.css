@@ -329,7 +329,7 @@ input[type="number"] {
 
 .gi-grand-total-row td {
   font-weight: 700;
-  font-size: 14px;
+  font-size: 13px;
   border-top: 2px solid var(--rule-strong);
   border-bottom: none;
   padding-top: 8px;

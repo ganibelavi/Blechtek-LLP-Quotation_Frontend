@@ -125,7 +125,7 @@
 
 .search-dropdown__option {
   padding: 10px 12px;
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-900, #111827);
   cursor: pointer;
   transition: background-color 0.15s ease;
