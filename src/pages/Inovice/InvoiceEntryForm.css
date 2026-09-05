@@ -20,13 +20,14 @@
 }
 
 .invoice-entry-header p {
-  color: #b6c5d4;
+  /* color: #b6c5d4; */
   margin: 0;
   font-size: 10px;
+  /* margin-bottom: 10px; */
 }
 
 .invoice-entry-eyebrow {
-  color: #9db4cd;
+  /* color: #9db4cd; */
   font: 700 9px var(--po-mono);
   letter-spacing: .13em;
 }

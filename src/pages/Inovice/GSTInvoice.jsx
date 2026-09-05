@@ -226,12 +226,10 @@ export default function GSTInvoice({ initialData, onBackToInvoiceList, onNavigat
       <div className="gi-sheet" ref={printRef}>
         {/* Header */}
         <div className="gi-header">
-          <div className="gi-logo">LOGO</div>
-          <input
-            className="gi-company-name"
-            placeholder="Company Name"
-            {...field("companyName")}
-          />
+          <div className="gi-logo">
+            <img src="/logo/logo.png" alt="BlechTek Software Solutions LLP logo" />
+          </div>
+          <div className="gi-company-name">BlechTek Software Solutions LLP</div>
           <div className="gi-original-tag">{invoice.originalFor}</div>
         </div>
 
@@ -561,9 +559,11 @@ export default function GSTInvoice({ initialData, onBackToInvoiceList, onNavigat
 
         <div className="gi-signatory">
           <div className="gi-signatory-line">
-            For {invoice.companyName || "Company Name"}
+            For BlechTek Software Solutions LLP
           </div>
-          <div className="gi-signatory-space" />
+          <div className="gi-signatory-space">
+            <img src="/logo/Authority_Seal.png" alt="Authority seal" />
+          </div>
           <div className="gi-signatory-line">Authorised Signatory</div>
         </div>
       </div>

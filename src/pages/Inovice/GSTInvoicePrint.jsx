@@ -169,8 +169,10 @@ export default function GSTInvoicePrint({ initialData, onBack }) {
 
       <div className="gi-sheet">
         <div className="gi-header">
-          <div className="gi-logo">LOGO</div>
-          <div className="gi-company-name">{invoice.companyName || "Your Company Name"}</div>
+          <div className="gi-logo">
+            <img src="/logo/logo.png" alt="BlechTek Software Solutions LLP logo" />
+          </div>
+          <div className="gi-company-name">BlechTek Software Solutions LLP</div>
           <div className="gi-original-tag">{invoice.originalFor || "ORIGINAL FOR RECIPIENT"}</div>
         </div>
 
@@ -321,6 +323,13 @@ export default function GSTInvoicePrint({ initialData, onBack }) {
           </div>
           <div className="gi-footer-block">
             <div className="gi-field"><span className="gi-label">Terms of Sale:</span><span>{invoice.termsOfSale || "-"}</span></div>
+          </div>
+          <div className="gi-signatory">
+            <div className="gi-signatory-line">For BlechTek Software Solutions LLP</div>
+            <div className="gi-signatory-space">
+              <img src="/logo/Authority_Seal.png" alt="Authority seal" />
+            </div>
+            <div className="gi-signatory-line">Authorised Signatory</div>
           </div>
         </div>
       </div>

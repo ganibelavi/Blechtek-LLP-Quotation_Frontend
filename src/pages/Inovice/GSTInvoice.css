@@ -113,18 +113,18 @@ input[type="number"] {
 /* Header */
 .gi-header {
   display: grid;
-  grid-template-columns: 64px 1fr auto;
+  grid-template-columns: 96px 1fr auto;
   align-items: center;
-  gap: 16px;
+  gap: 24px;
   border-bottom: 2px solid var(--rule-strong);
-  padding-bottom: 14px;
+  /* padding-bottom: 14px; */
   margin-bottom: 12px;
 }
 
 .gi-logo {
-  width: 64px;
-  height: 64px;
-  border: 1px dashed var(--rule);
+  width: 120px;
+  height: 96px;
+  /* border: 1px dashed var(--rule); */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -133,11 +133,17 @@ input[type="number"] {
   letter-spacing: 0.08em;
 }
 
+.gi-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
 .gi-company-name {
   font-size: 22px;
   font-weight: 700;
   border-bottom: none;
-  padding: 0;
+  padding: 0 0 0 10px;
 }
 
 .gi-original-tag {
@@ -337,7 +343,17 @@ input[type="number"] {
 }
 
 .gi-signatory-space {
-  height: 46px;
+  height: 104px;
+  /* margin-bottom: 14px; */
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-end;
+}
+
+.gi-signatory-space img {
+  width: 92px;
+  height: 92px;
+  object-fit: contain;
 }
 
 .gi-signatory-line {
