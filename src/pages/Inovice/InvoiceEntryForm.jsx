@@ -17,6 +17,7 @@ import {
 } from "../../services/quotationApi";
 import "../PurchaseOrder/PurchaseOrder.css";
 import "./InvoiceEntryForm.css";
+import CustomSnackbar from "../../components/CustomSnackbar";
 
 const readStoredPurchaseOrder = () => {
   try {
@@ -336,6 +337,11 @@ export default function InvoiceEntryForm({
   const [showQuotationModal, setShowQuotationModal] = useState(false);
   const [selectedQuotationId, setSelectedQuotationId] = useState("");
   const [queueSearch, setQueueSearch] = useState("");
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
   const isPreloadedSource = Boolean(form.sourcePoId || form.sourceQuotationId);
   const isItemLocked = (item) => Boolean(item?.isSourceData);
 
@@ -793,6 +799,24 @@ export default function InvoiceEntryForm({
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    const requiredFields = [
+      ["Company name", form.companyName],
+      ["Invoice number", form.invoiceNo],
+      ["Date of issue", form.dateOfIssue],
+      ["Supplier name", form.supplierName],
+      ["Receiver name", form.receiverName],
+    ];
+    const missingField = requiredFields.find(([, value]) => !String(value || "").trim());
+    if (missingField || form.items.some((item) => !String(item.description || "").trim())) {
+      setSnackbar({
+        open: true,
+        message: missingField
+          ? `${missingField[0]} is required.`
+          : "Each item must have a description.",
+        severity: "warning",
+      });
+      return;
+    }
 
     const payload = {
       poId: normalizeId(form.sourcePoId),
@@ -862,7 +886,11 @@ export default function InvoiceEntryForm({
       onNavigate("invoice");
     } catch (error) {
       console.error("Failed to save invoice", error);
-      window.alert("Unable to save invoice to database. Please try again.");
+      setSnackbar({
+        open: true,
+        message: "Unable to save invoice to database. Please try again.",
+        severity: "error",
+      });
     }
   };
 
@@ -979,7 +1007,7 @@ export default function InvoiceEntryForm({
             <div>
               <SearchDropdown
                 name="companyName"
-                label="Company Name"
+                label={<span>Company Name <RequiredMark /></span>}
                 value={form.companyName}
                 onChange={(value) => updateField("companyName", value)}
                 options={companyOptions}
@@ -990,7 +1018,7 @@ export default function InvoiceEntryForm({
             </div>
             <label>
               <div style={{ fontWeight: 600, marginBottom: 6 }}>
-                Invoice No.
+                Invoice No. <RequiredMark />
               </div>
               <input
                 value={form.invoiceNo}
@@ -1000,7 +1028,7 @@ export default function InvoiceEntryForm({
             </label>
             <label>
               <div style={{ fontWeight: 600, marginBottom: 6 }}>
-                Date of Issue
+                Date of Issue <RequiredMark />
               </div>
               <input
                 type="date"
@@ -1046,7 +1074,7 @@ export default function InvoiceEntryForm({
             <div className="invoice-entry-section">
               <h3>Supplier Details</h3>
               <label>
-                Name
+                Name <RequiredMark />
                 <input
                   value={form.supplierName}
                   onChange={(e) => updateField("supplierName", e.target.value)}
@@ -1099,7 +1127,7 @@ export default function InvoiceEntryForm({
             <div className="invoice-entry-section">
               <h3>Receiver / Consignee</h3>
               <label>
-                Name
+                Name <RequiredMark />
                 <input
                   value={form.receiverName}
                   onChange={(e) => updateField("receiverName", e.target.value)}
@@ -1210,7 +1238,7 @@ export default function InvoiceEntryForm({
               <table className="invoice-entry-table">
                 <thead>
                   <tr>
-                    <th>Description</th>
+                    <th>Description <RequiredMark /></th>
                     <th>Qty</th>
                     <th>UOM</th>
                     <th>Rate</th>
@@ -1227,6 +1255,7 @@ export default function InvoiceEntryForm({
                             updateItem(item.id, "description", e.target.value)
                           }
                           readOnly={isItemLocked(item)}
+                          required={!isItemLocked(item)}
                         />
                       </td>
                       <td>
@@ -1479,6 +1508,16 @@ export default function InvoiceEntryForm({
             </button>
           </DialogActions>
         </Dialog>
+        <CustomSnackbar
+          open={snackbar.open}
+          message={snackbar.message}
+          severity={snackbar.severity}
+          onClose={() => setSnackbar((current) => ({ ...current, open: false }))}
+        />
     </div>
   );
+}
+
+function RequiredMark() {
+  return <span className="required-mark" aria-label="required">*</span>;
 }

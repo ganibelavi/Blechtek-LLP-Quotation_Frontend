@@ -25,6 +25,7 @@ import {
   dialogPrimaryActionSx,
   dialogSecondaryActionSx,
 } from "../../styles/modalActionButtonStyles";
+import CustomSnackbar from "../../components/CustomSnackbar";
 
 const readStoredQuotation = () => {
   try {
@@ -180,6 +181,11 @@ export default function PurchaseOrderEntryForm({
   const [activePurchaseOrderId, setActivePurchaseOrderId] = useState(
     normalizeId(purchaseOrderId),
   );
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
   const isQuotationLocked = Boolean(form.sourceQuotationId);
   const isItemLocked = (item) => Boolean(item?.isSourceData);
 
@@ -232,7 +238,11 @@ export default function PurchaseOrderEntryForm({
       })
       .catch((error) => {
         console.error("Failed to load purchase order by id", error);
-        window.alert("Unable to load the selected purchase order.");
+        setSnackbar({
+          open: true,
+          message: "Unable to load the selected purchase order.",
+          severity: "error",
+        });
       });
   }, [purchaseOrderId]);
 
@@ -428,6 +438,24 @@ export default function PurchaseOrderEntryForm({
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    const requiredFields = [
+      ["Company name", form.companyName],
+      ["PO number", form.poNo || "generated"],
+      ["PO date", form.poDate],
+      ["Buyer name", form.buyerName],
+      ["Supplier name", form.supplierName],
+    ];
+    const missingField = requiredFields.find(([, value]) => !String(value || "").trim());
+    if (missingField || form.items.some((item) => !String(item.description || "").trim())) {
+      setSnackbar({
+        open: true,
+        message: missingField
+          ? `${missingField[0]} is required.`
+          : "Each item must have a description.",
+        severity: "warning",
+      });
+      return;
+    }
 
     const payload = {
       quotationId: form.sourceQuotationId,
@@ -519,12 +547,18 @@ export default function PurchaseOrderEntryForm({
         }),
       );
 
-      window.alert("Purchase order saved successfully.");
+      setSnackbar({
+        open: true,
+        message: "Purchase order saved successfully.",
+        severity: "success",
+      });
     } catch (error) {
       console.error("Failed to save purchase order", error);
-      window.alert(
-        "Unable to save purchase order to database. Please try again.",
-      );
+      setSnackbar({
+        open: true,
+        message: "Unable to save purchase order to database. Please try again.",
+        severity: "error",
+      });
     }
   };
 
@@ -675,9 +709,11 @@ export default function PurchaseOrderEntryForm({
 
   const updateVerificationStatus = async (status) => {
     if (!activePurchaseOrderId) {
-      window.alert(
-        "Save the purchase order before updating its verification status.",
-      );
+      setSnackbar({
+        open: true,
+        message: "Save the purchase order before updating its verification status.",
+        severity: "warning",
+      });
       return;
     }
 
@@ -712,7 +748,11 @@ export default function PurchaseOrderEntryForm({
         "Failed to update purchase order verification status",
         error,
       );
-      window.alert("Unable to update the purchase order verification status.");
+      setSnackbar({
+        open: true,
+        message: "Unable to update the purchase order verification status.",
+        severity: "error",
+      });
     }
   };
 
@@ -950,18 +990,18 @@ export default function PurchaseOrderEntryForm({
                   </div>
                   <div className="po-fields po-fields-3">
                     <label>
-                      Company name
+                      Company name <RequiredMark />
                       <input value={form.companyName} readOnly />
                     </label>
                     <label>
-                      PO number
+                      PO number <RequiredMark />
                       <input
                         value={form.poNo}
                         onChange={(e) => updateField("poNo", e.target.value)}
                       />
                     </label>
                     <label>
-                      PO date
+                      PO date <RequiredMark />
                       <input
                         type="date"
                         value={form.poDate}
@@ -1025,7 +1065,7 @@ export default function PurchaseOrderEntryForm({
                     <PartyBlock
                       title="Buyer / customer"
                       fields={[
-                        ["Customer name", "buyerName"],
+                        ["Customer name", "buyerName", true],
                         ["Address", "buyerAddress"],
                         ["State", "buyerState"],
                         ["State code", "buyerStateCode"],
@@ -1038,7 +1078,7 @@ export default function PurchaseOrderEntryForm({
                     <PartyBlock
                       title="Supplier / company"
                       fields={[
-                        ["Supplier name", "supplierName"],
+                        ["Supplier name", "supplierName", true],
                         ["Address", "supplierAddress"],
                         ["State", "supplierState"],
                         ["State code", "supplierStateCode"],
@@ -1060,7 +1100,7 @@ export default function PurchaseOrderEntryForm({
                     <table className="po-table">
                       <thead>
                         <tr>
-                          <th>Description</th>
+                          <th>Description <RequiredMark /></th>
                           <th>Qty</th>
                           <th>UOM</th>
                           <th>Rate</th>
@@ -1081,6 +1121,7 @@ export default function PurchaseOrderEntryForm({
                                   )
                                 }
                                 disabled={isItemLocked(item)}
+                                required={!isItemLocked(item)}
                               />
                             </td>
                             <td>
@@ -1334,17 +1375,27 @@ export default function PurchaseOrderEntryForm({
           </DialogActions>
         </Dialog>
       )}
+      <CustomSnackbar
+        open={snackbar.open}
+        message={snackbar.message}
+        severity={snackbar.severity}
+        onClose={() => setSnackbar((current) => ({ ...current, open: false }))}
+      />
     </div>
   );
+}
+
+function RequiredMark() {
+  return <span className="required-mark" aria-label="required">*</span>;
 }
 
 function PartyBlock({ title, fields, form, updateField, locked }) {
   return (
     <div className="po-party-block">
       <h4>{title}</h4>
-      {fields.map(([label, field]) => (
+      {fields.map(([label, field, required]) => (
         <label key={field}>
-          {label}
+          {label} {required && <RequiredMark />}
           <input
             value={form[field]}
             onChange={(e) => updateField(field, e.target.value)}
