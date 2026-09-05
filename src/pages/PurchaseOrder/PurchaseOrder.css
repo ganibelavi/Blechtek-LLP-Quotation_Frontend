@@ -125,7 +125,8 @@
     border-right: 1px solid var(--po-rule);
     padding: 24px 16px;
     display: flex;
-    flex-direction: column
+    flex-direction: column;
+    min-height: 0;
 }
 
 .po-panel-heading {
@@ -192,8 +193,9 @@
 }
 
 .po-queue-list {
-    overflow: auto;
+    overflow-y: auto;
     flex: 1;
+    min-height: 0;
     margin: 4px -16px 12px
 }
 
@@ -655,11 +657,13 @@
     .po-queue-panel {
         border-right: 0;
         border-bottom: 1px solid var(--po-rule);
-        min-height: 270px
+        min-height: 270px;
+        max-height: 300px;
     }
 
     .po-queue-list {
-        max-height: 145px
+        max-height: 145px;
+        overflow-y: auto;
     }
 
     .po-detail-panel {
@@ -756,8 +760,9 @@
     background: var(--blue-100);
     color: var(--blue-700);
 }
+
 .required-mark {
-  color: #d32f2f;
-  font-weight: 700;
-  margin-left: 2px;
+    color: #d32f2f;
+    font-weight: 700;
+    margin-left: 2px;
 }

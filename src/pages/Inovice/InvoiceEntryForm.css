@@ -49,6 +49,9 @@
   background: #fbfcfd;
   border-right: 1px solid var(--po-rule);
   padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .invoice-detail-panel {
@@ -300,6 +303,13 @@
   }
 }
 
+.po-queue-list {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  margin: 4px -16px 12px;
+}
+
 @media (max-width: 760px) {
   .invoice-entry-header {
     display: block;
@@ -315,5 +325,14 @@
   .invoice-entry-fields,
   .invoice-entry-notes {
     grid-template-columns: 1fr;
+  }
+
+  .invoice-queue-panel {
+    max-height: 300px;
+  }
+
+  .po-queue-list {
+    max-height: 145px;
+    overflow-y: auto;
   }
 }
