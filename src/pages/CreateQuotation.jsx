@@ -7,6 +7,7 @@ import {
   fetchOrganizations,
   fetchReferences,
   fetchCustomers,
+  fetchQuotationById,
 } from "../services/quotationApi";
 import "./CreateQuotation.css";
 import "../components/QuotationForm.css";
@@ -97,6 +98,44 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
     fetchCustomers()
       .then(setCustomers)
       .catch(() => setCustomers([]));
+
+    // Check for revision source quotation
+    const revisionSourceQuotationId = sessionStorage.getItem("revisionSourceQuotationId");
+    if (revisionSourceQuotationId) {
+      fetchQuotationById(revisionSourceQuotationId)
+        .then((quotation) => {
+          if (quotation) {
+            // Pre-fill form with revision data
+            const revisionValues = {
+              referenceBy: quotation.referenceBy || "",
+              organizationName: quotation.organizationName || "",
+              validationDate: quotation.validationDate || "",
+              date: quotation.date || new Date().toISOString().slice(0, 10),
+              selectedModules: Array.isArray(quotation.modules) ? quotation.modules : [],
+              quotationTo: {
+                name: quotation.quotationToName || "",
+                address: quotation.quotationToAddress || "",
+                contactNo: quotation.quotationToContactNo || "",
+                email: quotation.quotationToEmail || "",
+              },
+              discountPercentage: quotation.discountPercentage || 0,
+            };
+            setValues(revisionValues);
+            setSnackbar({
+              open: true,
+              message: `Loaded quotation ${quotation.quotationNo} as revision base. Reason: ${sessionStorage.getItem("revisionReason") || "Revision"}`,
+              severity: "info",
+            });
+            sessionStorage.removeItem("revisionSourceQuotationId");
+            sessionStorage.removeItem("revisionReason");
+          }
+        })
+        .catch((error) => {
+          console.error("Failed to load revision source quotation", error);
+          sessionStorage.removeItem("revisionSourceQuotationId");
+          sessionStorage.removeItem("revisionReason");
+        });
+    }
 
     // Fetch the next quotation number
     fetchNextQuotationNo()

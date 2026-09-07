@@ -251,7 +251,9 @@ export default function PurchaseOrderEntryForm({
     if (purchaseOrderId || form.poNo) return;
     fetchNextPurchaseOrderNo()
       .then((poNo) => setForm((prev) => (prev.poNo ? prev : { ...prev, poNo })))
-      .catch((error) => console.error("Failed to load next purchase order number", error));
+      .catch((error) =>
+        console.error("Failed to load next purchase order number", error),
+      );
   }, [purchaseOrderId, form.poNo]);
 
   // Sync intakeForm.poNo with auto-generated form.poNo
@@ -783,7 +785,7 @@ export default function PurchaseOrderEntryForm({
     intakeForm.quotationId &&
     intakeForm.poDate &&
     intakeForm.receivedFromEmail &&
-    intakeForm.attachmentUrl
+    intakeForm.attachmentUrl,
   );
 
   const handleEmailPoIntake = async (event) => {
@@ -1000,6 +1002,28 @@ export default function PurchaseOrderEntryForm({
                   </>
                 )}
               {activePurchaseOrderId &&
+                form.verificationStatus === "rejected" && (
+                  <button
+                    type="button"
+                    className="app-action-btn app-action-btn--primary"
+                    onClick={() => {
+                      if (form.sourceQuotationId) {
+                        sessionStorage.setItem(
+                          "revisionSourceQuotationId",
+                          String(form.sourceQuotationId),
+                        );
+                        sessionStorage.setItem(
+                          "revisionReason",
+                          "PO rejected - client PO and quotation mismatch",
+                        );
+                      }
+                      onNavigate("create");
+                    }}
+                  >
+                    Create Quotation Revision
+                  </button>
+                )}
+              {activePurchaseOrderId &&
                 form.verificationStatus !== "pending" && (
                   <button
                     type="button"
@@ -1021,7 +1045,7 @@ export default function PurchaseOrderEntryForm({
                   </div>
                   <div className="po-fields po-fields-3">
                     <label>
-                      Company name <RequiredMark />
+                      Company name
                       <input value={form.companyName} readOnly />
                     </label>
                     <label>
@@ -1033,7 +1057,7 @@ export default function PurchaseOrderEntryForm({
                       />
                     </label>
                     <label>
-                      PO date <RequiredMark />
+                      PO date
                       <input
                         type="date"
                         value={form.poDate}
@@ -1077,7 +1101,7 @@ export default function PurchaseOrderEntryForm({
                       />
                     </label>
                     <label>
-                      Expected delivery
+                      Expected delivery <RequiredMark />
                       <input
                         type="date"
                         value={form.expectedDeliveryDate}
@@ -1097,7 +1121,7 @@ export default function PurchaseOrderEntryForm({
                     <PartyBlock
                       title="Buyer / customer"
                       fields={[
-                        ["Customer name", "buyerName", true],
+                        ["Customer name", "buyerName"],
                         ["Address", "buyerAddress"],
                         ["State", "buyerState"],
                         ["State code", "buyerStateCode"],
@@ -1110,7 +1134,7 @@ export default function PurchaseOrderEntryForm({
                     <PartyBlock
                       title="Supplier / company"
                       fields={[
-                        ["Supplier name", "supplierName", true],
+                        ["Supplier name", "supplierName"],
                         ["Address", "supplierAddress"],
                         ["State", "supplierState"],
                         ["State code", "supplierStateCode"],
@@ -1132,9 +1156,7 @@ export default function PurchaseOrderEntryForm({
                     <table className="po-table">
                       <thead>
                         <tr>
-                          <th>
-                            Description <RequiredMark />
-                          </th>
+                          <th>Description</th>
                           <th>Qty</th>
                           <th>UOM</th>
                           <th>Rate</th>
@@ -1226,7 +1248,7 @@ export default function PurchaseOrderEntryForm({
                   </div>
                   <div className="po-fields po-fields-3">
                     <label>
-                      Delivery terms
+                      Delivery terms <RequiredMark />
                       <textarea
                         value={form.deliveryTerms}
                         onChange={(e) =>
@@ -1235,7 +1257,7 @@ export default function PurchaseOrderEntryForm({
                       />
                     </label>
                     <label>
-                      Payment terms
+                      Payment terms <RequiredMark />
                       <textarea
                         value={form.paymentTerms}
                         onChange={(e) =>
@@ -1244,7 +1266,7 @@ export default function PurchaseOrderEntryForm({
                       />
                     </label>
                     <label>
-                      Notes
+                      Notes <RequiredMark />
                       <textarea
                         value={form.notes}
                         onChange={(e) => updateField("notes", e.target.value)}

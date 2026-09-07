@@ -1148,512 +1148,404 @@ export default function InvoiceEntryForm({
             </div>
           </div>
           <form id="invoice-entry-form" onSubmit={handleSubmit}>
-            <div className="invoice-entry-card">
-              <fieldset
-                disabled={viewOnly}
-                className="invoice-entry-readonly-fields"
-              >
-                <section className="invoice-entry-section invoice-entry-identity">
-                  <div>
-                    <label>
-                      <div style={{ fontWeight: 600, marginBottom: 6 }}>
-                        Company Name
-                      </div>
-                      <input
-                        value={form.companyName}
-                        onChange={(e) =>
-                          updateField("companyName", e.target.value)
-                        }
-                        style={inputStyle}
-                        disabled={isPreloadedSource}
-                        placeholder="Company name from selected quotation"
-                      />
-                    </label>
-                  </div>
-                  <label>
-                    <div style={{ fontWeight: 600, marginBottom: 6 }}>
-                      Invoice No.
-                    </div>
-                    <input
-                      value={form.invoiceNo}
-                      onChange={(e) => updateField("invoiceNo", e.target.value)}
-                      className="invoice-entry-control"
-                      readOnly
-                    />
-                  </label>
-                  <label>
-                    <div style={{ fontWeight: 600, marginBottom: 6 }}>
-                      Date of Issue <RequiredMark />
-                    </div>
-                    <input
-                      type="date"
-                      value={form.dateOfIssue}
-                      onChange={(e) =>
-                        updateField("dateOfIssue", e.target.value)
-                      }
-                      style={inputStyle}
-                    />
-                  </label>
-                  <label>
-                    <div style={{ fontWeight: 600, marginBottom: 6 }}>
-                      Time of Issue <RequiredMark />
-                    </div>
-                    <input
-                      value={form.timeOfIssue}
-                      onChange={(e) =>
-                        updateField("timeOfIssue", e.target.value)
-                      }
-                      style={inputStyle}
-                    />
-                  </label>
-                  <label>
-                    <div style={{ fontWeight: 600, marginBottom: 6 }}>
-                      Place of Service <RequiredMark />
-                    </div>
-                    <input
-                      value={form.placeOfService}
-                      onChange={(e) =>
-                        updateField("placeOfService", e.target.value)
-                      }
-                      style={inputStyle}
-                    />
-                  </label>
-                  <label>
-                    <div style={{ fontWeight: 600, marginBottom: 6 }}>
-                      PO No. / Date
-                    </div>
-                    <input
-                      value={form.poNoDate}
-                      onChange={(e) => updateField("poNoDate", e.target.value)}
-                      style={inputStyle}
-                      readOnly={isPreloadedSource}
-                    />
-                  </label>
-                </section>
+            <section className="po-card">
+              <div className="po-card-title">
+                <span>01</span>
+                <h3>Invoice identity</h3>
+              </div>
+              <div className="po-fields po-fields-3">
+                <label>
+                  Company name
+                  <input
+                    value={form.companyName}
+                    onChange={(e) => updateField("companyName", e.target.value)}
+                    disabled={isPreloadedSource}
+                    placeholder="Company name from selected quotation"
+                  />
+                </label>
+                <label>
+                  Invoice No.
+                  <input
+                    value={form.invoiceNo}
+                    onChange={(e) => updateField("invoiceNo", e.target.value)}
+                    readOnly
+                  />
+                </label>
+                <label>
+                  Date of Issue <RequiredMark />
+                  <input
+                    type="date"
+                    value={form.dateOfIssue}
+                    onChange={(e) => updateField("dateOfIssue", e.target.value)}
+                  />
+                </label>
+                <label>
+                  Time of Issue <RequiredMark />
+                  <input
+                    value={form.timeOfIssue}
+                    onChange={(e) => updateField("timeOfIssue", e.target.value)}
+                  />
+                </label>
+                <label>
+                  Place of Service <RequiredMark />
+                  <input
+                    value={form.placeOfService}
+                    onChange={(e) => updateField("placeOfService", e.target.value)}
+                  />
+                </label>
+                <label>
+                  PO No. / Date
+                  <input
+                    value={form.poNoDate}
+                    onChange={(e) => updateField("poNoDate", e.target.value)}
+                    readOnly={isPreloadedSource}
+                  />
+                </label>
+              </div>
+            </section>
 
-                <div className="invoice-entry-party-grid">
-                  <div className="invoice-entry-section">
-                    <h3>Supplier Details</h3>
-                    <label>
-                      Name <RequiredMark />
-                      <input
-                        value={form.supplierName}
-                        onChange={(e) =>
-                          updateField("supplierName", e.target.value)
-                        }
-                        style={inputStyle}
-                        readOnly={isPreloadedSource}
-                      />
-                    </label>
-                    <label>
-                      Address
-                      <input
-                        value={form.supplierAddress}
-                        onChange={(e) =>
-                          updateField("supplierAddress", e.target.value)
-                        }
-                        style={inputStyle}
-                        readOnly={isPreloadedSource}
-                      />
-                    </label>
-                    <label>
-                      State
-                      <input
-                        value={form.supplierState}
-                        onChange={(e) =>
-                          updateField("supplierState", e.target.value)
-                        }
-                        style={inputStyle}
-                        readOnly={isPreloadedSource}
-                      />
-                    </label>
-                    <label>
-                      State Code
-                      <input
-                        value={form.supplierStateCode}
-                        onChange={(e) =>
-                          updateField("supplierStateCode", e.target.value)
-                        }
-                        style={inputStyle}
-                        readOnly={isPreloadedSource}
-                      />
-                    </label>
-                    <label>
-                      GSTN No.
-                      <input
-                        value={form.supplierGSTN}
-                        onChange={(e) =>
-                          updateField("supplierGSTN", e.target.value)
-                        }
-                        style={inputStyle}
-                        readOnly={isPreloadedSource}
-                      />
-                    </label>
-                  </div>
-
-                  <div className="invoice-entry-section">
-                    <h3>Receiver / Consignee</h3>
-                    <label>
-                      Name <RequiredMark />
-                      <input
-                        value={form.receiverName}
-                        onChange={(e) =>
-                          updateField("receiverName", e.target.value)
-                        }
-                        style={inputStyle}
-                        readOnly={isPreloadedSource}
-                      />
-                    </label>
-                    <label>
-                      Address
-                      <input
-                        value={form.receiverAddress}
-                        onChange={(e) =>
-                          updateField("receiverAddress", e.target.value)
-                        }
-                        style={inputStyle}
-                        readOnly={isPreloadedSource}
-                      />
-                    </label>
-                    <label>
-                      State
-                      <input
-                        value={form.receiverState}
-                        onChange={(e) =>
-                          updateField("receiverState", e.target.value)
-                        }
-                        style={inputStyle}
-                        readOnly={isPreloadedSource}
-                      />
-                    </label>
-                    <label>
-                      State Code
-                      <input
-                        value={form.receiverStateCode}
-                        onChange={(e) =>
-                          updateField("receiverStateCode", e.target.value)
-                        }
-                        style={inputStyle}
-                        readOnly={isPreloadedSource}
-                      />
-                    </label>
-                    <label>
-                      GSTN No.
-                      <input
-                        value={form.receiverGSTN}
-                        onChange={(e) =>
-                          updateField("receiverGSTN", e.target.value)
-                        }
-                        style={inputStyle}
-                        readOnly={isPreloadedSource}
-                      />
-                    </label>
-                  </div>
-                </div>
-
-                <div className="invoice-entry-fields">
+            <section className="po-card">
+              <div className="po-card-title">
+                <span>02</span>
+                <h3>Parties</h3>
+              </div>
+              <div className="po-party-grid">
+                <div className="po-party-block">
+                  <h4>Supplier details</h4>
                   <label>
-                    <div style={{ fontWeight: 600, marginBottom: 6 }}>
-                      Bank Name / Branch
-                    </div>
+                    Name
                     <input
-                      value={form.bankName}
-                      onChange={(e) => updateField("bankName", e.target.value)}
-                      style={inputStyle}
+                      value={form.supplierName}
+                      onChange={(e) => updateField("supplierName", e.target.value)}
                       readOnly={isPreloadedSource}
                     />
                   </label>
                   <label>
-                    <div style={{ fontWeight: 600, marginBottom: 6 }}>
-                      Account No.
-                    </div>
+                    Address
                     <input
-                      value={form.accountNo}
-                      onChange={(e) => updateField("accountNo", e.target.value)}
-                      style={inputStyle}
+                      value={form.supplierAddress}
+                      onChange={(e) => updateField("supplierAddress", e.target.value)}
                       readOnly={isPreloadedSource}
                     />
                   </label>
                   <label>
-                    <div style={{ fontWeight: 600, marginBottom: 6 }}>
-                      Account Type
-                    </div>
+                    State
                     <input
-                      value={form.accountType}
-                      onChange={(e) =>
-                        updateField("accountType", e.target.value)
-                      }
-                      style={inputStyle}
+                      value={form.supplierState}
+                      onChange={(e) => updateField("supplierState", e.target.value)}
                       readOnly={isPreloadedSource}
                     />
                   </label>
                   <label>
-                    <div style={{ fontWeight: 600, marginBottom: 6 }}>IFSC</div>
+                    State code
                     <input
-                      value={form.ifsc}
-                      onChange={(e) => updateField("ifsc", e.target.value)}
-                      style={inputStyle}
+                      value={form.supplierStateCode}
+                      onChange={(e) => updateField("supplierStateCode", e.target.value)}
                       readOnly={isPreloadedSource}
                     />
                   </label>
                   <label>
-                    <div style={{ fontWeight: 600, marginBottom: 6 }}>
-                      MSME No.
-                    </div>
+                    GSTN no.
                     <input
-                      value={form.msmeNo}
-                      onChange={(e) => updateField("msmeNo", e.target.value)}
-                      style={inputStyle}
+                      value={form.supplierGSTN}
+                      onChange={(e) => updateField("supplierGSTN", e.target.value)}
                       readOnly={isPreloadedSource}
                     />
                   </label>
                 </div>
-
-                <div className="invoice-entry-section invoice-entry-items">
-                  <h3>Items</h3>
-                  <div className="invoice-entry-table-wrap">
-                    <table className="invoice-entry-table">
-                      <thead>
-                        <tr>
-                          <th>
-                            Description <RequiredMark />
-                          </th>
-                          <th>Qty</th>
-                          <th>UOM</th>
-                          <th>Rate</th>
-                          <th>Amount</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {form.items.map((item) => (
-                          <tr key={item.id}>
-                            <td>
-                              <input
-                                value={item.description}
-                                onChange={(e) =>
-                                  updateItem(
-                                    item.id,
-                                    "description",
-                                    e.target.value,
-                                  )
-                                }
-                                readOnly={isItemLocked(item)}
-                                required={!isItemLocked(item)}
-                              />
-                            </td>
-                            <td>
-                              <input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                value={item.qty}
-                                onChange={(e) =>
-                                  updateItem(
-                                    item.id,
-                                    "qty",
-                                    Number(e.target.value) || 0,
-                                  )
-                                }
-                                readOnly={isItemLocked(item)}
-                              />
-                            </td>
-                            <td>
-                              <input
-                                value={item.uom}
-                                onChange={(e) =>
-                                  updateItem(item.id, "uom", e.target.value)
-                                }
-                                readOnly={isItemLocked(item)}
-                              />
-                            </td>
-                            <td>
-                              <input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                value={item.rate}
-                                onChange={(e) =>
-                                  updateItem(
-                                    item.id,
-                                    "rate",
-                                    Number(e.target.value) || 0,
-                                  )
-                                }
-                                readOnly={isItemLocked(item)}
-                              />
-                            </td>
-                            <td className="invoice-entry-amount">
-                              ₹
-                              {(
-                                (Number(item.qty) || 0) *
-                                (Number(item.rate) || 0)
-                              ).toLocaleString("en-IN", {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              })}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                <div className="invoice-entry-fields">
+                <div className="po-party-block">
+                  <h4>Receiver / Consignee</h4>
                   <label>
-                    <div style={{ fontWeight: 600, marginBottom: 6 }}>
-                      HSN Code
-                    </div>
+                    Name
                     <input
-                      value={form.hsnCode}
-                      onChange={(e) => updateField("hsnCode", e.target.value)}
-                      style={inputStyle}
+                      value={form.receiverName}
+                      onChange={(e) => updateField("receiverName", e.target.value)}
                       readOnly={isPreloadedSource}
                     />
                   </label>
                   <label>
-                    <div style={{ fontWeight: 600, marginBottom: 6 }}>
-                      SAC Code
-                    </div>
+                    Address
                     <input
-                      value={form.sacCode}
-                      onChange={(e) => updateField("sacCode", e.target.value)}
-                      style={inputStyle}
+                      value={form.receiverAddress}
+                      onChange={(e) => updateField("receiverAddress", e.target.value)}
                       readOnly={isPreloadedSource}
                     />
                   </label>
                   <label>
-                    <div style={{ fontWeight: 600, marginBottom: 6 }}>
-                      Reverse Charge
-                    </div>
-                    <select
-                      value={form.reverseCharge}
-                      onChange={(e) =>
-                        updateField("reverseCharge", e.target.value)
-                      }
-                      style={inputStyle}
-                      disabled={isPreloadedSource}
-                    >
-                      <option value="No">No</option>
-                      <option value="Yes">Yes</option>
-                    </select>
-                  </label>
-                  <label>
-                    <div style={{ fontWeight: 600, marginBottom: 6 }}>
-                      SGST %
-                    </div>
+                    State
                     <input
-                      type="number"
-                      step="0.01"
-                      value={form.sgstPct}
-                      onChange={(e) =>
-                        updateField("sgstPct", Number(e.target.value) || 0)
-                      }
+                      value={form.receiverState}
+                      onChange={(e) => updateField("receiverState", e.target.value)}
                       readOnly={isPreloadedSource}
-                      style={inputStyle}
                     />
                   </label>
                   <label>
-                    <div style={{ fontWeight: 600, marginBottom: 6 }}>
-                      CGST %
-                    </div>
+                    State code
                     <input
-                      type="number"
-                      step="0.01"
-                      value={form.cgstPct}
-                      onChange={(e) =>
-                        updateField("cgstPct", Number(e.target.value) || 0)
-                      }
+                      value={form.receiverStateCode}
+                      onChange={(e) => updateField("receiverStateCode", e.target.value)}
                       readOnly={isPreloadedSource}
-                      style={inputStyle}
                     />
                   </label>
                   <label>
-                    <div style={{ fontWeight: 600, marginBottom: 6 }}>
-                      IGST %
-                    </div>
+                    GSTN no.
                     <input
-                      type="number"
-                      step="0.01"
-                      value={form.igstPct}
-                      onChange={(e) =>
-                        updateField("igstPct", Number(e.target.value) || 0)
-                      }
+                      value={form.receiverGSTN}
+                      onChange={(e) => updateField("receiverGSTN", e.target.value)}
                       readOnly={isPreloadedSource}
-                      style={inputStyle}
-                    />
-                  </label>
-                  <label>
-                    <div style={{ fontWeight: 600, marginBottom: 6 }}>
-                      TDS %
-                    </div>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={form.tdsPct}
-                      onChange={(e) =>
-                        updateField("tdsPct", Number(e.target.value) || 0)
-                      }
-                      style={inputStyle}
-                    />
-                  </label>
-                  <label>
-                    <div style={{ fontWeight: 600, marginBottom: 6 }}>
-                      Insurance
-                    </div>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={form.insurance}
-                      onChange={(e) =>
-                        updateField("insurance", Number(e.target.value) || 0)
-                      }
-                      style={inputStyle}
                     />
                   </label>
                 </div>
+              </div>
+            </section>
 
-                <div className="invoice-entry-fields invoice-entry-notes">
-                  <label>
-                    <div style={{ fontWeight: 600, marginBottom: 6 }}>
-                      Terms of Sale
-                    </div>
-                    <textarea
-                      value={form.termsOfSale}
-                      onChange={(e) =>
-                        updateField("termsOfSale", e.target.value)
-                      }
-                      className="invoice-entry-control invoice-entry-textarea"
-                      readOnly={isPreloadedSource}
-                    />
-                  </label>
-                  <label>
-                    <div style={{ fontWeight: 600, marginBottom: 6 }}>
-                      Amount in Words
-                    </div>
-                    <textarea
-                      value={amountInWords}
-                      style={{
-                        ...inputStyle,
-                        minHeight: 90,
-                        resize: "vertical",
-                      }}
-                      readOnly
-                    />
-                  </label>
-                </div>
+            <section className="po-card">
+              <div className="po-card-title">
+                <span>03</span>
+                <h3>Bank details</h3>
+              </div>
+              <div className="po-fields po-fields-3">
+                <label>
+                  Bank name / branch
+                  <input
+                    value={form.bankName}
+                    onChange={(e) => updateField("bankName", e.target.value)}
+                    readOnly={isPreloadedSource}
+                  />
+                </label>
+                <label>
+                  Account no.
+                  <input
+                    value={form.accountNo}
+                    onChange={(e) => updateField("accountNo", e.target.value)}
+                    readOnly={isPreloadedSource}
+                  />
+                </label>
+                <label>
+                  Account type
+                  <input
+                    value={form.accountType}
+                    onChange={(e) => updateField("accountType", e.target.value)}
+                    readOnly={isPreloadedSource}
+                  />
+                </label>
+                <label>
+                  IFSC
+                  <input
+                    value={form.ifsc}
+                    onChange={(e) => updateField("ifsc", e.target.value)}
+                    readOnly={isPreloadedSource}
+                  />
+                </label>
+                <label>
+                  MSME no.
+                  <input
+                    value={form.msmeNo}
+                    onChange={(e) => updateField("msmeNo", e.target.value)}
+                    readOnly={isPreloadedSource}
+                  />
+                </label>
+              </div>
+            </section>
 
-                <div className="invoice-entry-total">
-                  <span>Total Qty: {totals.totalQty}</span>
-                  <span>
-                    Grand Total: ₹
-                    {totals.grandTotal.toLocaleString("en-IN", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
-                  </span>
-                </div>
-              </fieldset>
+            <section className="po-card">
+              <div className="po-card-title">
+                <span>04</span>
+                <h3>Line items <em>{form.items.length} items</em></h3>
+              </div>
+              <div className="po-table-wrap">
+                <table className="invoice-entry-table">
+                  <thead>
+                    <tr>
+                      <th>Description</th>
+                      <th>Qty</th>
+                      <th>UOM</th>
+                      <th>Rate</th>
+                      <th>Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {form.items.map((item) => (
+                      <tr key={item.id}>
+                        <td>
+                          <input
+                            value={item.description}
+                            onChange={(e) =>
+                              updateItem(item.id, "description", e.target.value)
+                            }
+                            readOnly={isItemLocked(item)}
+                            required={!isItemLocked(item)}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={item.qty}
+                            onChange={(e) =>
+                              updateItem(item.id, "qty", Number(e.target.value) || 0)
+                            }
+                            readOnly={isItemLocked(item)}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            value={item.uom}
+                            onChange={(e) => updateItem(item.id, "uom", e.target.value)}
+                            readOnly={isItemLocked(item)}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={item.rate}
+                            onChange={(e) =>
+                              updateItem(item.id, "rate", Number(e.target.value) || 0)
+                            }
+                            readOnly={isItemLocked(item)}
+                          />
+                        </td>
+                        <td className="invoice-entry-amount">
+                          ₹
+                          {(
+                            (Number(item.qty) || 0) *
+                            (Number(item.rate) || 0)
+                          ).toLocaleString("en-IN", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="po-total-row">
+                <span>
+                  Total quantity <b>{totals.totalQty}</b>
+                </span>
+                <span>
+                  Total amount <b>₹{totals.totalPrice.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b>
+                </span>
+              </div>
+            </section>
+
+            <section className="po-card">
+              <div className="po-card-title">
+                <span>05</span>
+                <h3>Tax details</h3>
+              </div>
+              <div className="po-fields po-fields-3">
+                <label>
+                  HSN code
+                  <input
+                    value={form.hsnCode}
+                    onChange={(e) => updateField("hsnCode", e.target.value)}
+                    readOnly={isPreloadedSource}
+                  />
+                </label>
+                <label>
+                  SAC code
+                  <input
+                    value={form.sacCode}
+                    onChange={(e) => updateField("sacCode", e.target.value)}
+                    readOnly={isPreloadedSource}
+                  />
+                </label>
+                <label>
+                  Reverse charge
+                  <select
+                    value={form.reverseCharge}
+                    onChange={(e) => updateField("reverseCharge", e.target.value)}
+                    disabled={isPreloadedSource}
+                  >
+                    <option value="No">No</option>
+                    <option value="Yes">Yes</option>
+                  </select>
+                </label>
+                <label>
+                  SGST %
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={form.sgstPct}
+                    onChange={(e) => updateField("sgstPct", Number(e.target.value) || 0)}
+                    readOnly={isPreloadedSource}
+                  />
+                </label>
+                <label>
+                  CGST %
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={form.cgstPct}
+                    onChange={(e) => updateField("cgstPct", Number(e.target.value) || 0)}
+                    readOnly={isPreloadedSource}
+                  />
+                </label>
+                <label>
+                  IGST %
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={form.igstPct}
+                    onChange={(e) => updateField("igstPct", Number(e.target.value) || 0)}
+                    readOnly={isPreloadedSource}
+                  />
+                </label>
+                <label>
+                  TDS %
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={form.tdsPct}
+                    onChange={(e) => updateField("tdsPct", Number(e.target.value) || 0)}
+                  />
+                </label>
+                <label>
+                  Insurance
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={form.insurance}
+                    onChange={(e) => updateField("insurance", Number(e.target.value) || 0)}
+                  />
+                </label>
+              </div>
+            </section>
+
+            <section className="po-card">
+              <div className="po-card-title">
+                <span>06</span>
+                <h3>Terms & amounts</h3>
+              </div>
+              <div className="po-fields po-fields-3">
+                <label>
+                  Terms of sale
+                  <textarea
+                    value={form.termsOfSale}
+                    onChange={(e) => updateField("termsOfSale", e.target.value)}
+                    readOnly={isPreloadedSource}
+                  />
+                </label>
+                <label>
+                  Amount in words
+                  <textarea
+                    value={amountInWords}
+                    readOnly
+                    style={{ minHeight: 90, resize: "vertical" }}
+                  />
+                </label>
+              </div>
+            </section>
+
+            <div className="po-total-row invoice-grand-total">
+              <span>
+                Grand Total <b>₹{totals.grandTotal.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b>
+              </span>
             </div>
           </form>
         </section>
