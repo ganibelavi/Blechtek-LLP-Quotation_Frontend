@@ -6,7 +6,8 @@
   font-size: 13px;
 }
 
-.invoice-entry-header {
+/* PO topbar styles */
+.po-topbar {
   height: var(--header-height);
   display: flex;
   align-items: center;
@@ -18,31 +19,63 @@
   color: #fff;
 }
 
-.invoice-entry-header h1 {
+.po-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 210px;
+}
+
+.po-brand-mark {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  font: 700 11px var(--font-mono);
+  letter-spacing: .05em;
   color: #fff;
-  font-size: 19px;
-  margin: 6px 0 4px;
-  letter-spacing: -.02em;
 }
 
-.invoice-entry-header p {
-  margin: 0;
+.po-brand strong {
+  display: block;
+  font: 700 13px var(--font-mono);
+  letter-spacing: .12em;
+  color: #fff;
+}
+
+.po-brand small {
+  display: block;
+  font-size: 10px;
   color: rgba(255, 255, 255, 0.7);
-  font-size: 11px;
+  margin-top: 2px;
 }
 
-.invoice-entry-eyebrow {
+.po-topbar-context {
+  flex: 1;
+}
+
+.po-topbar-context .po-eyebrow {
   text-transform: uppercase;
   font: 700 9px var(--font-mono);
   letter-spacing: .13em;
   color: rgba(255, 255, 255, 0.6);
+  display: block;
+  margin-bottom: 3px;
 }
 
-.invoice-entry-actions,
-.invoice-detail-panel .invoice-entry-actions {
+.po-topbar-context strong {
+  display: block;
+  font-size: 19px;
+  margin: 6px 0 4px;
+  letter-spacing: -.02em;
+  color: #fff;
+}
+
+.po-topbar-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
 }
 
 .invoice-workspace {
@@ -351,13 +384,24 @@
 }
 
 @media (max-width: 760px) {
-  .invoice-entry-header {
-    display: block;
-    padding: 14px 18px;
+  .po-topbar {
+    padding: 0 14px;
   }
 
-  .invoice-entry-actions {
-    margin-top: 14px;
+  .po-topbar-context {
+    display: none;
+  }
+
+  .po-brand {
+    min-width: auto;
+  }
+
+  .po-brand small {
+    display: none;
+  }
+
+  .invoice-workspace {
+    padding: 0.5rem;
   }
 
   .po-fields-3 {

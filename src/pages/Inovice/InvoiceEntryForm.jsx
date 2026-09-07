@@ -1026,13 +1026,19 @@ export default function InvoiceEntryForm({
 
   return (
     <div className="invoice-entry-page po-page">
-      <div className="po-topbar invoice-entry-header">
-        <div>
-          <span className="invoice-entry-eyebrow">BILLING OPERATIONS</span>
-          <h1>GST Invoice Entry</h1>
-          <p>Prepare and save a tax invoice</p>
+      <header className="po-topbar">
+        <div className="po-brand">
+          <span className="po-brand-mark">BT</span>
+          <div>
+            <strong>BLECHTEK</strong>
+            <small>Billing operations</small>
+          </div>
         </div>
-        <div className="invoice-entry-actions">
+        <div className="po-topbar-context">
+          <span className="po-eyebrow">INVOICE ENTRY</span>
+          <strong>GST Invoice Entry</strong>
+        </div>
+        <div className="po-topbar-actions">
           <button
             type="button"
             className="app-action-btn app-action-btn--secondary"
@@ -1057,7 +1063,7 @@ export default function InvoiceEntryForm({
             </svg>
           </button>
         </div>
-      </div>
+      </header>
 
       <main className="po-workspace invoice-workspace">
         <aside className="po-queue-panel invoice-queue-panel">

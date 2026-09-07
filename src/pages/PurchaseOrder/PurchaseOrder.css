@@ -305,7 +305,7 @@
 
 .po-form-column form {
     display: grid;
-    gap: 14px
+    /* gap: 14px */
 }
 
 .po-card {
