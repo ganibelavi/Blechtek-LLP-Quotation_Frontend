@@ -129,7 +129,8 @@
 .po-fields select,
 .po-fields textarea,
 .po-party-block input,
-.po-table input {
+.po-table input,
+.invoice-entry-table input {
   width: 100%;
   margin-top: 4px;
   min-height: 30px;
@@ -151,14 +152,16 @@
 .po-fields select:focus,
 .po-fields textarea:focus,
 .po-party-block input:focus,
-.po-table input:focus {
+.po-table input:focus,
+.invoice-entry-table input:focus {
   outline: 2px solid var(--blue-100);
   border-color: var(--blue-700);
 }
 
 .po-fields input:read-only,
 .po-party-block input:read-only,
-.po-table input:read-only {
+.po-table input:read-only,
+.invoice-entry-table input:read-only {
   background: var(--gray-100);
   color: var(--ash-gray);
 }
@@ -189,16 +192,18 @@
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
-  font-size: 13px;
+  font-size: 12px;
   font-family: var(--font-body);
 }
 
 .invoice-entry-table th {
-  background: var(--primary-gradient);
+  background: #65aadb;
   color: #fff;
   text-align: left;
   letter-spacing: .04em;
   text-transform: uppercase;
+  padding: 8px 10px;
+  border: 1px solid var(--border-color);
 }
 
 .invoice-entry-table th,
@@ -230,6 +235,11 @@
 .invoice-entry-table th:last-child,
 .invoice-entry-table td:last-child {
   width: 22%;
+}
+
+.invoice-entry-table td:last-child {
+  white-space: nowrap;
+  text-align: right;
 }
 
 .invoice-entry-table input {
