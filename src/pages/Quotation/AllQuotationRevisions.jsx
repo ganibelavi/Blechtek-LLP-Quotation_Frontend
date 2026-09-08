@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { fetchQuotations } from "../services/quotationApi";
-import { fetchQuotationRevisions } from "../services/quotationApi";
-import EntityTable from "../components/EntityTable";
+import { fetchQuotations } from "../../services/quotationApi";
+import { fetchQuotationRevisions } from "../../services/quotationApi";
+import EntityTable from "../../components/EntityTable";
 import {
   Box,
   Typography,

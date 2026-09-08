@@ -371,7 +371,7 @@ export default function ModulesPage() {
               Reverse charge default
             </label>
             <TextField
-              label="Implementation Effort Cost"
+              label=" Per Man Effort Implementation Cost "
               name="implementationEffortCost"
               type="number"
               value={form.implementationEffortCost}

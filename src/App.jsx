@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from "react";
-import CreateQuotation from "./pages/CreateQuotation";
-import CreatedQuotation from "./pages/CreatedQuotation";
+import CreateQuotation from "./pages/Quotation/CreateQuotation";
+import CreatedQuotation from "./pages/Quotation/CreatedQuotation";
 import DashboardPage from "./pages/DashboardPage";
-import QuotationPdfView from "./pages/QuotationPdfView";
+import QuotationPdfView from "./pages/Quotation/QuotationPdfView";
 import LoginPage from "./pages/LoginPage";
 import SettingsPage from "./pages/SettingsPage";
 import UsersPage from "./pages/Settings/Masters/UsersPage";
 import ModulesPage from "./pages/Settings/Masters/ModulesPage";
-import EditQuotation from "./pages/EditQuotation";
-import QuotationHistory from "./pages/QuotationHistory";
-import AllQuotationRevisions from "./pages/AllQuotationRevisions";
+import EditQuotation from "./pages/Quotation/EditQuotation";
+import QuotationHistory from "./pages/Quotation/QuotationHistory";
+import AllQuotationRevisions from "./pages/Quotation/AllQuotationRevisions";
 import PurchaseOrder from "./pages/PurchaseOrder/PurchaseOrder";
 import PurchaseOrderPrint from "./pages/PurchaseOrder/PurchaseOrderPrint";
 import PurchaseOrderEntryForm from "./pages/PurchaseOrder/PurchaseOrderEntryForm";
@@ -18,6 +18,11 @@ import CreatedInvoices from "./pages/Inovice/CreatedInvoices";
 import InvoiceEntryForm from "./pages/Inovice/InvoiceEntryForm";
 import GSTInvoice from "./pages/Inovice/GSTInvoice";
 import GSTInvoicePrint from "./pages/Inovice/GSTInvoicePrint";
+import CustomerSubscriptionsPage from "./pages/Renewal_and_Subscriptions/CustomerSubscriptionsPage";
+import RenewalsPage from "./pages/Renewal_and_Subscriptions/RenewalsPage";
+import RenewalQuotationPage from "./pages/Renewal_and_Subscriptions/RenewalQuotationPage";
+import SubscriptionPricingHistoryPage from "./pages/Renewal_and_Subscriptions/SubscriptionPricingHistoryPage";
+import SubscriptionDetailsPage from "./pages/Renewal_and_Subscriptions/SubscriptionDetailsPage";
 import { useAuth } from "./context/AuthContext";
 import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
@@ -30,6 +35,7 @@ export default function App() {
   const [view, setView] = useState("dashboard");
   const [settingsInitialTab, setSettingsInitialTab] = useState("users");
   const [settingsExpanded, setSettingsExpanded] = useState(false);
+  const [subscriptionsExpanded, setSubscriptionsExpanded] = useState(false);
   const [editQuotationId, setEditQuotationId] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
@@ -62,9 +68,12 @@ export default function App() {
     }
   }, [user]);
 
-  const navigate = (newView, initialTab, quotationId) => {
+  const [subscriptionId, setSubscriptionId] = useState(null);
+
+  const navigate = (newView, initialTab, quotationId, selectedSubscriptionId) => {
     if (initialTab) setSettingsInitialTab(initialTab);
     if (quotationId) setEditQuotationId(quotationId);
+    if (selectedSubscriptionId) setSubscriptionId(selectedSubscriptionId);
     setView(newView);
   };
 
@@ -89,6 +98,11 @@ export default function App() {
       // "invoice-entry": "GST Invoice Entry",
       invoice: "GST Invoice",
       "invoice-print": "GST Invoice Print Preview",
+      "customer-subscriptions": "Customer Subscriptions",
+      renewals: "Renewals",
+      "renewal-quotations": "Renewal Quotations",
+      "pricing-history": "Pricing History",
+      "subscription-details": "Subscription Details",
     }[view] || "";
 
   const menuItems = [
@@ -102,6 +116,7 @@ export default function App() {
     },
     { label: "Revision History", icon: "audit.png", view: "all-revisions" },
     { label: "GST Invoice", icon: "calculator.png", view: "created-invoices" },
+    { label: "Subscriptions", icon: "audit.png", view: "subscriptions" },
     { label: "Settings", icon: "settings.png", view: "settings" },
   ];
   const masterItems = [
@@ -266,6 +281,15 @@ export default function App() {
                               "invoice-entry",
                               "invoice",
                             ].includes(view)
+                          : item.view === "subscriptions"
+                            ? [
+                                "subscriptions",
+                                "customer-subscriptions",
+                                "renewals",
+                                "renewal-quotations",
+                                "pricing-history",
+                                "subscription-details",
+                              ].includes(view)
                           : view === item.view;
                 return (
                   <React.Fragment key={item.view}>
@@ -276,6 +300,9 @@ export default function App() {
                         if (item.view === "settings") {
                           setSettingsExpanded((expanded) => !expanded);
                           navigate("settings", settingsInitialTab);
+                        } else if (item.view === "subscriptions") {
+                          setSubscriptionsExpanded((expanded) => !expanded);
+                          navigate("customer-subscriptions");
                         } else {
                           navigate(item.view);
                         }
@@ -295,6 +322,12 @@ export default function App() {
                           aria-hidden="true"
                         />
                       )}
+                      {item.view === "subscriptions" && (
+                        <KeyboardArrowDownIcon
+                          className={`app-sidebar__settings-arrow ${subscriptionsExpanded ? "app-sidebar__settings-arrow--open" : ""}`}
+                          aria-hidden="true"
+                        />
+                      )}
                     </button>
                     {item.view === "settings" &&
                       settingsExpanded &&
@@ -306,6 +339,27 @@ export default function App() {
                               key={tab}
                               className={`app-sidebar__submenu-item ${settingsInitialTab === tab ? "app-sidebar__submenu-item--active" : ""}`}
                               onClick={() => navigate("settings", tab)}
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    {item.view === "subscriptions" &&
+                      subscriptionsExpanded &&
+                      !sidebarCollapsed && (
+                        <div className="app-sidebar__submenu">
+                          {[
+                            ["customer-subscriptions", "Customer subscriptions"],
+                            ["renewals", "Renewals"],
+                            ["renewal-quotations", "Renewal quotations"],
+                            ["pricing-history", "Pricing history"],
+                          ].map(([subscriptionView, label]) => (
+                            <button
+                              type="button"
+                              key={subscriptionView}
+                              className={`app-sidebar__submenu-item ${view === subscriptionView ? "app-sidebar__submenu-item--active" : ""}`}
+                              onClick={() => navigate(subscriptionView)}
                             >
                               {label}
                             </button>
@@ -338,6 +392,11 @@ export default function App() {
               "created-invoices",
               "invoice",
               "invoice-print",
+              "customer-subscriptions",
+              "renewals",
+              "renewal-quotations",
+              "pricing-history",
+              "subscription-details",
             ].includes(view) && (
               <div className="app-section-title">
                 <h1>{pageTitle}</h1>
@@ -457,6 +516,21 @@ export default function App() {
                     <GSTInvoicePrint
                       initialData={getInvoiceInitialData()}
                       onBack={() => navigate("invoice")}
+                    />
+                  );
+                case "customer-subscriptions":
+                  return <CustomerSubscriptionsPage onNavigate={navigate} />;
+                case "renewals":
+                  return <RenewalsPage onNavigate={navigate} />;
+                case "renewal-quotations":
+                  return <RenewalQuotationPage onNavigate={navigate} />;
+                case "pricing-history":
+                  return <SubscriptionPricingHistoryPage onNavigate={navigate} />;
+                case "subscription-details":
+                  return (
+                    <SubscriptionDetailsPage
+                      onNavigate={navigate}
+                      subscriptionId={subscriptionId}
                     />
                   );
                 case "create":

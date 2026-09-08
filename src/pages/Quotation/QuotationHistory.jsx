@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Alert, Box, Typography } from "@mui/material";
-import EntityTable from "../components/EntityTable";
-import { fetchQuotationRevisions } from "../services/quotationApi";
+import EntityTable from "../../components/EntityTable";
+import { fetchQuotationRevisions } from "../../services/quotationApi";
 import "./CreateQuotation.css";
 
 const formatDate = (value) =>

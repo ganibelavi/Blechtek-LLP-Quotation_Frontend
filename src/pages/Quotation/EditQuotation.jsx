@@ -4,10 +4,10 @@ import {
   updateDiscount,
   updateQuotation,
   resolveDownloadUrl,
-} from "../services/quotationApi";
+} from "../../services/quotationApi";
 import "./CreateQuotation.css";
-import "../components/QuotationForm.css";
-import "../components/QuotationPreview.css";
+import "../../components/QuotationForm.css";
+import "../../components/QuotationPreview.css";
 import {
   Alert,
   Button,
@@ -17,8 +17,8 @@ import {
   DialogActions,
   TextField,
 } from "@mui/material";
-import CustomSnackbar from "../components/CustomSnackbar";
-import { sendQuotationEmail } from "../services/quotationApi";
+import CustomSnackbar from "../../components/CustomSnackbar";
+import { sendQuotationEmail } from "../../services/quotationApi";
 const initialValues = {
   referenceBy: "",
   organizationName: "",

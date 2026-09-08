@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { fetchModules, resolveDownloadUrl } from "../services/quotationApi";
+import { fetchModules, resolveDownloadUrl } from "../../services/quotationApi";
 import "./QuotationPdfView.css";
-import "../components/QuotationPreview.css";
+import "../../components/QuotationPreview.css";
 
 const initialValues = {
   organizationName: "",

@@ -3,6 +3,8 @@ import {
   fetchDashboardData,
   fetchPurchaseOrders,
   fetchInvoices,
+  fetchCustomerSubscriptions,
+  fetchRenewals,
 } from "../services/quotationApi";
 import {
   Box,
@@ -89,20 +91,36 @@ export default function DashboardPage({ onNavigate }) {
   const [data, setData] = useState(null);
   const [purchaseOrders, setPurchaseOrders] = useState([]);
   const [invoices, setInvoices] = useState([]);
+  const [subscriptions, setSubscriptions] = useState([]);
+  const [renewalsDueThisMonth, setRenewalsDueThisMonth] = useState([]);
+  const [expiredSubscriptions, setExpiredSubscriptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const loadDashboard = async () => {
     try {
       setLoading(true);
-      const [dashboardResult, poRows, invoiceRows] = await Promise.all([
+      const [
+        dashboardResult,
+        poRows,
+        invoiceRows,
+        subscriptionRows,
+        renewalRows,
+        expiredRows,
+      ] = await Promise.all([
         fetchDashboardData(),
         fetchPurchaseOrders(),
         fetchInvoices(),
+        fetchCustomerSubscriptions().catch(() => []),
+        fetchRenewals("dueThisMonth").catch(() => []),
+        fetchRenewals("expired").catch(() => []),
       ]);
       setData(dashboardResult);
       setPurchaseOrders(Array.isArray(poRows) ? poRows : []);
       setInvoices(Array.isArray(invoiceRows) ? invoiceRows : []);
+      setSubscriptions(Array.isArray(subscriptionRows) ? subscriptionRows : []);
+      setRenewalsDueThisMonth(Array.isArray(renewalRows) ? renewalRows : []);
+      setExpiredSubscriptions(Array.isArray(expiredRows) ? expiredRows : []);
       setError(null);
     } catch (err) {
       setError(
@@ -194,25 +212,49 @@ export default function DashboardPage({ onNavigate }) {
     {
       label: "Total Quotations",
       value: data.totalQuotations ?? 0,
-      icon: <img src="/logo/report.png" alt="Total Quotations" style={{ width: 28, height: 28 }} />,
+      icon: (
+        <img
+          src="/logo/report.png"
+          alt="Total Quotations"
+          style={{ width: 28, height: 28 }}
+        />
+      ),
       color: "primary",
     },
     {
       label: "Organizations",
       value: data.totalOrganizations ?? 0,
-      icon: <img src="/logo/industry.png" alt="Organizations" style={{ width: 28, height: 28 }} />,
+      icon: (
+        <img
+          src="/logo/industry.png"
+          alt="Organizations"
+          style={{ width: 28, height: 28 }}
+        />
+      ),
       color: "secondary",
     },
     {
       label: "Modules",
       value: data.totalModules ?? 0,
-      icon: <img src="/logo/report.png" alt="Modules" style={{ width: 28, height: 28 }} />,
+      icon: (
+        <img
+          src="/logo/report.png"
+          alt="Modules"
+          style={{ width: 28, height: 28 }}
+        />
+      ),
       color: "primary",
     },
     {
       label: "Quotation Value",
       value: formatCurrency(data.totalQuotedAmount ?? 0),
-      icon: <img src="/logo/speedometer.png" alt="Quotation Value" style={{ width: 28, height: 28 }} />,
+      icon: (
+        <img
+          src="/logo/speedometer.png"
+          alt="Quotation Value"
+          style={{ width: 28, height: 28 }}
+        />
+      ),
       color: "primary",
     },
     // {
@@ -246,25 +288,127 @@ export default function DashboardPage({ onNavigate }) {
     {
       label: "Total Purchase Orders",
       value: purchaseOrders.length,
-      icon: <img src="/logo/clipboard.png" alt="Total Purchase Orders" style={{ width: 28, height: 28 }} />,
+      icon: (
+        <img
+          src="/logo/clipboard.png"
+          alt="Total Purchase Orders"
+          style={{ width: 28, height: 28 }}
+        />
+      ),
       color: "info",
     },
     {
       label: "Purchase Order Value",
       value: `₹${formatCurrency(totalPurchaseOrderValue)}`,
-      icon: <img src="/logo/report.png" alt="Purchase Order Value" style={{ width: 28, height: 28 }} />,
+      icon: (
+        <img
+          src="/logo/report.png"
+          alt="Purchase Order Value"
+          style={{ width: 28, height: 28 }}
+        />
+      ),
       color: "info",
     },
     {
       label: "Total Invoices",
       value: invoices.length,
-      icon: <img src="/logo/calculator.png" alt="Total Invoices" style={{ width: 28, height: 28 }} />,
+      icon: (
+        <img
+          src="/logo/calculator.png"
+          alt="Total Invoices"
+          style={{ width: 28, height: 28 }}
+        />
+      ),
       color: "info",
     },
     {
       label: "Invoice Value",
       value: `₹${formatCurrency(totalInvoiceValue)}`,
-      icon: <img src="/logo/speedometer.png" alt="Invoice Value" style={{ width: 28, height: 28 }} />,
+      icon: (
+        <img
+          src="/logo/speedometer.png"
+          alt="Invoice Value"
+          style={{ width: 28, height: 28 }}
+        />
+      ),
+      color: "info",
+    },
+  ];
+
+  const getRecordValue = (record, ...keys) =>
+    keys
+      .map((key) => getNestedValue(record, key))
+      .find((value) => value !== null && value !== undefined && value !== "");
+
+  const isActiveSubscription = (subscription) =>
+    String(
+      getRecordValue(subscription, "status", "Status") || "",
+    ).toLowerCase() === "active";
+
+  const subscriptionValue = subscriptions.reduce(
+    (sum, subscription) =>
+      sum +
+      getNumericValue(
+        getRecordValue(
+          subscription,
+          "subscriptionValue",
+          "SubscriptionValue",
+          "currentSubscriptionAmount",
+          "CurrentSubscriptionAmount",
+          "initialPurchaseAmount",
+          "InitialPurchaseAmount",
+        ),
+      ),
+    0,
+  );
+
+  const subscriptionCards = [
+    {
+      label: "Active Subscriptions",
+      value: subscriptions.filter(isActiveSubscription).length,
+      icon: (
+        <img
+          src="/logo/users.png"
+          alt="Active Subscriptions"
+          style={{ width: 28, height: 28 }}
+        />
+      ),
+      color: "info",
+    },
+    {
+      label: "Renewals Due This Month",
+      value: renewalsDueThisMonth.length,
+      icon: (
+        <img
+          src="/logo/audit.png"
+          alt="Renewals Due This Month"
+          style={{ width: 28, height: 28 }}
+        />
+      ),
+      color: "info",
+    },
+    {
+      label: "Expired Subscriptions",
+      value: expiredSubscriptions.length,
+      icon: (
+        <img
+          src="/logo/audit.png"
+          alt="Expired Subscriptions"
+          style={{ width: 28, height: 28 }}
+        />
+      ),
+      color: "info",
+    },
+    {
+      label: "Subscription Value",
+      value: `₹${formatCurrency(subscriptionValue)}`,
+      icon: (
+        <img
+          src="/logo/speedometer.png"
+          alt="Subscription Value"
+          style={{ width: 28, height: 28 }}
+        />
+      ),
       color: "info",
     },
   ];
@@ -282,26 +426,59 @@ export default function DashboardPage({ onNavigate }) {
   );
 
   const normalizeDocumentStatus = (value) => {
-    const normalized = String(value ?? "").trim().toLowerCase();
+    const normalized = String(value ?? "")
+      .trim()
+      .toLowerCase();
 
-    if (["approved", "approved and issued", "completed", "paid", "closed", "valid", "success"].includes(normalized)) {
+    if (
+      [
+        "approved",
+        "approved and issued",
+        "completed",
+        "paid",
+        "closed",
+        "valid",
+        "success",
+      ].includes(normalized)
+    ) {
       return "Approved";
     }
 
-    if (["cancelled", "canceled", "rejected", "void", "failed"].includes(normalized)) {
+    if (
+      ["cancelled", "canceled", "rejected", "void", "failed"].includes(
+        normalized,
+      )
+    ) {
       return "Cancelled";
     }
 
-    if (["draft", "pending", "in progress", "in-progress", "created", "issued"].includes(normalized)) {
+    if (
+      [
+        "draft",
+        "pending",
+        "in progress",
+        "in-progress",
+        "created",
+        "issued",
+      ].includes(normalized)
+    ) {
       return "Pending";
     }
 
-    return normalized ? normalized.charAt(0).toUpperCase() + normalized.slice(1) : "Pending";
+    return normalized
+      ? normalized.charAt(0).toUpperCase() + normalized.slice(1)
+      : "Pending";
   };
 
   const purchaseOrderStatusData = Object.entries(
     purchaseOrders.reduce((acc, order) => {
-      const status = normalizeDocumentStatus(order.status || order.poStatus || order.state || order.stage || "Pending");
+      const status = normalizeDocumentStatus(
+        order.status ||
+          order.poStatus ||
+          order.state ||
+          order.stage ||
+          "Pending",
+      );
       acc[status] = (acc[status] || 0) + 1;
       return acc;
     }, {}),
@@ -309,7 +486,13 @@ export default function DashboardPage({ onNavigate }) {
 
   const invoiceStatusData = Object.entries(
     invoices.reduce((acc, invoice) => {
-      const status = normalizeDocumentStatus(invoice.status || invoice.invoiceStatus || invoice.paymentStatus || invoice.billStatus || "Pending");
+      const status = normalizeDocumentStatus(
+        invoice.status ||
+          invoice.invoiceStatus ||
+          invoice.paymentStatus ||
+          invoice.billStatus ||
+          "Pending",
+      );
       acc[status] = (acc[status] || 0) + 1;
       return acc;
     }, {}),
@@ -338,15 +521,23 @@ export default function DashboardPage({ onNavigate }) {
       .slice(0, 5);
   };
 
-  const topPurchaseOrderCompanies = companyValueAggregator(
-    purchaseOrders,
-    ["companyName", "buyerName", "supplierName", "po.companyName", "po.buyerName", "po.supplierName"],
-  );
+  const topPurchaseOrderCompanies = companyValueAggregator(purchaseOrders, [
+    "companyName",
+    "buyerName",
+    "supplierName",
+    "po.companyName",
+    "po.buyerName",
+    "po.supplierName",
+  ]);
 
-  const topInvoiceCompanies = companyValueAggregator(
-    invoices,
-    ["companyName", "receiverName", "supplierName", "invoice.companyName", "invoice.receiverName", "invoice.supplierName"],
-  );
+  const topInvoiceCompanies = companyValueAggregator(invoices, [
+    "companyName",
+    "receiverName",
+    "supplierName",
+    "invoice.companyName",
+    "invoice.receiverName",
+    "invoice.supplierName",
+  ]);
 
   const recentColumns = [
     {
@@ -510,6 +701,19 @@ export default function DashboardPage({ onNavigate }) {
       >
         {poInvoiceCards.map((card, index) => (
           <DataCard key={`po-invoice-${index}`} {...card} borderRadius={2} />
+        ))}
+      </Box>
+
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+          gap: 3,
+          mb: 4,
+        }}
+      >
+        {subscriptionCards.map((card, index) => (
+          <DataCard key={`subscription-${index}`} {...card} borderRadius={2} />
         ))}
       </Box>
 

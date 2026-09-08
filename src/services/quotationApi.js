@@ -87,6 +87,18 @@ export async function fetchDashboardData() {
   return data;
 }
 
+export async function fetchCustomerSubscriptions() {
+  const { data } = await client.get("/api/customer-subscriptions");
+  return Array.isArray(data) ? data : [];
+}
+
+export async function fetchRenewals(filter) {
+  const { data } = await client.get("/api/renewals", {
+    params: filter ? { filter } : undefined,
+  });
+  return Array.isArray(data) ? data : [];
+}
+
 /** Resolves a relative download URL returned by the API into an absolute one. */
 export function resolveDownloadUrl(path) {
   if (!path) return "";

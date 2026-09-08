@@ -220,7 +220,7 @@ export default function UsersPage() {
     { key: "firstName", label: "First Name", sortable: true, minWidth: 140 },
     { key: "lastName", label: "Last Name", sortable: true, minWidth: 140 },
     { key: "email", label: "Email", sortable: true, minWidth: 220 },
-    { key: "passwordHash", label: "Password", minWidth: 120 },
+    // { key: "passwordHash", label: "Password", minWidth: 120 },
     {
       key: "isActive",
       label: "Status",

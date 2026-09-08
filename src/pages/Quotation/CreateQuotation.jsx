@@ -8,12 +8,12 @@ import {
   fetchReferences,
   fetchCustomers,
   fetchQuotationById,
-} from "../services/quotationApi";
+} from "../../services/quotationApi";
 import "./CreateQuotation.css";
-import "../components/QuotationForm.css";
-import "../components/QuotationPreview.css";
-import CustomSnackbar from "../components/CustomSnackbar";
-import SearchDropdown from "../components/SearchDropdown";
+import "../../components/QuotationForm.css";
+import "../../components/QuotationPreview.css";
+import CustomSnackbar from "../../components/CustomSnackbar";
+import SearchDropdown from "../../components/SearchDropdown";
 import {
   Dialog,
   DialogTitle,
@@ -22,7 +22,7 @@ import {
   TextField,
   Button,
 } from "@mui/material";
-import { sendQuotationEmail } from "../services/quotationApi";
+import { sendQuotationEmail } from "../../services/quotationApi";
 
 const initialValues = {
   referenceBy: "",
@@ -31,6 +31,7 @@ const initialValues = {
   quotationNo: "",
   date: "",
   selectedModules: [],
+  moduleRequirements: {},
   quotationTo: { name: "", address: "", contactNo: "", email: "" },
   discountPercentage: 0,
 };
@@ -100,7 +101,9 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
       .catch(() => setCustomers([]));
 
     // Check for revision source quotation
-    const revisionSourceQuotationId = sessionStorage.getItem("revisionSourceQuotationId");
+    const revisionSourceQuotationId = sessionStorage.getItem(
+      "revisionSourceQuotationId",
+    );
     if (revisionSourceQuotationId) {
       fetchQuotationById(revisionSourceQuotationId)
         .then((quotation) => {
@@ -111,7 +114,10 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
               organizationName: quotation.organizationName || "",
               validationDate: quotation.validationDate || "",
               date: quotation.date || new Date().toISOString().slice(0, 10),
-              selectedModules: Array.isArray(quotation.modules) ? quotation.modules : [],
+              selectedModules: Array.isArray(quotation.modules)
+                ? quotation.modules
+                : [],
+              moduleRequirements: {},
               quotationTo: {
                 name: quotation.quotationToName || "",
                 address: quotation.quotationToAddress || "",
@@ -195,13 +201,42 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
   const handleToggleModule = (moduleName) => {
     setValues((v) => {
       const exists = v.selectedModules.includes(moduleName);
+      const moduleRequirements = { ...(v.moduleRequirements || {}) };
+
+      if (exists) {
+        delete moduleRequirements[moduleName];
+      } else {
+        moduleRequirements[moduleName] = {
+          noOfUsers: "",
+          noOfInstallations: "",
+          noOfSites: "",
+          implementationEffortUnit: "",
+          implementationDuration: "",
+          implementationWorkers: "",
+        };
+      }
+
       return {
         ...v,
         selectedModules: exists
           ? v.selectedModules.filter((m) => m !== moduleName)
           : [...v.selectedModules, moduleName],
+        moduleRequirements,
       };
     });
+  };
+
+  const handleModuleRequirementChange = (moduleName, field, value) => {
+    setValues((v) => ({
+      ...v,
+      moduleRequirements: {
+        ...(v.moduleRequirements || {}),
+        [moduleName]: {
+          ...(v.moduleRequirements?.[moduleName] || {}),
+          [field]: value,
+        },
+      },
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -290,7 +325,9 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
   };
 
   return (
-    <div className={`create-quotation ${readOnly ? "create-quotation--readonly" : ""}`}>
+    <div
+      className={`create-quotation ${readOnly ? "create-quotation--readonly" : ""}`}
+    >
       <div className="create-quotation__header">
         <div className="create-quotation__title">
           <h2 className="page-heading page-heading__text">
@@ -326,7 +363,11 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
 
       <div className="create-quotation__layout">
         <div className="create-quotation__card">
-          <form className="q-form" onSubmit={readOnly ? undefined : handleSubmit} noValidate>
+          <form
+            className="q-form"
+            onSubmit={readOnly ? undefined : handleSubmit}
+            noValidate
+          >
             <section className="q-form__section">
               <h3 className="q-form__heading">Quotation details</h3>
               <div className="q-form__row">
@@ -335,7 +376,9 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
                     name="organizationName"
                     label="Organization name"
                     value={values.organizationName}
-                    onChange={(val) => handleFieldChange("organizationName", val)}
+                    onChange={(val) =>
+                      handleFieldChange("organizationName", val)
+                    }
                     disabled={readOnly}
                     options={organizations}
                     placeholder="e.g. Vantage Auto Components Pvt. Ltd."
@@ -440,22 +483,24 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
               </div>
             </section>
 
-            <section className={`q-form__section ${readOnly ? "q-form__section--disabled" : ""}`}>
+            <section
+              className={`q-form__section ${readOnly ? "q-form__section--disabled" : ""}`}
+            >
               <h3 className="q-form__heading">Quotation to</h3>
               <div className="q-form__row">
                 <div className="q-field">
-                <SearchDropdown
-                  name="contactName"
-                  label="Contact name"
-                  value={values.quotationTo.name}
-                  onChange={handleCustomerChange}
-                  options={customers
-                    .map((customer) => customer.contactName)
-                    .filter(Boolean)}
-                  placeholder="Select customer contact"
-                  allowFreeText
-                  disabled={readOnly}
-                />
+                  <SearchDropdown
+                    name="contactName"
+                    label="Contact name"
+                    value={values.quotationTo.name}
+                    onChange={handleCustomerChange}
+                    options={customers
+                      .map((customer) => customer.contactName)
+                      .filter(Boolean)}
+                    placeholder="Select customer contact"
+                    allowFreeText
+                    disabled={readOnly}
+                  />
                   {errors.contactName && (
                     <span className="q-field__error">{errors.contactName}</span>
                   )}
@@ -529,11 +574,23 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
                 error={errors.selectedModules}
                 disabled={readOnly}
               />
+              {values.selectedModules.length > 0 && (
+                <ModuleRequirements
+                  selectedModules={values.selectedModules}
+                  requirements={values.moduleRequirements || {}}
+                  onChange={handleModuleRequirementChange}
+                  disabled={readOnly}
+                />
+              )}
             </section>
 
             <div className="q-form__row" style={{ justifyContent: "flex-end" }}>
               {!readOnly && (
-                <button type="submit" className="q-submit" disabled={submitting}>
+                <button
+                  type="submit"
+                  className="q-submit"
+                  disabled={submitting}
+                >
                   {submitting ? "Generating quotation…" : "Generate quotation"}
                 </button>
               )}
@@ -602,12 +659,14 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
               <p className="q-result__title">Quotation generated</p>
               <p className="q-result__id">{result.quotationNo}</p>
               <div className="q-result__actions">
-                {!readOnly && <button
-                  className="q-result__btn q-result__btn--primary"
-                  onClick={handleViewDetails}
-                >
-                  View Details
-                </button>}
+                {!readOnly && (
+                  <button
+                    className="q-result__btn q-result__btn--primary"
+                    onClick={handleViewDetails}
+                  >
+                    View Details
+                  </button>
+                )}
                 <button
                   className="q-result__btn q-result__btn--primary"
                   onClick={() => {
@@ -662,11 +721,13 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
           onClose={() => setEmailDialogOpen(false)}
           maxWidth="sm"
           fullWidth
-          PaperProps={{ sx: { borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)' } }}
+          PaperProps={{
+            sx: { borderRadius: 2, boxShadow: "0 4px 12px rgba(0,0,0,0.15)" },
+          }}
         >
           <DialogTitle
             sx={{
-              position: 'relative',
+              position: "relative",
               background: "linear-gradient(120deg, #308aea 0%, #48cae4 100%)",
               color: "white",
               px: 3,
@@ -681,19 +742,29 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
               aria-label="Close"
               onClick={() => setEmailDialogOpen(false)}
               style={{
-                position: 'absolute',
+                position: "absolute",
                 right: 12,
                 top: 8,
                 width: 40,
                 height: 40,
-                borderRadius: '50%',
-                border: 'none',
-                background: 'transparent',
-                color: 'white',
-                cursor: 'pointer'
+                borderRadius: "50%",
+                border: "none",
+                background: "transparent",
+                color: "white",
+                cursor: "pointer",
               }}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ display: "block" }}
+              >
                 <path d="M18 6L6 18M6 6l12 12" />
               </svg>
             </button>
@@ -725,7 +796,9 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
               onChange={(e) => setEmailMessage(e.target.value)}
             />
           </DialogContent>
-          <DialogActions sx={{ justifyContent: 'flex-end', gap: 1, p: '16px 24px' }}>
+          <DialogActions
+            sx={{ justifyContent: "flex-end", gap: 1, p: "16px 24px" }}
+          >
             <Button
               onClick={() => setEmailDialogOpen(false)}
               sx={{
@@ -790,7 +863,7 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
   );
 }
 
-function ModuleSelector({ modules, selected, onToggle, error }) {
+function ModuleSelector({ modules, selected, onToggle, error, disabled }) {
   const grouped = modules.reduce((acc, { pillar, module }) => {
     if (!acc[pillar]) acc[pillar] = [];
     acc[pillar].push(module);
@@ -811,6 +884,7 @@ function ModuleSelector({ modules, selected, onToggle, error }) {
                     type="checkbox"
                     checked={selected.includes(module)}
                     onChange={() => onToggle(module)}
+                    disabled={disabled}
                   />
                   <span>{module}</span>
                 </label>
@@ -818,6 +892,159 @@ function ModuleSelector({ modules, selected, onToggle, error }) {
             </div>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function ModuleRequirements({
+  selectedModules,
+  requirements,
+  onChange,
+  disabled,
+}) {
+  return (
+    <div className="module-requirements">
+      <h4 className="module-requirements__heading">
+        Requirements for selected modules for the Implementation part.
+      </h4>
+      <p className="q-form__hint">
+        Enter the quotation-specific requirements for each selected module.
+      </p>
+      <div className="module-requirements__list">
+        {selectedModules.map((moduleName) => {
+          const values = requirements[moduleName] || {};
+          const unit = values.implementationEffortUnit || "";
+          const durationLabel =
+            unit === "Per Day"
+              ? "Number of Days"
+              : unit === "Per 15 Days"
+                ? "Number of 15-Day Periods"
+                : unit === "Per Month"
+                  ? "Number of Months"
+                  : "Implementation Duration";
+
+          return (
+            <div className="module-requirements__card" key={moduleName}>
+              <h5 className="module-requirements__module">{moduleName}</h5>
+              <div className="q-form__row">
+                <div className="q-field">
+                  <label htmlFor={`${moduleName}-users`}>No. of Users</label>
+                  <input
+                    id={`${moduleName}-users`}
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={values.noOfUsers || ""}
+                    onChange={(event) =>
+                      onChange(moduleName, "noOfUsers", event.target.value)
+                    }
+                    disabled={disabled}
+                  />
+                </div>
+                <div className="q-field">
+                  <label htmlFor={`${moduleName}-installations`}>
+                    No. of Installations
+                  </label>
+                  <input
+                    id={`${moduleName}-installations`}
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={values.noOfInstallations || ""}
+                    onChange={(event) =>
+                      onChange(
+                        moduleName,
+                        "noOfInstallations",
+                        event.target.value,
+                      )
+                    }
+                    disabled={disabled}
+                  />
+                </div>
+                <div className="q-field">
+                  <label htmlFor={`${moduleName}-sites`}>No. of Sites</label>
+                  <input
+                    id={`${moduleName}-sites`}
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={values.noOfSites || ""}
+                    onChange={(event) =>
+                      onChange(moduleName, "noOfSites", event.target.value)
+                    }
+                    disabled={disabled}
+                  />
+                </div>
+              </div>
+
+              <div className="q-form__row">
+                <div className="q-field">
+                  <label htmlFor={`${moduleName}-unit`}>
+                    Implementation Effort Unit
+                  </label>
+                  <select
+                    id={`${moduleName}-unit`}
+                    value={unit}
+                    onChange={(event) =>
+                      onChange(
+                        moduleName,
+                        "implementationEffortUnit",
+                        event.target.value,
+                      )
+                    }
+                    disabled={disabled}
+                  >
+                    <option value="">Select unit</option>
+                    <option value="Per Day">Per Day</option>
+                    <option value="Per 15 Days">Per 15 Days</option>
+                    <option value="Per Month">Per Month</option>
+                  </select>
+                </div>
+                <div className="q-field">
+                  <label htmlFor={`${moduleName}-duration`}>
+                    {durationLabel}
+                  </label>
+                  <input
+                    id={`${moduleName}-duration`}
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={values.implementationDuration || ""}
+                    onChange={(event) =>
+                      onChange(
+                        moduleName,
+                        "implementationDuration",
+                        event.target.value,
+                      )
+                    }
+                    disabled={disabled}
+                  />
+                </div>
+                <div className="q-field">
+                  <label htmlFor={`${moduleName}-workers`}>
+                    Implementation Workers
+                  </label>
+                  <input
+                    id={`${moduleName}-workers`}
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={values.implementationWorkers || ""}
+                    onChange={(event) =>
+                      onChange(
+                        moduleName,
+                        "implementationWorkers",
+                        event.target.value,
+                      )
+                    }
+                    disabled={disabled}
+                  />
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

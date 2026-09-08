@@ -2,8 +2,8 @@ import { Box } from "@mui/material";
 
 import UsersPage from "./Settings/Masters/UsersPage";
 import ModulesPage from "./Settings/Masters/ModulesPage";
-import CreatedQuotation from "./CreatedQuotation";
-import QuotationPdfView from "./QuotationPdfView";
+import CreatedQuotation from "./Quotation/CreatedQuotation";
+import QuotationPdfView from "./Quotation/QuotationPdfView";
 import CustomersPage from "./Settings/Masters/CustomersPage";
 import SuppliersPage from "./Settings/Masters/SuppliersPage";
 import CompanyProfilePage from "./Settings/Masters/CompanyProfilePage";

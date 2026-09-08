@@ -96,6 +96,48 @@
   color: var(--text-400);
 }
 
+.module-requirements {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.module-requirements__heading {
+  margin: 0;
+  color: var(--text-700);
+  font-size: 16px;
+}
+
+.module-requirements__list {
+  display: grid;
+  gap: 16px;
+}
+
+.module-requirements__card {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-subtle, #fafafa);
+}
+
+.module-requirements__module {
+  margin: 0 0 12px;
+  color: var(--text-700);
+  font-size: 15px;
+}
+
+.module-requirements .q-field select {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-700);
+  font: inherit;
+}
+
 @media (max-width: 860px) {
   .create-quotation__layout {
     flex-direction: column;
