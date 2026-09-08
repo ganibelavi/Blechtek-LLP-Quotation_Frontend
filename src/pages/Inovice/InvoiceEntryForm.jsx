@@ -6,9 +6,12 @@ import {
   DialogTitle,
   MenuItem,
   TextField,
+  Typography,
 } from "@mui/material";
 import {
   createInvoice,
+  updateInvoice,
+  updateInvoiceStatus,
   fetchModules,
   fetchPurchaseOrderById,
   fetchQuotationById,
@@ -60,6 +63,14 @@ const inputStyle = {
   font: "inherit",
   background: "var(--white)",
   boxSizing: "border-box",
+};
+
+const STATUS_LABEL = {
+  draft: "Draft",
+  advance_received: "Advance Received",
+  partially_paid: "Partially Paid",
+  paid: "Paid",
+  overdue: "Overdue",
 };
 
 const emptyItem = (description = "", isSourceData = false, rate = 0) => ({
@@ -366,6 +377,7 @@ export default function InvoiceEntryForm({
     return {
       ...baseForm,
       ...(sourceData?.invoice || {}),
+      status: sourceData?.invoice?.status || sourceData?.status || "draft",
       items: sourceItems,
       sourceInvoiceId: normalizeId(sourceData?.id || sourceData?.invoice?.id),
     };
@@ -381,12 +393,64 @@ export default function InvoiceEntryForm({
   const [showQuotationModal, setShowQuotationModal] = useState(false);
   const [selectedQuotationId, setSelectedQuotationId] = useState("");
   const [queueSearch, setQueueSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusActionDialogOpen, setStatusActionDialogOpen] = useState(false);
+  const [invoiceForStatusAction, setInvoiceForStatusAction] = useState(null);
+  const [statusActionLoading, setStatusActionLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
     severity: "success",
   });
   const isPreloadedSource = Boolean(form.sourcePoId || form.sourceQuotationId);
+
+  // Fields that are populated from PO/Quotation source data and should be disabled during edit
+  const sourceFields = new Set([
+    "companyName",
+    "supplierName",
+    "supplierAddress",
+    "supplierState",
+    "supplierStateCode",
+    "supplierGSTN",
+    "receiverName",
+    "receiverAddress",
+    "receiverState",
+    "receiverStateCode",
+    "receiverGSTN",
+    "consigneeName",
+    "consigneeAddress",
+    "consigneeState",
+    "consigneeStateCode",
+    "consigneeGSTN",
+    "bankName",
+    "accountNo",
+    "accountType",
+    "ifsc",
+    "msmeNo",
+    "poNoDate",
+    "hsnCode",
+    "sacCode",
+    "reverseCharge",
+    "sgstPct",
+    "cgstPct",
+    "igstPct",
+  ]);
+
+  // Check if a field should be disabled: either viewOnly, or it's a source field and we're editing an existing invoice
+  const isFieldDisabled = (fieldName) => {
+    if (viewOnly) return true;
+    // If editing an existing invoice and field is a source field, disable it
+    if (form.sourceInvoiceId && sourceFields.has(fieldName)) return true;
+    // If creating new from PO/Quotation, disable source fields
+    if (
+      !form.sourceInvoiceId &&
+      isPreloadedSource &&
+      sourceFields.has(fieldName)
+    )
+      return true;
+    return false;
+  };
+
   const isItemLocked = (item) => Boolean(item?.isSourceData);
 
   useEffect(() => {
@@ -574,6 +638,7 @@ export default function InvoiceEntryForm({
       invoiceRecords
         .map((record) => {
           const invoice = record.invoice || record;
+          const status = invoice.status || "draft";
           return {
             id: record.id || invoice.id,
             invoice,
@@ -587,17 +652,20 @@ export default function InvoiceEntryForm({
                 invoice.totalAmount ??
                 0,
             ),
+            status,
             current:
               normalizeId(form.sourceInvoiceId) ===
               normalizeId(record.id || invoice.id),
           };
         })
-        .filter((entry) =>
-          `${entry.ref} ${entry.company}`
-            .toLowerCase()
-            .includes(queueSearch.toLowerCase()),
+        .filter(
+          (entry) =>
+            `${entry.ref} ${entry.company}`
+              .toLowerCase()
+              .includes(queueSearch.toLowerCase()) &&
+            (statusFilter === "all" || entry.status === statusFilter),
         ),
-    [invoiceRecords, queueSearch, form.sourceInvoiceId],
+    [invoiceRecords, queueSearch, form.sourceInvoiceId, statusFilter],
   );
 
   const formatMoney = (value) =>
@@ -623,8 +691,68 @@ export default function InvoiceEntryForm({
       ...prev,
       sourceInvoiceId: normalizeId(entry.id),
       ...invoice,
+      status: entry.status || invoice.status || "draft",
       items,
     }));
+  };
+
+  const getInvoiceStatus = () => {
+    return form.invoice?.status || form.status || "draft";
+  };
+
+  const handleStatusAction = (newStatus) => {
+    if (!form.sourceInvoiceId) return;
+    setInvoiceForStatusAction({
+      id: form.sourceInvoiceId,
+      _targetStatus: newStatus,
+    });
+    setStatusActionDialogOpen(true);
+  };
+
+  const handleConfirmStatusAction = async () => {
+    if (!invoiceForStatusAction) return;
+
+    try {
+      setStatusActionLoading(true);
+      const newStatus = invoiceForStatusAction._targetStatus;
+      await updateInvoiceStatus(invoiceForStatusAction.id, newStatus);
+
+      // Update local form status
+      setForm((prev) => ({ ...prev, status: newStatus }));
+
+      // Update invoice queue
+      setInvoiceRecords((prev) =>
+        prev.map((record) =>
+          record.id === invoiceForStatusAction.id
+            ? { ...record, invoice: { ...record.invoice, status: newStatus } }
+            : record,
+        ),
+      );
+
+      setStatusActionDialogOpen(false);
+      setInvoiceForStatusAction(null);
+      setSnackbar({
+        open: true,
+        message: `Invoice status updated to ${newStatus}`,
+        severity: "success",
+      });
+    } catch (err) {
+      console.error("Failed to update invoice status", err);
+      setSnackbar({
+        open: true,
+        message: "Unable to update invoice status.",
+        severity: "error",
+      });
+      setStatusActionDialogOpen(false);
+      setInvoiceForStatusAction(null);
+    } finally {
+      setStatusActionLoading(false);
+    }
+  };
+
+  const handleCloseStatusActionDialog = () => {
+    setStatusActionDialogOpen(false);
+    setInvoiceForStatusAction(null);
   };
 
   useEffect(() => {
@@ -988,7 +1116,12 @@ export default function InvoiceEntryForm({
     };
 
     try {
-      const saved = await createInvoice(payload);
+      let saved;
+      if (form.sourceInvoiceId) {
+        saved = await updateInvoice(form.sourceInvoiceId, payload);
+      } else {
+        saved = await createInvoice(payload);
+      }
 
       sessionStorage.setItem(
         "invoiceData",
@@ -1083,8 +1216,47 @@ export default function InvoiceEntryForm({
             />
           </div>
           <div className="po-filter-row">
-            <button type="button" className="active">
+            <button
+              type="button"
+              className={statusFilter === "all" ? "active" : ""}
+              onClick={() => setStatusFilter("all")}
+            >
               All
+            </button>
+            <button
+              type="button"
+              className={statusFilter === "draft" ? "active" : ""}
+              onClick={() => setStatusFilter("draft")}
+            >
+              Draft
+            </button>
+            <button
+              type="button"
+              className={statusFilter === "advance_received" ? "active" : ""}
+              onClick={() => setStatusFilter("advance_received")}
+            >
+              Advance Received
+            </button>
+            <button
+              type="button"
+              className={statusFilter === "partially_paid" ? "active" : ""}
+              onClick={() => setStatusFilter("partially_paid")}
+            >
+              Partially Paid
+            </button>
+            <button
+              type="button"
+              className={statusFilter === "paid" ? "active" : ""}
+              onClick={() => setStatusFilter("paid")}
+            >
+              Paid
+            </button>
+            <button
+              type="button"
+              className={statusFilter === "overdue" ? "active" : ""}
+              onClick={() => setStatusFilter("overdue")}
+            >
+              Overdue
             </button>
           </div>
           <div className="po-queue-list">
@@ -1097,7 +1269,7 @@ export default function InvoiceEntryForm({
               >
                 <div className="po-queue-item-top">
                   <strong>{entry.ref}</strong>
-                  <span>SAVED</span>
+                  <span>{STATUS_LABEL[entry.status] || entry.status}</span>
                 </div>
                 <div>{entry.company}</div>
                 <small>
@@ -1122,7 +1294,7 @@ export default function InvoiceEntryForm({
               </p>
             </div>
             <div className="po-detail-actions">
-              {!viewOnly && (
+              {!viewOnly && !form.sourceInvoiceId && (
                 <button
                   type="button"
                   className="app-action-btn app-action-btn--secondary"
@@ -1151,6 +1323,88 @@ export default function InvoiceEntryForm({
                   Generate Invoice
                 </button>
               )}
+              {form.sourceInvoiceId &&
+                !viewOnly &&
+                getInvoiceStatus() === "draft" && (
+                  <button
+                    type="button"
+                    className="app-action-btn app-action-btn--primary"
+                    onClick={() => handleStatusAction("advance_received")}
+                  >
+                    Mark as Advance Received
+                  </button>
+                )}
+              {form.sourceInvoiceId &&
+                !viewOnly &&
+                getInvoiceStatus() === "advance_received" && (
+                  <>
+                    <button
+                      type="button"
+                      className="app-action-btn app-action-btn--secondary"
+                      onClick={() => handleStatusAction("partially_paid")}
+                    >
+                      Mark as Partially Paid
+                    </button>
+                    <button
+                      type="button"
+                      className="app-action-btn app-action-btn--secondary"
+                      onClick={() => handleStatusAction("overdue")}
+                    >
+                      Mark as Overdue
+                    </button>
+                  </>
+                )}
+              {form.sourceInvoiceId &&
+                !viewOnly &&
+                getInvoiceStatus() === "partially_paid" && (
+                  <>
+                    <button
+                      type="button"
+                      className="app-action-btn app-action-btn--primary"
+                      onClick={() => handleStatusAction("paid")}
+                    >
+                      Mark as Paid
+                    </button>
+                    <button
+                      type="button"
+                      className="app-action-btn app-action-btn--secondary"
+                      onClick={() => handleStatusAction("overdue")}
+                    >
+                      Mark as Overdue
+                    </button>
+                  </>
+                )}
+              {form.sourceInvoiceId &&
+                !viewOnly &&
+                getInvoiceStatus() === "overdue" && (
+                  <>
+                    <button
+                      type="button"
+                      className="app-action-btn app-action-btn--secondary"
+                      onClick={() => handleStatusAction("partially_paid")}
+                    >
+                      Mark as Partially Paid
+                    </button>
+                    <button
+                      type="button"
+                      className="app-action-btn app-action-btn--primary"
+                      onClick={() => handleStatusAction("paid")}
+                    >
+                      Mark as Paid
+                    </button>
+                  </>
+                )}
+              {form.sourceInvoiceId &&
+                !viewOnly &&
+                getInvoiceStatus() === "paid" && (
+                  <button
+                    type="button"
+                    className="app-action-btn app-action-btn--secondary"
+                    onClick={() => handleStatusAction("draft")}
+                  >
+                    Revert to Draft
+                  </button>
+                )}
             </div>
           </div>
           <form id="invoice-entry-form" onSubmit={handleSubmit}>
@@ -1165,7 +1419,7 @@ export default function InvoiceEntryForm({
                   <input
                     value={form.companyName}
                     onChange={(e) => updateField("companyName", e.target.value)}
-                    disabled={isPreloadedSource}
+                    disabled={isFieldDisabled("companyName")}
                     placeholder="Company name from selected quotation"
                   />
                 </label>
@@ -1196,7 +1450,9 @@ export default function InvoiceEntryForm({
                   Place of Service <RequiredMark />
                   <input
                     value={form.placeOfService}
-                    onChange={(e) => updateField("placeOfService", e.target.value)}
+                    onChange={(e) =>
+                      updateField("placeOfService", e.target.value)
+                    }
                   />
                 </label>
                 <label>
@@ -1204,7 +1460,7 @@ export default function InvoiceEntryForm({
                   <input
                     value={form.poNoDate}
                     onChange={(e) => updateField("poNoDate", e.target.value)}
-                    readOnly={isPreloadedSource}
+                    readOnly={isFieldDisabled("poNoDate")}
                   />
                 </label>
               </div>
@@ -1222,40 +1478,50 @@ export default function InvoiceEntryForm({
                     Name
                     <input
                       value={form.supplierName}
-                      onChange={(e) => updateField("supplierName", e.target.value)}
-                      readOnly={isPreloadedSource}
+                      onChange={(e) =>
+                        updateField("supplierName", e.target.value)
+                      }
+                      readOnly={isFieldDisabled("supplierName")}
                     />
                   </label>
                   <label>
                     Address
                     <input
                       value={form.supplierAddress}
-                      onChange={(e) => updateField("supplierAddress", e.target.value)}
-                      readOnly={isPreloadedSource}
+                      onChange={(e) =>
+                        updateField("supplierAddress", e.target.value)
+                      }
+                      readOnly={isFieldDisabled("supplierAddress")}
                     />
                   </label>
                   <label>
                     State
                     <input
                       value={form.supplierState}
-                      onChange={(e) => updateField("supplierState", e.target.value)}
-                      readOnly={isPreloadedSource}
+                      onChange={(e) =>
+                        updateField("supplierState", e.target.value)
+                      }
+                      readOnly={isFieldDisabled("supplierState")}
                     />
                   </label>
                   <label>
                     State code
                     <input
                       value={form.supplierStateCode}
-                      onChange={(e) => updateField("supplierStateCode", e.target.value)}
-                      readOnly={isPreloadedSource}
+                      onChange={(e) =>
+                        updateField("supplierStateCode", e.target.value)
+                      }
+                      readOnly={isFieldDisabled("supplierStateCode")}
                     />
                   </label>
                   <label>
                     GSTN no.
                     <input
                       value={form.supplierGSTN}
-                      onChange={(e) => updateField("supplierGSTN", e.target.value)}
-                      readOnly={isPreloadedSource}
+                      onChange={(e) =>
+                        updateField("supplierGSTN", e.target.value)
+                      }
+                      readOnly={isFieldDisabled("supplierGSTN")}
                     />
                   </label>
                 </div>
@@ -1265,40 +1531,50 @@ export default function InvoiceEntryForm({
                     Name
                     <input
                       value={form.receiverName}
-                      onChange={(e) => updateField("receiverName", e.target.value)}
-                      readOnly={isPreloadedSource}
+                      onChange={(e) =>
+                        updateField("receiverName", e.target.value)
+                      }
+                      readOnly={isFieldDisabled("receiverName")}
                     />
                   </label>
                   <label>
                     Address
                     <input
                       value={form.receiverAddress}
-                      onChange={(e) => updateField("receiverAddress", e.target.value)}
-                      readOnly={isPreloadedSource}
+                      onChange={(e) =>
+                        updateField("receiverAddress", e.target.value)
+                      }
+                      readOnly={isFieldDisabled("receiverAddress")}
                     />
                   </label>
                   <label>
                     State
                     <input
                       value={form.receiverState}
-                      onChange={(e) => updateField("receiverState", e.target.value)}
-                      readOnly={isPreloadedSource}
+                      onChange={(e) =>
+                        updateField("receiverState", e.target.value)
+                      }
+                      readOnly={isFieldDisabled("receiverState")}
                     />
                   </label>
                   <label>
                     State code
                     <input
                       value={form.receiverStateCode}
-                      onChange={(e) => updateField("receiverStateCode", e.target.value)}
-                      readOnly={isPreloadedSource}
+                      onChange={(e) =>
+                        updateField("receiverStateCode", e.target.value)
+                      }
+                      readOnly={isFieldDisabled("receiverStateCode")}
                     />
                   </label>
                   <label>
                     GSTN no.
                     <input
                       value={form.receiverGSTN}
-                      onChange={(e) => updateField("receiverGSTN", e.target.value)}
-                      readOnly={isPreloadedSource}
+                      onChange={(e) =>
+                        updateField("receiverGSTN", e.target.value)
+                      }
+                      readOnly={isFieldDisabled("receiverGSTN")}
                     />
                   </label>
                 </div>
@@ -1316,7 +1592,7 @@ export default function InvoiceEntryForm({
                   <input
                     value={form.bankName}
                     onChange={(e) => updateField("bankName", e.target.value)}
-                    readOnly={isPreloadedSource}
+                    readOnly={isFieldDisabled("bankName")}
                   />
                 </label>
                 <label>
@@ -1324,7 +1600,7 @@ export default function InvoiceEntryForm({
                   <input
                     value={form.accountNo}
                     onChange={(e) => updateField("accountNo", e.target.value)}
-                    readOnly={isPreloadedSource}
+                    readOnly={isFieldDisabled("accountNo")}
                   />
                 </label>
                 <label>
@@ -1332,7 +1608,7 @@ export default function InvoiceEntryForm({
                   <input
                     value={form.accountType}
                     onChange={(e) => updateField("accountType", e.target.value)}
-                    readOnly={isPreloadedSource}
+                    readOnly={isFieldDisabled("accountType")}
                   />
                 </label>
                 <label>
@@ -1340,7 +1616,7 @@ export default function InvoiceEntryForm({
                   <input
                     value={form.ifsc}
                     onChange={(e) => updateField("ifsc", e.target.value)}
-                    readOnly={isPreloadedSource}
+                    readOnly={isFieldDisabled("ifsc")}
                   />
                 </label>
                 <label>
@@ -1348,7 +1624,7 @@ export default function InvoiceEntryForm({
                   <input
                     value={form.msmeNo}
                     onChange={(e) => updateField("msmeNo", e.target.value)}
-                    readOnly={isPreloadedSource}
+                    readOnly={isFieldDisabled("msmeNo")}
                   />
                 </label>
               </div>
@@ -1357,7 +1633,9 @@ export default function InvoiceEntryForm({
             <section className="po-card">
               <div className="po-card-title">
                 <span>04</span>
-                <h3>Line items <em>{form.items.length} items</em></h3>
+                <h3>
+                  Line items <em>{form.items.length} items</em>
+                </h3>
               </div>
               <div className="po-table-wrap">
                 <table className="invoice-entry-table">
@@ -1390,7 +1668,11 @@ export default function InvoiceEntryForm({
                             step="0.01"
                             value={item.qty}
                             onChange={(e) =>
-                              updateItem(item.id, "qty", Number(e.target.value) || 0)
+                              updateItem(
+                                item.id,
+                                "qty",
+                                Number(e.target.value) || 0,
+                              )
                             }
                             readOnly={isItemLocked(item)}
                           />
@@ -1398,7 +1680,9 @@ export default function InvoiceEntryForm({
                         <td>
                           <input
                             value={item.uom}
-                            onChange={(e) => updateItem(item.id, "uom", e.target.value)}
+                            onChange={(e) =>
+                              updateItem(item.id, "uom", e.target.value)
+                            }
                             readOnly={isItemLocked(item)}
                           />
                         </td>
@@ -1409,7 +1693,11 @@ export default function InvoiceEntryForm({
                             step="0.01"
                             value={item.rate}
                             onChange={(e) =>
-                              updateItem(item.id, "rate", Number(e.target.value) || 0)
+                              updateItem(
+                                item.id,
+                                "rate",
+                                Number(e.target.value) || 0,
+                              )
                             }
                             readOnly={isItemLocked(item)}
                           />
@@ -1417,8 +1705,7 @@ export default function InvoiceEntryForm({
                         <td className="invoice-entry-amount">
                           ₹
                           {(
-                            (Number(item.qty) || 0) *
-                            (Number(item.rate) || 0)
+                            (Number(item.qty) || 0) * (Number(item.rate) || 0)
                           ).toLocaleString("en-IN", {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2,
@@ -1434,7 +1721,14 @@ export default function InvoiceEntryForm({
                   Total quantity <b>{totals.totalQty}</b>
                 </span>
                 <span>
-                  Total amount <b>₹{totals.totalPrice.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b>
+                  Total amount{" "}
+                  <b>
+                    ₹
+                    {totals.totalPrice.toLocaleString("en-IN", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </b>
                 </span>
               </div>
             </section>
@@ -1450,7 +1744,7 @@ export default function InvoiceEntryForm({
                   <input
                     value={form.hsnCode}
                     onChange={(e) => updateField("hsnCode", e.target.value)}
-                    readOnly={isPreloadedSource}
+                    readOnly={isFieldDisabled("hsnCode")}
                   />
                 </label>
                 <label>
@@ -1458,15 +1752,17 @@ export default function InvoiceEntryForm({
                   <input
                     value={form.sacCode}
                     onChange={(e) => updateField("sacCode", e.target.value)}
-                    readOnly={isPreloadedSource}
+                    readOnly={isFieldDisabled("sacCode")}
                   />
                 </label>
                 <label>
                   Reverse charge
                   <select
                     value={form.reverseCharge}
-                    onChange={(e) => updateField("reverseCharge", e.target.value)}
-                    disabled={isPreloadedSource}
+                    onChange={(e) =>
+                      updateField("reverseCharge", e.target.value)
+                    }
+                    disabled={isFieldDisabled("reverseCharge")}
                   >
                     <option value="No">No</option>
                     <option value="Yes">Yes</option>
@@ -1478,8 +1774,10 @@ export default function InvoiceEntryForm({
                     type="number"
                     step="0.01"
                     value={form.sgstPct}
-                    onChange={(e) => updateField("sgstPct", Number(e.target.value) || 0)}
-                    readOnly={isPreloadedSource}
+                    onChange={(e) =>
+                      updateField("sgstPct", Number(e.target.value) || 0)
+                    }
+                    readOnly={isFieldDisabled("sgstPct")}
                   />
                 </label>
                 <label>
@@ -1488,8 +1786,10 @@ export default function InvoiceEntryForm({
                     type="number"
                     step="0.01"
                     value={form.cgstPct}
-                    onChange={(e) => updateField("cgstPct", Number(e.target.value) || 0)}
-                    readOnly={isPreloadedSource}
+                    onChange={(e) =>
+                      updateField("cgstPct", Number(e.target.value) || 0)
+                    }
+                    readOnly={isFieldDisabled("cgstPct")}
                   />
                 </label>
                 <label>
@@ -1498,8 +1798,10 @@ export default function InvoiceEntryForm({
                     type="number"
                     step="0.01"
                     value={form.igstPct}
-                    onChange={(e) => updateField("igstPct", Number(e.target.value) || 0)}
-                    readOnly={isPreloadedSource}
+                    onChange={(e) =>
+                      updateField("igstPct", Number(e.target.value) || 0)
+                    }
+                    readOnly={isFieldDisabled("igstPct")}
                   />
                 </label>
                 <label>
@@ -1508,7 +1810,9 @@ export default function InvoiceEntryForm({
                     type="number"
                     step="0.01"
                     value={form.tdsPct}
-                    onChange={(e) => updateField("tdsPct", Number(e.target.value) || 0)}
+                    onChange={(e) =>
+                      updateField("tdsPct", Number(e.target.value) || 0)
+                    }
                   />
                 </label>
                 <label>
@@ -1517,7 +1821,9 @@ export default function InvoiceEntryForm({
                     type="number"
                     step="0.01"
                     value={form.insurance}
-                    onChange={(e) => updateField("insurance", Number(e.target.value) || 0)}
+                    onChange={(e) =>
+                      updateField("insurance", Number(e.target.value) || 0)
+                    }
                   />
                 </label>
               </div>
@@ -1550,7 +1856,14 @@ export default function InvoiceEntryForm({
 
             <div className="po-total-row invoice-grand-total">
               <span>
-                Grand Total <b>₹{totals.grandTotal.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b>
+                Grand Total{" "}
+                <b>
+                  ₹
+                  {totals.grandTotal.toLocaleString("en-IN", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </b>
               </span>
             </div>
           </form>
@@ -1611,6 +1924,54 @@ export default function InvoiceEntryForm({
             disabled={!selectedQuotationId}
           >
             Use quotation
+          </button>
+        </DialogActions>
+      </Dialog>
+      <Dialog
+        open={statusActionDialogOpen}
+        onClose={handleCloseStatusActionDialog}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle
+          sx={{
+            background: "linear-gradient(120deg, #308aea 0%, #48cae4 100%)",
+            color: "white",
+            fontSize: "18px",
+            fontWeight: 600,
+            py: 1.5,
+          }}
+        >
+          Confirm Status Change
+        </DialogTitle>
+        <DialogContent>
+          <Typography
+            variant="body1"
+            sx={{ mt: 1, fontSize: "14px", lineHeight: 1.5 }}
+          >
+            Are you sure you want to change the status of{" "}
+            <strong>Invoice No. {form.invoiceNo}</strong> to{" "}
+            <strong>
+              {STATUS_LABEL[invoiceForStatusAction?._targetStatus]}
+            </strong>
+            ?
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ p: 3, pt: 0 }}>
+          <button
+            type="button"
+            className="app-action-btn app-action-btn--secondary"
+            onClick={handleCloseStatusActionDialog}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="app-action-btn app-action-btn--primary"
+            onClick={handleConfirmStatusAction}
+            disabled={statusActionLoading}
+          >
+            {statusActionLoading ? "Updating..." : "Confirm"}
           </button>
         </DialogActions>
       </Dialog>

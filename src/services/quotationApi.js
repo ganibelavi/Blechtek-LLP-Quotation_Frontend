@@ -161,6 +161,16 @@ export async function deleteInvoice(id) {
   await client.delete(`/api/invoice/${id}`);
 }
 
+export async function updateInvoice(id, payload) {
+  const { data } = await client.put(`/api/invoice/${id}`, payload);
+  return data;
+}
+
+export async function updateInvoiceStatus(id, status) {
+  const { data } = await client.patch(`/api/invoice/${id}/status`, { status });
+  return data;
+}
+
 /**
  * GET /api/quotation/next-quotation-no
  * returns: { quotationNo: "BTSS/FY2025-26/PR-000X" }

@@ -10,15 +10,36 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Chip,
 } from "@mui/material";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import DeleteIcon from "@mui/icons-material/Delete";
+import EditIcon from "@mui/icons-material/Edit";
 import EntityTable from "../../components/EntityTable";
-import { fetchInvoices, deleteInvoice as deleteInvoiceApi } from "../../services/quotationApi";
+import {
+  fetchInvoices,
+  deleteInvoice as deleteInvoiceApi,
+} from "../../services/quotationApi";
 import {
   dialogPrimaryActionSx,
   dialogSecondaryActionSx,
 } from "../../styles/modalActionButtonStyles";
+
+const STATUS_LABEL = {
+  draft: "Draft",
+  advance_received: "Advance Received",
+  partially_paid: "Partially Paid",
+  paid: "Paid",
+  overdue: "Overdue",
+};
+
+const STATUS_COLOR = {
+  draft: "default",
+  advance_received: "info",
+  partially_paid: "warning",
+  paid: "success",
+  overdue: "error",
+};
 
 export default function CreatedInvoices({ onNavigate }) {
   const [invoices, setInvoices] = useState([]);
@@ -52,7 +73,9 @@ export default function CreatedInvoices({ onNavigate }) {
       : {
           invoice: invoiceData,
           items: invoiceData?.items || [],
-          totals: invoiceData?.totals || { grandTotal: invoiceData?.totalAmount || 0 },
+          totals: invoiceData?.totals || {
+            grandTotal: invoiceData?.totalAmount || 0,
+          },
           id: invoiceData?.id,
           invoiceNo: invoiceData?.invoiceNo,
         };
@@ -60,6 +83,26 @@ export default function CreatedInvoices({ onNavigate }) {
     sessionStorage.setItem("invoiceData", JSON.stringify(normalizedData));
     sessionStorage.setItem("invoiceBackView", "created-invoices");
     sessionStorage.setItem("invoiceViewOnly", "true");
+    onNavigate("invoice-entry");
+  };
+
+  const openInvoiceForEdit = (row) => {
+    const invoiceData = row.data || row;
+    const normalizedData = invoiceData?.invoice
+      ? invoiceData
+      : {
+          invoice: invoiceData,
+          items: invoiceData?.items || [],
+          totals: invoiceData?.totals || {
+            grandTotal: invoiceData?.totalAmount || 0,
+          },
+          id: invoiceData?.id,
+          invoiceNo: invoiceData?.invoiceNo,
+        };
+
+    sessionStorage.setItem("invoiceData", JSON.stringify(normalizedData));
+    sessionStorage.setItem("invoiceBackView", "created-invoices");
+    sessionStorage.removeItem("invoiceViewOnly");
     onNavigate("invoice-entry");
   };
 
@@ -73,7 +116,9 @@ export default function CreatedInvoices({ onNavigate }) {
 
     try {
       await deleteInvoiceApi(invoiceToDelete.id);
-      setInvoices((prev) => prev.filter((invoice) => invoice.id !== invoiceToDelete.id));
+      setInvoices((prev) =>
+        prev.filter((invoice) => invoice.id !== invoiceToDelete.id),
+      );
       setDeleteDialogOpen(false);
       setInvoiceToDelete(null);
     } catch (err) {
@@ -89,6 +134,11 @@ export default function CreatedInvoices({ onNavigate }) {
     setInvoiceToDelete(null);
   };
 
+  const getInvoiceStatus = (invoice) => {
+    const inv = invoice.invoice || invoice;
+    return inv.status || "draft";
+  };
+
   const columns = [
     {
       key: "srNo",
@@ -100,8 +150,30 @@ export default function CreatedInvoices({ onNavigate }) {
     { key: "invoiceNo", label: "Invoice No.", sortable: true, minWidth: 180 },
     { key: "receiverName", label: "Customer", sortable: true, minWidth: 180 },
     { key: "companyName", label: "Company", sortable: true, minWidth: 180 },
-    { key: "dateOfIssue", label: "Invoice Date", sortable: true, minWidth: 150 },
+    {
+      key: "dateOfIssue",
+      label: "Invoice Date",
+      sortable: true,
+      minWidth: 150,
+    },
     { key: "poNoDate", label: "PO Ref.", sortable: true, minWidth: 180 },
+    {
+      key: "status",
+      label: "Status",
+      sortable: true,
+      minWidth: 120,
+      render: ({ row }) => {
+        const status = getInvoiceStatus(row);
+        return (
+          <Chip
+            label={STATUS_LABEL[status] || status}
+            color={STATUS_COLOR[status] || "default"}
+            size="small"
+            variant="outlined"
+          />
+        );
+      },
+    },
     {
       key: "totalAmount",
       label: "Amount",
@@ -112,21 +184,28 @@ export default function CreatedInvoices({ onNavigate }) {
       key: "actions",
       label: "Actions",
       sortable: false,
-      minWidth: 120,
-      render: ({ row }) => (
-        <Box sx={{ display: "flex", gap: 0.5 }}>
-          <Tooltip title="Open Invoice">
-            <IconButton size="small" onClick={() => openInvoice(row)}>
-              <VisibilityIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Delete Invoice">
-            <IconButton size="small" onClick={() => handleRemoveInvoice(row)}>
-              <DeleteIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-        </Box>
-      ),
+      minWidth: 150,
+      render: ({ row }) => {
+        return (
+          <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
+            <Tooltip title="Open Invoice">
+              <IconButton size="small" onClick={() => openInvoice(row)}>
+                <VisibilityIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Edit Invoice">
+              <IconButton size="small" onClick={() => openInvoiceForEdit(row)}>
+                <EditIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Delete Invoice">
+              <IconButton size="small" onClick={() => handleRemoveInvoice(row)}>
+                <DeleteIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        );
+      },
     },
   ];
 
@@ -137,6 +216,7 @@ export default function CreatedInvoices({ onNavigate }) {
     companyName: invoice.invoice?.companyName || invoice.companyName || "-",
     dateOfIssue: invoice.invoice?.dateOfIssue || invoice.dateOfIssue || "-",
     poNoDate: invoice.invoice?.poNoDate || invoice.poNoDate || "-",
+    status: getInvoiceStatus(invoice),
     totalAmount: invoice.totals?.grandTotal
       ? `₹${Number(invoice.totals.grandTotal).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
       : "₹0.00",
@@ -145,13 +225,21 @@ export default function CreatedInvoices({ onNavigate }) {
 
   return (
     <Box>
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 2,
+        }}
+      >
         <h1 className="page-heading page-heading__text">GST Invoices</h1>
         <Button
           variant="contained"
           onClick={() => {
             sessionStorage.setItem("invoiceBackView", "created-invoices");
             sessionStorage.removeItem("invoiceViewOnly");
+            sessionStorage.removeItem("invoiceData");
             onNavigate("invoice-entry");
           }}
           sx={{ px: 3, py: 1 }}
@@ -200,7 +288,9 @@ export default function CreatedInvoices({ onNavigate }) {
           <Typography variant="body1" sx={{ mt: 1, fontSize: "14px" }}>
             Are you sure you want to delete the invoice{" "}
             <strong>
-              {invoiceToDelete ? `Invoice No. ${invoiceToDelete.invoiceNo || invoiceToDelete.id}` : ""}
+              {invoiceToDelete
+                ? `Invoice No. ${invoiceToDelete.invoiceNo || invoiceToDelete.id}`
+                : ""}
             </strong>
             ? This action cannot be undone.
           </Typography>
@@ -221,6 +311,7 @@ export default function CreatedInvoices({ onNavigate }) {
           </Button>
         </DialogActions>
       </Dialog>
+
     </Box>
   );
 }
