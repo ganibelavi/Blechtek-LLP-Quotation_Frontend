@@ -30,6 +30,10 @@ export async function fetchModules() {
       module.ReverseChargeDefault ??
       module.reverse_charge_default ??
       false,
+    implementationEffortCost:
+      module.implementationEffortCost ??
+      module.ImplementationEffortCost ??
+      null,
   }));
 }
 

@@ -27,6 +27,7 @@ const emptyModule = {
   hsnCode: "",
   sacCode: "",
   reverseChargeDefault: false,
+  implementationEffortCost: "",
 };
 
 const toTableModule = (module) => ({
@@ -43,6 +44,10 @@ const toTableModule = (module) => ({
   SacCode: module.sacCode ?? module.SacCode ?? "",
   ReverseChargeDefault:
     module.reverseChargeDefault ?? module.ReverseChargeDefault ?? false,
+  ImplementationEffortCost:
+    module.implementationEffortCost ??
+    module.ImplementationEffortCost ??
+    null,
 });
 
 export default function ModulesPage() {
@@ -87,6 +92,7 @@ export default function ModulesPage() {
       hsnCode: module.HsnCode ?? module.hsnCode ?? "",
       sacCode: module.SacCode ?? module.sacCode ?? "",
       reverseChargeDefault: module.ReverseChargeDefault ?? false,
+      implementationEffortCost: module.ImplementationEffortCost ?? "",
     });
     setIsDialogOpen(true);
   };
@@ -114,6 +120,10 @@ export default function ModulesPage() {
       hsnCode: form.hsnCode || null,
       sacCode: form.sacCode || null,
       reverseChargeDefault: form.reverseChargeDefault,
+      implementationEffortCost:
+        form.implementationEffortCost === ""
+          ? null
+          : Number(form.implementationEffortCost),
     };
 
     if (editingModuleId === null) {
@@ -222,6 +232,12 @@ export default function ModulesPage() {
       sortable: true,
       minWidth: 160,
       render: ({ row }) => (row.ReverseChargeDefault ? "Yes" : "No"),
+    },
+    {
+      key: "ImplementationEffortCost",
+      label: "Implementation Effort Cost",
+      sortable: true,
+      minWidth: 180,
     },
     {
       key: "actions",
@@ -354,6 +370,14 @@ export default function ModulesPage() {
               />
               Reverse charge default
             </label>
+            <TextField
+              label="Implementation Effort Cost"
+              name="implementationEffortCost"
+              type="number"
+              value={form.implementationEffortCost}
+              onChange={updateField}
+              inputProps={{ min: 0, step: "0.01" }}
+            />
           </Box>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
