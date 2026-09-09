@@ -10,6 +10,7 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Chip,
 } from "@mui/material";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -22,6 +23,20 @@ import {
   dialogPrimaryActionSx,
   dialogSecondaryActionSx,
 } from "../../styles/modalActionButtonStyles";
+
+const STATUS_LABEL = {
+  open: "Open",
+  partially_fulfilled: "Partially fulfilled",
+  fulfilled: "Fulfilled",
+  cancelled: "Cancelled",
+};
+
+const STATUS_COLOR = {
+  open: "info",
+  partially_fulfilled: "warning",
+  fulfilled: "success",
+  cancelled: "error",
+};
 
 export default function CreatedPurchaseOrders({ onNavigate }) {
   const [purchaseOrders, setPurchaseOrders] = useState([]);
@@ -100,6 +115,23 @@ export default function CreatedPurchaseOrders({ onNavigate }) {
       minWidth: 180,
     },
     { key: "poDate", label: "PO Date", sortable: true, minWidth: 140 },
+    {
+      key: "status",
+      label: "Status",
+      sortable: true,
+      minWidth: 150,
+      render: ({ row }) => {
+        const status = String(row.status || "open").toLowerCase();
+        return (
+          <Chip
+            label={STATUS_LABEL[status] || status}
+            color={STATUS_COLOR[status] || "default"}
+            size="small"
+            variant="outlined"
+          />
+        );
+      },
+    },
     { key: "totalAmount", label: "Amount", sortable: true, minWidth: 140 },
     {
       key: "actions",
@@ -132,6 +164,7 @@ export default function CreatedPurchaseOrders({ onNavigate }) {
     buyerName: po.buyerName || "-",
     quotationRefNo: po.quotationRefNo || "-",
     poDate: po.poDate || "-",
+    status: po.status || "open",
     totalAmount: po.totalAmount
       ? `₹${Number(po.totalAmount).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
       : "₹0.00",

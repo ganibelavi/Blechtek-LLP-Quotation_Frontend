@@ -138,6 +138,19 @@
   font: inherit;
 }
 
+.module-selector__modules {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+}
+
+.module-selector__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
 @media (max-width: 860px) {
   .create-quotation__layout {
     flex-direction: column;
