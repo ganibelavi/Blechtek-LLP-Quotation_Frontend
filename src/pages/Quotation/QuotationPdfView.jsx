@@ -1,5 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { fetchModules, resolveDownloadUrl } from "../../services/quotationApi";
+import {
+  fetchModules,
+  fetchQuotationById,
+  resolveDownloadUrl,
+} from "../../services/quotationApi";
 import "./QuotationPdfView.css";
 import "../../components/QuotationPreview.css";
 
@@ -8,6 +12,7 @@ const initialValues = {
   referenceBy: "",
   validationDate: "",
   selectedModules: [],
+  moduleRequirements: {},
   quotationTo: { name: "", address: "", contactNo: "", email: "" },
   quotationNo: "",
   date: "",
@@ -23,18 +28,85 @@ export default function QuotationPdfView({ onBack }) {
   useEffect(() => {
     const storedResult = sessionStorage.getItem("quotationData");
     const storedValues = sessionStorage.getItem("quotationFormValues");
+    let quotationId = "";
     if (storedResult) {
       try {
-        setResult(JSON.parse(storedResult));
+        const parsedResult = JSON.parse(storedResult);
+        setResult(parsedResult);
+        quotationId = parsedResult.quotationId || parsedResult.QuotationId || "";
       } catch (e) {
         console.error("Failed to parse quotation data", e);
       }
     }
     if (storedValues) {
       try {
-        setValues(JSON.parse(storedValues));
+        setValues((current) => ({
+          ...current,
+          ...JSON.parse(storedValues),
+        }));
       } catch (e) {
         console.error("Failed to parse form values", e);
+      }
+      if (quotationId) {
+        fetchQuotationById(quotationId)
+          .then((quotation) => {
+            if (!quotation) return;
+
+            const selectedModules = (
+              quotation.modules ||
+              quotation.Modules ||
+              []
+            ).map((moduleName) => String(moduleName).trim());
+            const moduleDetails =
+              quotation.moduleDetails || quotation.ModuleDetails || [];
+            const moduleRequirements = moduleDetails.reduce((requirements, detail) => {
+              const moduleName = String(
+                detail.moduleName || detail.ModuleName || "",
+              ).trim();
+              if (!moduleName) return requirements;
+
+              return {
+                ...requirements,
+                [moduleName]: {
+                  noOfUsers: detail.noOfUsers ?? detail.NoOfUsers ?? "",
+                  noOfInstallations:
+                    detail.noOfInstallations ??
+                    detail.NoOfInstallations ??
+                    "",
+                  noOfSites: detail.noOfSites ?? detail.NoOfSites ?? "",
+                  implementationEffortUnit:
+                    detail.implementationEffortUnit ??
+                    detail.ImplementationEffortUnit ??
+                    "",
+                },
+              };
+            }, {});
+
+            setValues((current) => ({
+              ...current,
+              organizationName:
+                quotation.organizationName || current.organizationName,
+              referenceBy: quotation.referenceBy || current.referenceBy,
+              quotationNo: quotation.quotationNo || current.quotationNo,
+              date: quotation.date || current.date,
+              validationDate:
+                quotation.validationDate || current.validationDate,
+              selectedModules,
+              moduleRequirements,
+              quotationTo: {
+                name: quotation.quotationToName || current.quotationTo.name,
+                address:
+                  quotation.quotationToAddress || current.quotationTo.address,
+                contactNo:
+                  quotation.quotationToContactNo || current.quotationTo.contactNo,
+                email: quotation.quotationToEmail || current.quotationTo.email,
+              },
+              discountPercentage: quotation.discountPercentage || 0,
+            }));
+          })
+          .catch((error) =>
+            console.error("Failed to load saved quotation details", error),
+          );
       }
     }
     // Fetch modules to get pillar/module mapping for scope table
@@ -65,6 +137,7 @@ export default function QuotationPdfView({ onBack }) {
     referenceBy,
     validationDate,
     selectedModules,
+    moduleRequirements,
     quotationTo,
     quotationNo,
     date,
@@ -302,6 +375,53 @@ export default function QuotationPdfView({ onBack }) {
                   <tr>
                     <td colSpan="3" className="pdf-table__empty">
                       No modules selected
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="pdf-section pdf-section--heading">
+            <h3>
+              Requirements for selected modules for the Implementation part.
+            </h3>
+          </div>
+
+          <div className="pdf-section pdf-section--table">
+            <table className="pdf-table">
+              <thead>
+                <tr>
+                  <th>Module</th>
+                  <th>No. of Users</th>
+                  <th>No. of Installations</th>
+                  <th>No. of Sites</th>
+                  <th>Implementation Effort</th>
+                </tr>
+              </thead>
+              <tbody>
+                {selectedModules.length > 0 ? (
+                  selectedModules.map((moduleName, index) => {
+                    const requirement = moduleRequirements[moduleName] || {};
+                    return (
+                      <tr
+                        key={moduleName}
+                        className={
+                          index % 2 === 1 ? "pdf-table__row--alt" : ""
+                        }
+                      >
+                        <td>{moduleName}</td>
+                        <td>{requirement.noOfUsers || "—"}</td>
+                        <td>{requirement.noOfInstallations || "—"}</td>
+                        <td>{requirement.noOfSites || "—"}</td>
+                        <td>{requirement.implementationEffortUnit || "—"}</td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan="5" className="pdf-table__empty">
+                      No module requirements saved
                     </td>
                   </tr>
                 )}

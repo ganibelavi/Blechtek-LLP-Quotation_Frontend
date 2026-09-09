@@ -1,0 +1,119 @@
+/* ---------------------------------------------------------
+   Dashboard tab bar + flip-transition styles
+   Mirrors the inline-style behaviour from the original
+   HTML mockup, extracted into a reusable stylesheet.
+--------------------------------------------------------- */
+
+.dashboard-tabbar {
+  display: flex;
+  gap: 8px;
+  margin: 28px 0 20px;
+  flex-wrap: wrap;
+}
+
+.dashboard-tab {
+  border: 1px solid var(--border-color, #d7dee8);
+  border-radius: 999px;
+  padding: 9px 16px;
+  background: var(--surface-1, #fff);
+  color: var(--text-secondary, #52606d);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.2;
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    background-color 0.15s ease,
+    font-weight 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.dashboard-tab:hover {
+  transform: translateY(-1px);
+  border-color: var(--border-accent, #2a78d6);
+  color: var(--text-accent, #2a78d6);
+  box-shadow: 0 3px 8px rgba(42, 120, 214, 0.15);
+}
+
+.dashboard-tab:focus-visible {
+  outline: 3px solid rgba(42, 120, 214, 0.28);
+  outline-offset: 2px;
+}
+
+.dashboard-tab.is-active {
+  font-weight: 500;
+  border-color: var(--border-accent);
+  color: var(--text-accent);
+  background: rgba(42, 120, 214, 0.08);
+}
+
+.dashboard-analytics-page {
+  color: var(--text-primary, #17202a);
+}
+
+.dashboard-metric-card,
+.dashboard-chart-card {
+  background: #fff !important;
+  border: 1px solid #e3e8ef;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(31, 45, 61, 0.08);
+}
+
+.dashboard-metric-card {
+  min-height: 78px;
+}
+
+.dashboard-chart-card {
+  min-width: 0;
+  padding: 16px;
+}
+
+.dashboard-chart-grid {
+  align-items: stretch;
+}
+
+@media (max-width: 700px) {
+  .dashboard-chart-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .dashboard-tabbar {
+    gap: 6px;
+  }
+
+  .dashboard-tab {
+    padding: 8px 12px;
+  }
+}
+
+/* Outer perspective wrapper — gives the flip its 3D depth */
+.flip-stage {
+  perspective: 1400px;
+}
+
+/* Inner element that actually rotates */
+.flip-stage-inner {
+  transition: transform 0.35s var(--ease-out, ease);
+  transform-style: preserve-3d;
+  transform: rotateY(0deg);
+}
+
+/* Applied for the brief moment the page is "edge-on", right
+   before the new section's content is swapped in */
+.flip-stage-inner.is-flipping {
+  transform: rotateY(90deg);
+}
+
+/* Respect users who've asked for reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-tab {
+    transition: none;
+  }
+
+  .flip-stage-inner {
+    transition: none;
+  }
+}

@@ -64,9 +64,13 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
       setLoadingQuotationNo(false);
       const storedResult = sessionStorage.getItem("quotationData");
       const storedValues = sessionStorage.getItem("quotationFormValues");
+      let quotationId = "";
       if (storedResult) {
         try {
-          setResult(JSON.parse(storedResult));
+          const parsedResult = JSON.parse(storedResult);
+          setResult(parsedResult);
+          quotationId =
+            parsedResult.quotationId || parsedResult.QuotationId || "";
         } catch (error) {
           console.error("Failed to parse quotation data", error);
         }
@@ -77,6 +81,76 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
         } catch (error) {
           console.error("Failed to parse quotation form values", error);
         }
+      }
+
+      if (quotationId) {
+        fetchQuotationById(quotationId)
+          .then((quotation) => {
+            if (!quotation) return;
+
+            const selectedModules = (
+              quotation.modules ||
+              quotation.Modules ||
+              []
+            ).map((moduleName) => String(moduleName).trim());
+            const savedModuleDetails =
+              quotation.moduleDetails || quotation.ModuleDetails || [];
+            const moduleRequirements = savedModuleDetails.reduce(
+              (requirements, detail) => {
+                const moduleName = String(
+                  detail.moduleName || detail.ModuleName || "",
+                ).trim();
+                if (!moduleName) return requirements;
+
+                return {
+                  ...requirements,
+                  [moduleName]: {
+                    noOfUsers: detail.noOfUsers ?? detail.NoOfUsers ?? "",
+                    noOfInstallations:
+                      detail.noOfInstallations ??
+                      detail.NoOfInstallations ??
+                      "",
+                    noOfSites: detail.noOfSites ?? detail.NoOfSites ?? "",
+                    implementationEffortUnit:
+                      detail.implementationEffortUnit ??
+                      detail.ImplementationEffortUnit ??
+                      "",
+                  },
+                };
+              },
+              {},
+            );
+
+            setValues((current) => ({
+              ...current,
+              organizationName:
+                quotation.organizationName || current.organizationName,
+              referenceBy: quotation.referenceBy || current.referenceBy,
+              quotationNo: quotation.quotationNo || current.quotationNo,
+              date: quotation.date
+                ? quotation.date.slice(0, 10)
+                : current.date,
+              validationDate: quotation.validationDate
+                ? quotation.validationDate.slice(0, 10)
+                : current.validationDate,
+              selectedModules,
+              moduleRequirements,
+              quotationTo: {
+                name: quotation.quotationToName || current.quotationTo.name,
+                address:
+                  quotation.quotationToAddress || current.quotationTo.address,
+                contactNo:
+                  quotation.quotationToContactNo ||
+                  current.quotationTo.contactNo,
+                email: quotation.quotationToEmail || current.quotationTo.email,
+              },
+              discountPercentage: quotation.discountPercentage || 0,
+            }));
+          })
+          .catch((error) => {
+            console.error("Failed to load saved quotation for viewing", error);
+            setApiError("Could not load the saved quotation details.");
+          });
       }
     }
 
@@ -211,8 +285,6 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
           noOfInstallations: "",
           noOfSites: "",
           implementationEffortUnit: "",
-          implementationDuration: "",
-          implementationWorkers: "",
         };
       }
 
@@ -267,6 +339,26 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
         quotationNo: "", // Auto-generated on backend
         date: values.date,
         selectedModules: values.selectedModules,
+        moduleDetails: values.selectedModules.map((moduleName) => ({
+          moduleName,
+          noOfUsers:
+            values.moduleRequirements?.[moduleName]?.noOfUsers === ""
+              ? null
+              : Number(values.moduleRequirements?.[moduleName]?.noOfUsers),
+          noOfInstallations:
+            values.moduleRequirements?.[moduleName]?.noOfInstallations === ""
+              ? null
+              : Number(
+                  values.moduleRequirements?.[moduleName]?.noOfInstallations,
+                ),
+          noOfSites:
+            values.moduleRequirements?.[moduleName]?.noOfSites === ""
+              ? null
+              : Number(values.moduleRequirements?.[moduleName]?.noOfSites),
+          implementationEffortUnit:
+            values.moduleRequirements?.[moduleName]
+              ?.implementationEffortUnit || null,
+        })),
         quotationTo: {
           name: values.quotationTo.name,
           address: values.quotationTo.address,
@@ -915,14 +1007,6 @@ function ModuleRequirements({
         {selectedModules.map((moduleName) => {
           const values = requirements[moduleName] || {};
           const unit = values.implementationEffortUnit || "";
-          const durationLabel =
-            unit === "Per Day"
-              ? "Number of Days"
-              : unit === "Per 15 Days"
-                ? "Number of 15-Day Periods"
-                : unit === "Per Month"
-                  ? "Number of Months"
-                  : "Implementation Duration";
 
           return (
             <div className="module-requirements__card" key={moduleName}>
@@ -981,7 +1065,7 @@ function ModuleRequirements({
               <div className="q-form__row">
                 <div className="q-field">
                   <label htmlFor={`${moduleName}-unit`}>
-                    Implementation Effort Unit
+                    Implementation Effort
                   </label>
                   <select
                     id={`${moduleName}-unit`}
@@ -995,51 +1079,14 @@ function ModuleRequirements({
                     }
                     disabled={disabled}
                   >
-                    <option value="">Select unit</option>
-                    <option value="Per Day">Per Day</option>
-                    <option value="Per 15 Days">Per 15 Days</option>
-                    <option value="Per Month">Per Month</option>
+                    <option value="">Select effort</option>
+                    <option value="1 Man Month">1 Man Month</option>
+                    <option value="0.5 Man Month">0.5 Man Month</option>
+                    <option value="2 Man Month">2 Man Month</option>
+                    <option value="1 Day">1 Day</option>
+                    <option value="2 Days">2 Days</option>
+                    <option value="1 Week">1 Week</option>
                   </select>
-                </div>
-                <div className="q-field">
-                  <label htmlFor={`${moduleName}-duration`}>
-                    {durationLabel}
-                  </label>
-                  <input
-                    id={`${moduleName}-duration`}
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={values.implementationDuration || ""}
-                    onChange={(event) =>
-                      onChange(
-                        moduleName,
-                        "implementationDuration",
-                        event.target.value,
-                      )
-                    }
-                    disabled={disabled}
-                  />
-                </div>
-                <div className="q-field">
-                  <label htmlFor={`${moduleName}-workers`}>
-                    Implementation Workers
-                  </label>
-                  <input
-                    id={`${moduleName}-workers`}
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={values.implementationWorkers || ""}
-                    onChange={(event) =>
-                      onChange(
-                        moduleName,
-                        "implementationWorkers",
-                        event.target.value,
-                      )
-                    }
-                    disabled={disabled}
-                  />
                 </div>
               </div>
             </div>

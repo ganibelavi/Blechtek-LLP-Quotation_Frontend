@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
   fetchModules,
+  fetchQuotationById,
   updateDiscount,
   updateQuotation,
   resolveDownloadUrl,
@@ -26,6 +27,7 @@ const initialValues = {
   quotationNo: "",
   date: "",
   selectedModules: [],
+  moduleRequirements: {},
   quotationTo: { name: "", address: "", contactNo: "", email: "" },
   discountPercentage: 0,
 };
@@ -64,28 +66,134 @@ export default function EditQuotation({ onNavigate, quotationId }) {
   useEffect(() => {
     const storedResult = sessionStorage.getItem("quotationData");
     const storedValues = sessionStorage.getItem("quotationFormValues");
+    let storedQuotationId = "";
     if (storedResult) {
       try {
-        setResult(JSON.parse(storedResult));
+        const parsedResult = JSON.parse(storedResult);
+        setResult(parsedResult);
+        storedQuotationId =
+          parsedResult.quotationId || parsedResult.QuotationId || "";
       } catch (e) {
         console.error("Failed to parse quotation data", e);
       }
     }
     if (storedValues) {
       try {
-        setValues(JSON.parse(storedValues));
+        const parsedValues = JSON.parse(storedValues);
+        const selectedModules = Array.isArray(parsedValues.selectedModules)
+          ? parsedValues.selectedModules
+          : [];
+        const storedRequirements = parsedValues.moduleRequirements || {};
+        const moduleRequirements = selectedModules.reduce(
+          (requirements, moduleName) => ({
+            ...requirements,
+            [moduleName]: {
+              noOfUsers: storedRequirements[moduleName]?.noOfUsers ?? "",
+              noOfInstallations:
+                storedRequirements[moduleName]?.noOfInstallations ?? "",
+              noOfSites: storedRequirements[moduleName]?.noOfSites ?? "",
+              implementationEffortUnit:
+                storedRequirements[moduleName]?.implementationEffortUnit ?? "",
+            },
+          }),
+          {},
+        );
+        setValues({
+          ...initialValues,
+          ...parsedValues,
+          selectedModules,
+          moduleRequirements,
+        });
       } catch (e) {
         console.error("Failed to parse form values", e);
       }
     }
-    fetchModules()
-      .then(setModules)
-      .catch((err) => {
+    const loadQuotation = async () => {
+      try {
+        const effectiveQuotationId = quotationId || storedQuotationId;
+        const quotation = effectiveQuotationId
+          ? await fetchQuotationById(effectiveQuotationId)
+          : null;
+
+        if (quotation) {
+          const selectedModules = Array.isArray(quotation.modules)
+            ? quotation.modules.map((moduleName) => String(moduleName).trim())
+            : Array.isArray(quotation.Modules)
+              ? quotation.Modules.map((moduleName) => String(moduleName).trim())
+              : [];
+          const savedModuleDetails = Array.isArray(quotation.moduleDetails)
+            ? quotation.moduleDetails
+            : Array.isArray(quotation.ModuleDetails)
+              ? quotation.ModuleDetails
+              : [];
+          const moduleRequirements = savedModuleDetails.reduce(
+            (requirements, detail) => {
+              const moduleName = String(
+                detail.moduleName || detail.ModuleName || "",
+              ).trim();
+              if (!moduleName) return requirements;
+
+              return {
+                ...requirements,
+                [moduleName]: {
+                  noOfUsers: detail.noOfUsers ?? detail.NoOfUsers ?? "",
+                  noOfInstallations:
+                    detail.noOfInstallations ??
+                    detail.NoOfInstallations ??
+                    "",
+                  noOfSites: detail.noOfSites ?? detail.NoOfSites ?? "",
+                  implementationEffortUnit:
+                    detail.implementationEffortUnit ??
+                    detail.ImplementationEffortUnit ??
+                    "",
+                },
+              };
+            },
+            {},
+          );
+
+          setValues((current) => ({
+            ...current,
+            organizationName:
+              quotation.organizationName || current.organizationName,
+            referenceBy: quotation.referenceBy || current.referenceBy,
+            quotationNo: quotation.quotationNo || current.quotationNo,
+            date: quotation.date
+              ? quotation.date.slice(0, 10)
+              : current.date,
+            validationDate: quotation.validationDate
+              ? quotation.validationDate.slice(0, 10)
+              : current.validationDate,
+            selectedModules,
+            moduleRequirements,
+            quotationTo: {
+              name: quotation.quotationToName || current.quotationTo.name,
+              address:
+                quotation.quotationToAddress || current.quotationTo.address,
+              contactNo:
+                quotation.quotationToContactNo || current.quotationTo.contactNo,
+              email: quotation.quotationToEmail || current.quotationTo.email,
+            },
+            discountPercentage: quotation.discountPercentage || 0,
+          }));
+        }
+      } catch (error) {
+        const msg = "Could not load the saved quotation details.";
+        console.error("Failed to load saved quotation details", error);
+        setApiError(msg);
+        setSnackbar({ open: true, message: msg, severity: "error" });
+      }
+    };
+
+    Promise.all([
+      fetchModules().then(setModules),
+      loadQuotation(),
+    ]).catch((err) => {
         const msg = "Could not load the module list. Is the API running?";
         setApiError(msg);
         setSnackbar({ open: true, message: msg, severity: "error" });
       });
-  }, []);
+  }, [quotationId]);
 
   const handleFieldChange = (field, value) => {
     setValues((v) => ({ ...v, [field]: value }));
@@ -101,13 +209,41 @@ export default function EditQuotation({ onNavigate, quotationId }) {
   const handleToggleModule = (moduleName) => {
     setValues((v) => {
       const exists = v.selectedModules.includes(moduleName);
+      const moduleRequirements = { ...(v.moduleRequirements || {}) };
+
+      if (exists) {
+        delete moduleRequirements[moduleName];
+      } else {
+        moduleRequirements[moduleName] = {
+          noOfUsers: "",
+          noOfInstallations: "",
+          noOfSites: "",
+          implementationEffortUnit: "",
+        };
+      }
+
       return {
         ...v,
         selectedModules: exists
           ? v.selectedModules.filter((m) => m !== moduleName)
           : [...v.selectedModules, moduleName],
+        moduleRequirements,
       };
     });
+  };
+
+  const handleModuleRequirementChange = (moduleName, field, value) => {
+    setValues((v) => ({
+      ...v,
+      moduleRequirements: {
+        ...(v.moduleRequirements || {}),
+        [moduleName]: {
+          ...(v.moduleRequirements?.[moduleName] || {}),
+          [field]: value,
+        },
+      },
+    }));
+    setDetailsChanged(true);
   };
 
   const handleDiscountChange = (e) => {
@@ -188,6 +324,26 @@ export default function EditQuotation({ onNavigate, quotationId }) {
       const payload = {
         validationDate: values.validationDate,
         selectedModules: values.selectedModules,
+        moduleDetails: values.selectedModules.map((moduleName) => ({
+          moduleName,
+          noOfUsers:
+            values.moduleRequirements?.[moduleName]?.noOfUsers === ""
+              ? null
+              : Number(values.moduleRequirements?.[moduleName]?.noOfUsers),
+          noOfInstallations:
+            values.moduleRequirements?.[moduleName]?.noOfInstallations === ""
+              ? null
+              : Number(
+                  values.moduleRequirements?.[moduleName]?.noOfInstallations,
+                ),
+          noOfSites:
+            values.moduleRequirements?.[moduleName]?.noOfSites === ""
+              ? null
+              : Number(values.moduleRequirements?.[moduleName]?.noOfSites),
+          implementationEffortUnit:
+            values.moduleRequirements?.[moduleName]
+              ?.implementationEffortUnit || null,
+        })),
       };
       const data = await updateQuotation(result.quotationId, payload);
       setResult(data);
@@ -475,6 +631,14 @@ export default function EditQuotation({ onNavigate, quotationId }) {
                 error={errors.selectedModules}
                 readOnly={false}
               />
+              {values.selectedModules.length > 0 && (
+                <ModuleRequirements
+                  selectedModules={values.selectedModules}
+                  requirements={values.moduleRequirements || {}}
+                  onChange={handleModuleRequirementChange}
+                  disabled={false}
+                />
+              )}
             </section>
 
             {discountChanged && (
@@ -902,6 +1066,114 @@ function ModuleSelector({ modules, selected, onToggle, error, readOnly }) {
             </div>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function ModuleRequirements({
+  selectedModules,
+  requirements,
+  onChange,
+  disabled,
+}) {
+  return (
+    <div className="module-requirements">
+      <h4 className="module-requirements__heading">
+        Requirements for selected modules for the Implementation part.
+      </h4>
+      <p className="q-form__hint">
+        Update the quotation-specific requirements for each selected module.
+      </p>
+      <div className="module-requirements__list">
+        {selectedModules.map((moduleName) => {
+          const values = requirements[moduleName] || {};
+          const unit = values.implementationEffortUnit || "";
+
+          return (
+            <div className="module-requirements__card" key={moduleName}>
+              <h5 className="module-requirements__module">{moduleName}</h5>
+              <div className="q-form__row">
+                <div className="q-field">
+                  <label htmlFor={`${moduleName}-users`}>No. of Users</label>
+                  <input
+                    id={`${moduleName}-users`}
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={values.noOfUsers || ""}
+                    onChange={(event) =>
+                      onChange(moduleName, "noOfUsers", event.target.value)
+                    }
+                    disabled={disabled}
+                  />
+                </div>
+                <div className="q-field">
+                  <label htmlFor={`${moduleName}-installations`}>
+                    No. of Installations
+                  </label>
+                  <input
+                    id={`${moduleName}-installations`}
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={values.noOfInstallations || ""}
+                    onChange={(event) =>
+                      onChange(
+                        moduleName,
+                        "noOfInstallations",
+                        event.target.value,
+                      )
+                    }
+                    disabled={disabled}
+                  />
+                </div>
+                <div className="q-field">
+                  <label htmlFor={`${moduleName}-sites`}>No. of Sites</label>
+                  <input
+                    id={`${moduleName}-sites`}
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={values.noOfSites || ""}
+                    onChange={(event) =>
+                      onChange(moduleName, "noOfSites", event.target.value)
+                    }
+                    disabled={disabled}
+                  />
+                </div>
+              </div>
+
+              <div className="q-form__row">
+                <div className="q-field">
+                  <label htmlFor={`${moduleName}-unit`}>
+                    Implementation Effort
+                  </label>
+                  <select
+                    id={`${moduleName}-unit`}
+                    value={unit}
+                    onChange={(event) =>
+                      onChange(
+                        moduleName,
+                        "implementationEffortUnit",
+                        event.target.value,
+                      )
+                    }
+                    disabled={disabled}
+                  >
+                    <option value="">Select effort</option>
+                    <option value="1 Man Month">1 Man Month</option>
+                    <option value="0.5 Man Month">0.5 Man Month</option>
+                    <option value="2 Man Month">2 Man Month</option>
+                    <option value="1 Day">1 Day</option>
+                    <option value="2 Days">2 Days</option>
+                    <option value="1 Week">1 Week</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

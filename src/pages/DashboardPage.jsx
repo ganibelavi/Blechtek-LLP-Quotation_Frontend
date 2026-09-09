@@ -26,6 +26,46 @@ import ModuleBar from "../components/ModuleBar";
 import TopOrganizationsBar from "../components/TopOrganizationsBar";
 import MachineUtilChart from "../components/MachineUtilChart";
 import EntityTable, { StatusText } from "../components/EntityTable";
+import UsersDashboardPage from "./Dashboards/UsersPage";
+import RenewalsDashboardPage from "./Dashboards/RenewalsPage";
+import QuotationsDashboardPage from "./Dashboards/QuotationsPage";
+import PurchaseOrdersDashboardPage from "./Dashboards/PurchaseOrdersPage";
+import InvoicesDashboardPage from "./Dashboards/InvoicesPage";
+import "./Dashboards/animations.css";
+
+const dashboardTabs = [
+  { id: "users", label: "Users", component: UsersDashboardPage },
+  {
+    id: "renewals",
+    label: "Renewals & subscriptions",
+    component: RenewalsDashboardPage,
+  },
+  { id: "quotations", label: "Quotations", component: QuotationsDashboardPage },
+  {
+    id: "purchase-orders",
+    label: "Purchase orders",
+    component: PurchaseOrdersDashboardPage,
+  },
+  { id: "invoices", label: "Invoices", component: InvoicesDashboardPage },
+];
+
+function DashboardSwitcher({ activeDashboard, onChange }) {
+  return (
+    <nav className="dashboard-tabbar" aria-label="Dashboard views">
+      {dashboardTabs.map((tab) => (
+        <button
+          type="button"
+          key={tab.id}
+          className={`dashboard-tab ${activeDashboard === tab.id ? "is-active" : ""}`}
+          aria-current={activeDashboard === tab.id ? "page" : undefined}
+          onClick={() => onChange(tab.id)}
+        >
+          {tab.label}
+        </button>
+      ))}
+    </nav>
+  );
+}
 
 function formatDateTime(dateStr) {
   if (!dateStr) return "";
@@ -96,6 +136,10 @@ export default function DashboardPage({ onNavigate }) {
   const [expiredSubscriptions, setExpiredSubscriptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [activeDashboard, setActiveDashboard] = useState("users");
+  const [isDashboardFlipping, setIsDashboardFlipping] = useState(false);
+  const [selectedYear, setSelectedYear] = useState("all");
+  const [selectedMonth, setSelectedMonth] = useState("all");
 
   const loadDashboard = async () => {
     try {
@@ -136,8 +180,38 @@ export default function DashboardPage({ onNavigate }) {
     loadDashboard();
   }, []);
 
-  const [selectedYear, setSelectedYear] = useState("all");
-  const [selectedMonth, setSelectedMonth] = useState("all");
+  const changeDashboard = (dashboardId) => {
+    if (dashboardId === activeDashboard) return;
+
+    setIsDashboardFlipping(true);
+    window.setTimeout(() => {
+      setActiveDashboard(dashboardId);
+      window.setTimeout(() => setIsDashboardFlipping(false), 180);
+    }, 180);
+  };
+
+  if (activeDashboard !== "overview") {
+    const selectedTab = dashboardTabs.find(
+      (tab) => tab.id === activeDashboard,
+    );
+    const DashboardComponent = selectedTab?.component;
+
+    return (
+      <Box sx={{ p: 0, minHeight: "100%" }}>
+        <DashboardSwitcher
+          activeDashboard={activeDashboard}
+          onChange={changeDashboard}
+        />
+        <Box className="flip-stage">
+          <Box
+            className={`flip-stage-inner ${isDashboardFlipping ? "is-flipping" : ""}`}
+          >
+            {DashboardComponent && <DashboardComponent />}
+          </Box>
+        </Box>
+      </Box>
+    );
+  }
 
   const monthlyOptions = (data?.monthlyQuotes || []).map((item) => {
     const monthLabel = item.month ?? item.Month ?? "";
@@ -654,6 +728,15 @@ export default function DashboardPage({ onNavigate }) {
         flexDirection: "column",
       }}
     >
+      <DashboardSwitcher
+        activeDashboard={activeDashboard}
+        onChange={changeDashboard}
+      />
+
+      <Box className="flip-stage">
+        <Box
+          className={`flip-stage-inner ${isDashboardFlipping ? "is-flipping" : ""}`}
+        >
       <Box
         sx={{
           display: "flex",
@@ -960,6 +1043,8 @@ export default function DashboardPage({ onNavigate }) {
           <EntityTable title="" columns={recentColumns} rows={recentRows} />
         </Paper>
       </Stack>
+        </Box>
+      </Box>
     </Box>
   );
 }

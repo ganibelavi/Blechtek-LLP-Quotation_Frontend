@@ -2,6 +2,11 @@ import React, { useState, useEffect } from "react";
 import CreateQuotation from "./pages/Quotation/CreateQuotation";
 import CreatedQuotation from "./pages/Quotation/CreatedQuotation";
 import DashboardPage from "./pages/DashboardPage";
+import UsersDashboardPage from "./pages/Dashboards/UsersPage";
+import RenewalsDashboardPage from "./pages/Dashboards/RenewalsPage";
+import QuotationsDashboardPage from "./pages/Dashboards/QuotationsPage";
+import PurchaseOrdersDashboardPage from "./pages/Dashboards/PurchaseOrdersPage";
+import InvoicesDashboardPage from "./pages/Dashboards/InvoicesPage";
 import QuotationPdfView from "./pages/Quotation/QuotationPdfView";
 import LoginPage from "./pages/LoginPage";
 import SettingsPage from "./pages/SettingsPage";
@@ -80,6 +85,11 @@ export default function App() {
   const pageTitle =
     {
       dashboard: "Dashboard",
+      "dashboard-users": "Users dashboard",
+      "dashboard-renewals": "Renewals & subscriptions dashboard",
+      "dashboard-quotations": "Quotations dashboard",
+      "dashboard-purchase-orders": "Purchase orders dashboard",
+      "dashboard-invoices": "Invoices dashboard",
       create: "Create quotation",
       "created-quotations": "Quotations",
       "edit-quotation": "Edit quotation",
@@ -253,7 +263,16 @@ export default function App() {
             <nav className="app-sidebar__nav">
               {menuItems.map((item) => {
                 const activeView =
-                  item.view === "created-quotations"
+                  item.view === "dashboard"
+                    ? [
+                        "dashboard",
+                        "dashboard-users",
+                        "dashboard-renewals",
+                        "dashboard-quotations",
+                        "dashboard-purchase-orders",
+                        "dashboard-invoices",
+                      ].includes(view)
+                    : item.view === "created-quotations"
                     ? [
                         "created-quotations",
                         "quotation-detail",
@@ -297,7 +316,9 @@ export default function App() {
                       type="button"
                       className={`app-sidebar__item ${activeView ? "app-sidebar__item--active" : ""}`}
                       onClick={() => {
-                        if (item.view === "settings") {
+                        if (item.view === "dashboard") {
+                          navigate("dashboard");
+                        } else if (item.view === "settings") {
                           setSettingsExpanded((expanded) => !expanded);
                           navigate("settings", settingsInitialTab);
                         } else if (item.view === "subscriptions") {
@@ -407,6 +428,16 @@ export default function App() {
               switch (view) {
                 case "dashboard":
                   return <DashboardPage onNavigate={navigate} />;
+                case "dashboard-users":
+                  return <UsersDashboardPage />;
+                case "dashboard-renewals":
+                  return <RenewalsDashboardPage />;
+                case "dashboard-quotations":
+                  return <QuotationsDashboardPage />;
+                case "dashboard-purchase-orders":
+                  return <PurchaseOrdersDashboardPage />;
+                case "dashboard-invoices":
+                  return <InvoicesDashboardPage />;
                 case "settings":
                   return (
                     <SettingsPage

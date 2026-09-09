@@ -235,7 +235,7 @@ export default function ModulesPage() {
     },
     {
       key: "ImplementationEffortCost",
-      label: "Implementation Effort Cost",
+      label: "Implementation Rate Per ManDay",
       sortable: true,
       minWidth: 180,
     },
@@ -371,7 +371,7 @@ export default function ModulesPage() {
               Reverse charge default
             </label>
             <TextField
-              label=" Per Man Effort Implementation Cost "
+              label=" Implementation Rate Per ManDay "
               name="implementationEffortCost"
               type="number"
               value={form.implementationEffortCost}
