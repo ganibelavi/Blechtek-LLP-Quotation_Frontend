@@ -881,7 +881,7 @@ export default function PurchaseOrderEntryForm({
       </header>
 
       <main className="po-workspace">
-        <aside className="po-queue-panel">
+        {/* <aside className="po-queue-panel">
           <div className="po-panel-heading">
             <div>
               <span className="po-eyebrow">INBOX</span>
@@ -958,7 +958,7 @@ export default function PurchaseOrderEntryForm({
               </div>
             )}
           </div>
-        </aside>
+        </aside> */}
 
         <section className="po-detail-panel">
           <div className="po-detail-header">

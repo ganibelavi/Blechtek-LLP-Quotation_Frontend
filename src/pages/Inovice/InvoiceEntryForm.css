@@ -80,7 +80,7 @@
 
 .invoice-workspace {
   display: grid;
-  grid-template-columns: 280px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   min-height: calc(100vh - var(--header-height));
   padding: 0.5rem;
 }

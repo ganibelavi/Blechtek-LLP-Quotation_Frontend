@@ -114,13 +114,14 @@
 
 .po-workspace {
     display: grid;
-    grid-template-columns: 280px minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
     /* max-width: 1600px; */
     /* margin: 0 auto; */
     min-height: calc(100vh - 64px)
 }
 
 .po-queue-panel {
+    display: none;
     background: #fbfcfd;
     border-right: 1px solid var(--po-rule);
     padding: 24px 16px;

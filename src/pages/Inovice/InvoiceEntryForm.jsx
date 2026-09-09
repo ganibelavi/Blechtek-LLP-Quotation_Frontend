@@ -1199,7 +1199,7 @@ export default function InvoiceEntryForm({
       </header>
 
       <main className="po-workspace invoice-workspace">
-        <aside className="po-queue-panel invoice-queue-panel">
+        {/* <aside className="po-queue-panel invoice-queue-panel">
           <div className="po-panel-heading">
             <div>
               <span className="po-eyebrow">INBOX</span>
@@ -1281,7 +1281,7 @@ export default function InvoiceEntryForm({
               <div className="po-empty">No matching invoices found.</div>
             )}
           </div>
-        </aside>
+        </aside> */}
 
         <section className="po-detail-panel invoice-detail-panel">
           <div className="po-detail-header">
