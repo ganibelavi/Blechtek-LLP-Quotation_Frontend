@@ -80,12 +80,20 @@ const STATUS_LABEL = {
   overdue: "Overdue",
 };
 
-const emptyItem = (description = "", isSourceData = false, rate = 0) => ({
+const emptyItem = (
+  description = "",
+  isSourceData = false,
+  rate = 0,
+  implementationPrice = 0,
+  modulePrice = 0,
+) => ({
   id: Date.now() + Math.random(),
   description,
   qty: 1,
   uom: "Nos.",
   rate,
+  modulePrice,
+  implementationPrice,
   isSourceData,
 });
 
@@ -289,13 +297,70 @@ const buildQuotationItems = (quotation, moduleCatalog = []) => {
     .map((module) => {
       const name = getModuleName(module);
       if (!name) return null;
-      const price = getModulePrice(module, moduleCatalog);
+      const modulePrice = Number(
+        module?.modulePrice ??
+          module?.ModulePrice ??
+          getModulePrice(module, moduleCatalog),
+      );
+      const implementationPrice = Number(
+        module?.implementationPrice ?? module?.ImplementationPrice ?? 0,
+      );
+      const finalPrice = Number(
+        module?.finalPrice ??
+          module?.FinalPrice ??
+          modulePrice + implementationPrice,
+      );
       return {
-        ...emptyItem(name, true, price),
+        ...emptyItem(
+          name,
+          true,
+          Number.isFinite(finalPrice) ? finalPrice : 0,
+          Number.isFinite(implementationPrice) ? implementationPrice : 0,
+          Number.isFinite(modulePrice) ? modulePrice : 0,
+        ),
         ...getModuleTaxDetails(module, moduleCatalog),
       };
     })
     .filter(Boolean);
+};
+
+const applyQuotationPricing = (items, quotation) => {
+  const details = Array.isArray(quotation?.moduleDetails)
+    ? quotation.moduleDetails
+    : [];
+
+  return items.map((item) => {
+    const detail = details.find(
+      (module) =>
+        getModuleName(module).toLowerCase() ===
+        String(item.description || "").trim().toLowerCase(),
+    );
+    if (!detail) return item;
+
+    const modulePrice = Number(detail.modulePrice ?? detail.ModulePrice ?? 0);
+    const implementationPrice = Number(
+      detail.implementationPrice ?? detail.ImplementationPrice ?? 0,
+    );
+    const finalPrice = Number(
+      detail.finalPrice ??
+        detail.FinalPrice ??
+        modulePrice + implementationPrice,
+    );
+
+    return {
+      ...item,
+      modulePrice: Number.isFinite(modulePrice) ? modulePrice : 0,
+      implementationPrice: Number.isFinite(implementationPrice)
+        ? implementationPrice
+        : 0,
+      rate:
+        Number(item.rate) > 0
+          ? Number(item.rate)
+          : Number.isFinite(finalPrice)
+            ? finalPrice
+            : 0,
+    };
+  });
 };
 
 const defaultForm = () => {
@@ -310,6 +375,8 @@ const defaultForm = () => {
           qty: Number(item.qty) || 1,
           uom: item.uom || "Nos.",
           rate: Number(item.rate) || 0,
+          modulePrice: Number(item.modulePrice) || 0,
+          implementationPrice: Number(item.implementationPrice) || 0,
           isSourceData: true,
         }))
       : [emptyItem("", true)];
@@ -563,11 +630,16 @@ export default function InvoiceEntryForm({
           qty: Number(item.qty) || 1,
           uom: item.uom || "Nos.",
           rate: Number(item.rate) || 0,
+          modulePrice: Number(item.modulePrice) || 0,
+          implementationPrice: Number(item.implementationPrice) || 0,
           isSourceData: true,
           ...getModuleTaxDetails(item, moduleCatalog),
         }))
       : null;
-    const selectedItems = poItems || buildQuotationItems(source, moduleCatalog);
+    const selectedItems = applyQuotationPricing(
+      poItems || buildQuotationItems(source, moduleCatalog),
+      source,
+    );
     const moduleTaxDetails = aggregateModuleTaxDetails(selectedItems);
     const profile =
       companyProfiles.find(
@@ -693,6 +765,8 @@ export default function InvoiceEntryForm({
             qty: Number(item.qty) || 1,
             uom: item.uom || "Nos.",
             rate: Number(item.rate) || 0,
+            modulePrice: Number(item.modulePrice) || 0,
+            implementationPrice: Number(item.implementationPrice) || 0,
             isSourceData: true,
           }))
         : [emptyItem("", true)];
@@ -893,7 +967,7 @@ export default function InvoiceEntryForm({
                   ? `Quotation No. ${remoteQuotation.quotationNo}`
                   : ""),
               items: prev.items.some((item) => item.isSourceData)
-                ? prev.items
+                ? applyQuotationPricing(prev.items, remoteQuotation)
                 : buildQuotationItems(remoteQuotation, moduleCatalog),
             }));
           }
@@ -1669,7 +1743,9 @@ export default function InvoiceEntryForm({
                       <th>Description</th>
                       <th>Qty</th>
                       <th>UOM</th>
-                      <th>Rate</th>
+                      <th>Module price</th>
+                      <th>Implementation</th>
+                      <th>Total price</th>
                       <th>Amount</th>
                     </tr>
                   </thead>
@@ -1707,6 +1783,38 @@ export default function InvoiceEntryForm({
                             value={item.uom}
                             onChange={(e) =>
                               updateItem(item.id, "uom", e.target.value)
+                            }
+                            readOnly={isItemLocked(item)}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={item.modulePrice ?? 0}
+                            onChange={(e) =>
+                              updateItem(
+                                item.id,
+                                "modulePrice",
+                                Number(e.target.value) || 0,
+                              )
+                            }
+                            readOnly={isItemLocked(item)}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={item.implementationPrice ?? 0}
+                            onChange={(e) =>
+                              updateItem(
+                                item.id,
+                                "implementationPrice",
+                                Number(e.target.value) || 0,
+                              )
                             }
                             readOnly={isItemLocked(item)}
                           />

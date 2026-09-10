@@ -54,12 +54,20 @@ const normalizeDateInput = (value) => {
   return String(value).slice(0, 10);
 };
 
-const emptyItem = (description = "", isSourceData = false, rate = 0) => ({
+const emptyItem = (
+  description = "",
+  isSourceData = false,
+  rate = 0,
+  implementationPrice = 0,
+  modulePrice = 0,
+) => ({
   id: Date.now() + Math.random(),
   description,
   qty: 1,
   uom: "Nos.",
   rate,
+  modulePrice,
+  implementationPrice,
   isSourceData,
 });
 
@@ -123,8 +131,25 @@ const buildQuotationItems = (quotation, moduleCatalog = []) => {
     .map((module) => {
       const name = getModuleName(module);
       if (!name) return null;
-      const price = getModulePrice(module, moduleCatalog);
-      return emptyItem(name, true, price);
+      const modulePrice = Number(
+        module?.modulePrice ?? module?.ModulePrice ?? getModulePrice(module, moduleCatalog),
+      );
+      const implementationPrice = Number(
+        module?.implementationPrice ?? module?.ImplementationPrice ?? 0,
+      );
+      const finalPrice = Number(
+        module?.finalPrice ??
+          module?.FinalPrice ??
+          (Number.isFinite(modulePrice) ? modulePrice + implementationPrice : 0),
+      );
+
+      return emptyItem(
+        name,
+        true,
+        Number.isFinite(finalPrice) ? finalPrice : 0,
+        Number.isFinite(implementationPrice) ? implementationPrice : 0,
+        Number.isFinite(modulePrice) ? modulePrice : 0,
+      );
     })
     .filter(Boolean);
 };
@@ -1169,7 +1194,9 @@ export default function PurchaseOrderEntryForm({
                           <th>Description</th>
                           <th>Qty</th>
                           <th>UOM</th>
-                          <th>Rate</th>
+                          <th>Module price</th>
+                          <th>Implementation</th>
+                          <th>Total price</th>
                           <th>Amount</th>
                         </tr>
                       </thead>
@@ -1214,6 +1241,12 @@ export default function PurchaseOrderEntryForm({
                                 }
                                 disabled={isItemLocked(item)}
                               />
+                            </td>
+                            <td className="po-amount">
+                              {formatMoney(Number(item.modulePrice) || 0)}
+                            </td>
+                            <td className="po-amount">
+                              {formatMoney(Number(item.implementationPrice) || 0)}
                             </td>
                             <td>
                               <input

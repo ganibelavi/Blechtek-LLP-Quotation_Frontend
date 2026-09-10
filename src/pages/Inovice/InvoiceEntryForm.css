@@ -237,6 +237,7 @@
   text-transform: uppercase;
   padding: 8px 10px;
   border: 1px solid var(--border-color);
+  white-space: nowrap;
 }
 
 .invoice-entry-table th,
@@ -247,12 +248,12 @@
 
 .invoice-entry-table th:first-child,
 .invoice-entry-table td:first-child {
-  width: 46%;
+  width: 34%;
 }
 
 .invoice-entry-table th:nth-child(2),
 .invoice-entry-table td:nth-child(2) {
-  width: 10%;
+  width: 8%;
 }
 
 .invoice-entry-table th:nth-child(3),
@@ -265,14 +266,28 @@
   width: 14%;
 }
 
+.invoice-entry-table th:nth-child(5),
+.invoice-entry-table td:nth-child(5) {
+  width: 14%;
+}
+
+.invoice-entry-table th:nth-child(6),
+.invoice-entry-table td:nth-child(6) {
+  width: 10%;
+}
+
 .invoice-entry-table th:last-child,
 .invoice-entry-table td:last-child {
-  width: 22%;
+  width: 12%;
+}
+
+.invoice-entry-table th:nth-child(n + 4),
+.invoice-entry-table td:nth-child(n + 4) {
+  text-align: right;
 }
 
 .invoice-entry-table td:last-child {
   white-space: nowrap;
-  text-align: right;
 }
 
 .invoice-entry-table input {
