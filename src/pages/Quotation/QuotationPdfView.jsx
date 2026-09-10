@@ -165,21 +165,17 @@ export default function QuotationPdfView({ onBack }) {
           ? " & " + selectedModules[selectedModules.length - 1]
           : "");
 
-  // Get selected modules with their pillar info from the master module list
-  const scopeModules = allModules.filter((m) =>
-    selectedModules.includes(m.module),
-  );
+  const selectedModulesWithPrices = selectedModules.map((moduleName) => ({
+    name: moduleName,
+    module: allModules.find(
+      (m) => String(m.module).toLowerCase() === moduleName.toLowerCase(),
+    ),
+  }));
+  const scopeModules = selectedModulesWithPrices
+    .map(({ module }) => module)
+    .filter(Boolean);
 
-  // Get price from the first selected module (or sum if multiple)
-  const modulePrice =
-    scopeModules.length > 0
-      ? scopeModules.reduce((sum, m) => sum + (m.price || 0), 0)
-      : null;
-
-  // Calculate discounted price
   const discountPct = discountPercentage || 0;
-  const discountAmount = modulePrice !== null ? (modulePrice * discountPct / 100) : 0;
-  const finalPrice = modulePrice !== null ? (modulePrice - discountAmount) : null;
 
   if (
     !result &&
@@ -443,40 +439,43 @@ export default function QuotationPdfView({ onBack }) {
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td>1</td>
-                  <td>
-                    <strong>
-                      {moduleList || "CQUAL Module Name"} - Product License
-                    </strong>{" "}
-                    applicable for single installation.
-                    <br />
-                    <span style={{ fontSize: "9pt", color: "#333" }}>
-                      Scope – As mentioned above
-                    </span>
-                    {/* {discountPct > 0 && modulePrice !== null && (
-                      <>
+                {selectedModulesWithPrices.map(({ name, module }, index) => {
+                  const price = module?.price ?? 0;
+                  const discountedPrice = price - (price * discountPct) / 100;
+
+                  return (
+                    <tr
+                      key={name}
+                      className={index % 2 === 1 ? "pdf-table__row--alt" : ""}
+                    >
+                      <td>{index + 1}</td>
+                      <td>
+                        <strong>{name} - Product License</strong> applicable
+                        for single installation.
                         <br />
-                        <span style={{ fontSize: "9pt", color: "#666" }}>
-                          Module Price: ₹{modulePrice.toLocaleString()}
-                          <br />
-                          Discount ({discountPct}%): -₹{discountAmount.toLocaleString()}
-                          <br />
-                          <strong>Net Price: ₹{finalPrice.toLocaleString()}</strong>
+                        <span style={{ fontSize: "9pt", color: "#333" }}>
+                          Scope – As mentioned above
                         </span>
-                      </>
-                    )} */}
-                  </td>
-                  <td>
-                    {modulePrice !== null && modulePrice > 0
-                      ? (discountPct > 0
-                          ? `₹${finalPrice.toLocaleString()}`
-                          : `₹${modulePrice.toLocaleString()}`)
-                      : "TBD"}
-                  </td>
-                </tr>
-                <tr className="pdf-table__row--alt">
-                  <td>2</td>
+                      </td>
+                      <td>
+                        {price > 0
+                          ? `₹${(discountPct > 0
+                              ? discountedPrice
+                              : price
+                            ).toLocaleString()}`
+                          : "TBD"}
+                      </td>
+                    </tr>
+                  );
+                })}
+                <tr
+                  className={
+                    selectedModulesWithPrices.length % 2 === 1
+                      ? "pdf-table__row--alt"
+                      : ""
+                  }
+                >
+                  <td>{selectedModulesWithPrices.length + 1}</td>
                   <td>
                     <strong>Customization</strong>
                     <br />
@@ -488,7 +487,7 @@ export default function QuotationPdfView({ onBack }) {
                   <td>TBD</td>
                 </tr>
                 <tr>
-                  <td>3</td>
+                  <td>{selectedModulesWithPrices.length + 2}</td>
                   <td>
                     <strong>Annual License Renewal</strong>
                     <br />
@@ -503,7 +502,7 @@ export default function QuotationPdfView({ onBack }) {
                   <td>TBD</td>
                 </tr>
                 <tr className="pdf-table__row--alt">
-                  <td>4</td>
+                  <td>{selectedModulesWithPrices.length + 3}</td>
                   <td>
                     <strong>Support Services</strong>
                     <br />
@@ -514,7 +513,7 @@ export default function QuotationPdfView({ onBack }) {
                   <td>TBD</td>
                 </tr>
                 <tr>
-                  <td>5</td>
+                  <td>{selectedModulesWithPrices.length + 4}</td>
                   <td>
                     <strong>Payment Terms</strong>
                     <br />
@@ -529,7 +528,7 @@ export default function QuotationPdfView({ onBack }) {
                   <td>On Chargeable</td>
                 </tr>
                 <tr className="pdf-table__row--alt">
-                  <td>6</td>
+                  <td>{selectedModulesWithPrices.length + 5}</td>
                   <td>
                     <strong>Support Level</strong>
                   </td>
@@ -587,7 +586,7 @@ export default function QuotationPdfView({ onBack }) {
                   <td>On Chargeable</td>
                 </tr>
                 <tr className="pdf-table__row--alt">
-                  <td>7</td>
+                  <td>{selectedModulesWithPrices.length + 6}</td>
                   <td>
                     <strong>Taxes</strong>
                     <br />
