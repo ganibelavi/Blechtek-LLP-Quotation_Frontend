@@ -13,6 +13,7 @@ import {
   Chip,
 } from "@mui/material";
 import VisibilityIcon from "@mui/icons-material/Visibility";
+import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EntityTable from "../../components/EntityTable";
 import {
@@ -63,10 +64,15 @@ export default function CreatedPurchaseOrders({ onNavigate }) {
     loadPurchaseOrders();
   }, []);
 
-  const openPurchaseOrder = (row) => {
+  const openPurchaseOrder = (row, viewOnly = true) => {
     const purchaseOrderData = row.data || row;
     sessionStorage.setItem("purchaseOrderBackView", "created-purchase-orders");
     sessionStorage.setItem("purchaseOrderId", String(purchaseOrderData.id));
+    if (viewOnly) {
+      sessionStorage.setItem("purchaseOrderViewOnly", "true");
+    } else {
+      sessionStorage.removeItem("purchaseOrderViewOnly");
+    }
     onNavigate("purchase-order-entry");
   };
 
@@ -141,8 +147,13 @@ export default function CreatedPurchaseOrders({ onNavigate }) {
       render: ({ row }) => (
         <Box sx={{ display: "flex", gap: 0.5 }}>
           <Tooltip title="Open PO">
-            <IconButton size="small" onClick={() => openPurchaseOrder(row)}>
+            <IconButton size="small" onClick={() => openPurchaseOrder(row, true)}>
               <VisibilityIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Edit PO">
+            <IconButton size="small" onClick={() => openPurchaseOrder(row, false)}>
+              <EditIcon fontSize="small" />
             </IconButton>
           </Tooltip>
           <Tooltip title="Delete PO">
@@ -186,6 +197,7 @@ export default function CreatedPurchaseOrders({ onNavigate }) {
           variant="contained"
           onClick={() => {
             sessionStorage.removeItem("purchaseOrderId");
+            sessionStorage.removeItem("purchaseOrderViewOnly");
             sessionStorage.setItem(
               "purchaseOrderBackView",
               "created-purchase-orders",

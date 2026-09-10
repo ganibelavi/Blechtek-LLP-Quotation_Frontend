@@ -1224,12 +1224,23 @@ export default function InvoiceEntryForm({
         }),
       );
 
-      onNavigate("invoice");
-    } catch (error) {
-      console.error("Failed to save invoice", error);
       setSnackbar({
         open: true,
-        message: "Unable to save invoice to database. Please try again.",
+        message: form.sourceInvoiceId
+          ? "Invoice updated successfully."
+          : "Invoice saved successfully.",
+        severity: "success",
+      });
+      window.setTimeout(() => onNavigate("invoice"), 700);
+    } catch (error) {
+      console.error("Failed to save invoice", error);
+      const message =
+        error?.response?.data?.error ||
+        error?.response?.data?.message ||
+        "Unable to save invoice to database. Please try again.";
+      setSnackbar({
+        open: true,
+        message,
         severity: "error",
       });
     }

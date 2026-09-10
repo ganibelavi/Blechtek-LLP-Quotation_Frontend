@@ -484,6 +484,10 @@ export default function App() {
                       purchaseOrderId={sessionStorage.getItem(
                         "purchaseOrderId",
                       )}
+                      viewOnly={
+                        sessionStorage.getItem("purchaseOrderViewOnly") ===
+                        "true"
+                      }
                       defaultReturnView={
                         sessionStorage.getItem("purchaseOrderBackView") ||
                         "created-purchase-orders"

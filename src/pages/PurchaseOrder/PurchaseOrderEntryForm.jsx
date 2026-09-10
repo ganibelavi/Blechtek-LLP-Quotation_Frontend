@@ -196,6 +196,7 @@ export default function PurchaseOrderEntryForm({
   onNavigate,
   purchaseOrderId = null,
   defaultReturnView = "created-purchase-orders",
+  viewOnly = false,
 }) {
   const [form, setForm] = useState(defaultForm);
   const [quotationRecords, setQuotationRecords] = useState([]);
@@ -212,8 +213,8 @@ export default function PurchaseOrderEntryForm({
     message: "",
     severity: "success",
   });
-  const isQuotationLocked = Boolean(form.sourceQuotationId);
-  const isItemLocked = (item) => Boolean(item?.isSourceData);
+  const isQuotationLocked = viewOnly || Boolean(form.sourceQuotationId);
+  const isItemLocked = (item) => viewOnly || Boolean(item?.isSourceData);
 
   useEffect(() => {
     const id = normalizeId(purchaseOrderId);
@@ -276,9 +277,14 @@ export default function PurchaseOrderEntryForm({
     if (purchaseOrderId || form.poNo) return;
     fetchNextPurchaseOrderNo()
       .then((poNo) => setForm((prev) => (prev.poNo ? prev : { ...prev, poNo })))
-      .catch((error) =>
-        console.error("Failed to load next purchase order number", error),
-      );
+        .catch((error) => {
+          console.error("Failed to load next purchase order number", error);
+          setSnackbar({
+            open: true,
+            message: "Unable to generate the next purchase order number.",
+            severity: "error",
+          });
+        });
   }, [purchaseOrderId, form.poNo]);
 
   // Sync intakeForm.poNo with auto-generated form.poNo
@@ -480,6 +486,7 @@ export default function PurchaseOrderEntryForm({
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    if (viewOnly) return;
     const requiredFields = [
       ["Company name", form.companyName],
       ["PO date", form.poDate],
@@ -788,6 +795,11 @@ export default function PurchaseOrderEntryForm({
             : record,
         ),
       );
+      setSnackbar({
+        open: true,
+        message: `Purchase order verification status updated to ${result.verificationStatus}.`,
+        severity: "success",
+      });
     } catch (error) {
       console.error(
         "Failed to update purchase order verification status",
@@ -996,21 +1008,37 @@ export default function PurchaseOrderEntryForm({
               </p>
             </div>
             <div className="po-detail-actions">
-              <button
+              {!viewOnly && !activePurchaseOrderId && (
+                <button
                 type="button"
                 className="app-action-btn app-action-btn--secondary"
                 onClick={() => setShowUpload(true)}
-              >
-                New PO
-              </button>
-              <button
+                >
+                  New PO
+                </button>
+              )}
+              {!viewOnly && (
+                <button
                 type="submit"
                 form="po-entry-form"
                 className="app-action-btn app-action-btn--primary"
-              >
-                Save
-              </button>
-              {activePurchaseOrderId &&
+                >
+                  Save
+                </button>
+              )}
+              {/* {viewOnly && activePurchaseOrderId && (
+                <button
+                  type="button"
+                  className="app-action-btn app-action-btn--primary"
+                  onClick={() => {
+                    sessionStorage.removeItem("purchaseOrderViewOnly");
+                    onNavigate("purchase-order-entry");
+                  }}
+                >
+                  Edit
+                </button>
+              )} */}
+              {!viewOnly && activePurchaseOrderId &&
                 form.verificationStatus === "pending" && (
                   <>
                     <button
@@ -1036,7 +1064,7 @@ export default function PurchaseOrderEntryForm({
                     </button>
                   </>
                 )}
-              {activePurchaseOrderId &&
+              {!viewOnly && activePurchaseOrderId &&
                 form.verificationStatus === "rejected" && (
                   <button
                     type="button"
@@ -1058,7 +1086,7 @@ export default function PurchaseOrderEntryForm({
                     Create Quotation Revision
                   </button>
                 )}
-              {activePurchaseOrderId &&
+              {!viewOnly && activePurchaseOrderId &&
                 form.verificationStatus !== "pending" && (
                   <button
                     type="button"
@@ -1097,6 +1125,7 @@ export default function PurchaseOrderEntryForm({
                         type="date"
                         value={form.poDate}
                         onChange={(e) => updateField("poDate", e.target.value)}
+                        disabled={viewOnly}
                       />
                     </label>
                     <label>
@@ -1105,6 +1134,7 @@ export default function PurchaseOrderEntryForm({
                         className={`po-status-select po-status-${form.status}`}
                         value={form.status}
                         onChange={(e) => updateField("status", e.target.value)}
+                        disabled={viewOnly}
                       >
                         <option value="open">Open</option>
                         <option value="partially_fulfilled">
@@ -1143,6 +1173,7 @@ export default function PurchaseOrderEntryForm({
                         onChange={(e) =>
                           updateField("expectedDeliveryDate", e.target.value)
                         }
+                        disabled={viewOnly}
                       />
                     </label>
                   </div>
@@ -1297,6 +1328,7 @@ export default function PurchaseOrderEntryForm({
                         onChange={(e) =>
                           updateField("deliveryTerms", e.target.value)
                         }
+                        disabled={viewOnly}
                       />
                     </label>
                     <label>
@@ -1306,6 +1338,7 @@ export default function PurchaseOrderEntryForm({
                         onChange={(e) =>
                           updateField("paymentTerms", e.target.value)
                         }
+                        disabled={viewOnly}
                       />
                     </label>
                     <label>
@@ -1313,6 +1346,7 @@ export default function PurchaseOrderEntryForm({
                       <textarea
                         value={form.notes}
                         onChange={(e) => updateField("notes", e.target.value)}
+                        disabled={viewOnly}
                       />
                     </label>
                   </div>
