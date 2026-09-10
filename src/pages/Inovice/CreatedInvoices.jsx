@@ -157,6 +157,7 @@ export default function CreatedInvoices({ onNavigate }) {
       minWidth: 150,
     },
     { key: "poNoDate", label: "PO Ref.", sortable: true, minWidth: 180 },
+    { key: "quotationNo", label: "Quotation No.", sortable: true, minWidth: 180 },
     {
       key: "status",
       label: "Status",
@@ -216,6 +217,7 @@ export default function CreatedInvoices({ onNavigate }) {
     companyName: invoice.invoice?.companyName || invoice.companyName || "-",
     dateOfIssue: invoice.invoice?.dateOfIssue || invoice.dateOfIssue || "-",
     poNoDate: invoice.invoice?.poNoDate || invoice.poNoDate || "-",
+    quotationNo: invoice.invoice?.quotationNo || invoice.quotationNo || "-",
     status: getInvoiceStatus(invoice),
     totalAmount: invoice.totals?.grandTotal
       ? `₹${Number(invoice.totals.grandTotal).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`

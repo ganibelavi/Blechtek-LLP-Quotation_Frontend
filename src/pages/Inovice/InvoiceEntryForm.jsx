@@ -54,6 +54,13 @@ const normalizeId = (value) => {
   return Number.isInteger(parsed) ? parsed : null;
 };
 
+const normalizeQuotationId = (value) => {
+  if (value === null || value === undefined || String(value).trim() === "") {
+    return null;
+  }
+  return String(value).trim();
+};
+
 const inputStyle = {
   width: "100%",
   minHeight: 36,
@@ -310,9 +317,10 @@ const defaultForm = () => {
   return {
     sourceInvoiceId: null,
     sourcePoId: normalizeId(poDetails.id || po?.id || null),
-    sourceQuotationId: normalizeId(
+    sourceQuotationId: normalizeQuotationId(
       quotation?.quotationId || po?.quotationId || null,
     ),
+    quotationNo: quotation?.quotationNo || po?.quotationNo || "",
     originalFor: "ORIGINAL FOR RECIPIENT",
     companyName: poDetails.companyName || "",
     invoiceNo: "",
@@ -584,7 +592,8 @@ export default function InvoiceEntryForm({
     setForm((prev) => ({
       ...prev,
       sourcePoId: linkedPoId || prev.sourcePoId,
-      sourceQuotationId: normalizeId(source.quotationId ?? source.id),
+      sourceQuotationId: normalizeQuotationId(source.quotationId ?? source.id),
+      quotationNo: source.quotationNo || prev.quotationNo || "",
       companyName:
         po.companyName || source.organizationName || prev.companyName,
       supplierName:
@@ -786,7 +795,7 @@ export default function InvoiceEntryForm({
     const hydrateSourceData = async () => {
       const purchaseOrder = rawPo?.po || rawPo;
       const sourcePoId = normalizeId(purchaseOrder?.id || rawPo?.id || null);
-      const sourceQuotationId = normalizeId(
+      const sourceQuotationId = normalizeQuotationId(
         rawQuotation?.quotationId ||
           purchaseOrder?.quotationId ||
           rawPo?.quotationId ||
@@ -846,6 +855,7 @@ export default function InvoiceEntryForm({
               poNoDate: poPayload.poNo
                 ? `PO No. ${poPayload.poNo} / ${poPayload.poDate || ""}`
                 : prev.poNoDate || "",
+              quotationNo: poPayload.quotationNo || prev.quotationNo || "",
               items: itemRows,
             }));
           }
@@ -856,9 +866,11 @@ export default function InvoiceEntryForm({
           if (remoteQuotation) {
             setForm((prev) => ({
               ...prev,
-              sourceQuotationId: normalizeId(
+              sourceQuotationId: normalizeQuotationId(
                 remoteQuotation.quotationId || prev.sourceQuotationId || null,
               ),
+              quotationNo:
+                remoteQuotation.quotationNo || prev.quotationNo || "",
               companyName:
                 remoteQuotation.organizationName || prev.companyName || "",
               supplierName:
@@ -908,7 +920,7 @@ export default function InvoiceEntryForm({
     if (!matchedQuotation) return;
 
     const loadMatchedQuotation = async () => {
-      const quotationId = normalizeId(
+      const quotationId = normalizeQuotationId(
         matchedQuotation.quotationId ?? matchedQuotation.id,
       );
 
@@ -922,7 +934,7 @@ export default function InvoiceEntryForm({
 
         setForm((prev) => ({
           ...prev,
-          sourceQuotationId: normalizeId(
+          sourceQuotationId: normalizeQuotationId(
             activeQuotation.quotationId ??
               activeQuotation.id ??
               prev.sourceQuotationId,
@@ -938,6 +950,8 @@ export default function InvoiceEntryForm({
             activeQuotation.quotationToName || prev.consigneeName || "",
           consigneeAddress:
             activeQuotation.quotationToAddress || prev.consigneeAddress || "",
+          quotationNo:
+            activeQuotation.quotationNo || prev.quotationNo || "",
           poNoDate: activeQuotation.quotationNo
             ? `Quotation No. ${activeQuotation.quotationNo}`
             : prev.poNoDate || "",
@@ -950,7 +964,7 @@ export default function InvoiceEntryForm({
         );
         setForm((prev) => ({
           ...prev,
-          sourceQuotationId: normalizeId(
+          sourceQuotationId: normalizeQuotationId(
             matchedQuotation.quotationId ??
               matchedQuotation.id ??
               prev.sourceQuotationId,
@@ -966,6 +980,8 @@ export default function InvoiceEntryForm({
             matchedQuotation.quotationToName || prev.consigneeName || "",
           consigneeAddress:
             matchedQuotation.quotationToAddress || prev.consigneeAddress || "",
+          quotationNo:
+            matchedQuotation.quotationNo || prev.quotationNo || "",
           poNoDate: matchedQuotation.quotationNo
             ? `Quotation No. ${matchedQuotation.quotationNo}`
             : prev.poNoDate || "",
@@ -1065,7 +1081,8 @@ export default function InvoiceEntryForm({
 
     const payload = {
       poId: normalizeId(form.sourcePoId),
-      quotationId: normalizeId(form.sourceQuotationId),
+      quotationId: normalizeQuotationId(form.sourceQuotationId),
+      quotationNo: form.quotationNo || "",
       originalFor: form.originalFor,
       companyName: form.companyName,
       invoiceNo: form.invoiceNo,
@@ -1461,6 +1478,14 @@ export default function InvoiceEntryForm({
                     value={form.poNoDate}
                     onChange={(e) => updateField("poNoDate", e.target.value)}
                     readOnly={isFieldDisabled("poNoDate")}
+                  />
+                </label>
+                <label>
+                  Quotation No.
+                  <input
+                    value={form.quotationNo || ""}
+                    onChange={(e) => updateField("quotationNo", e.target.value)}
+                    readOnly
                   />
                 </label>
               </div>
