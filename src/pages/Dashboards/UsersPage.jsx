@@ -1,27 +1,30 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
+import { fetchUsers } from '../../services/userApi';
+import { fetchInvoices, fetchPurchaseOrders, fetchQuotations, fetchRenewals } from '../../services/quotationApi';
+import DataCard from '../../components/DataCard';
 
 // ---- shared design tokens (kept local so this file can be dropped in on its own) ----
 const cove = { blue: '#2a78d6', orange: '#eb6834', aqua: '#1baf7a', yellow: '#eda100', green: '#008300' };
 const gridStroke = 'rgba(137,135,129,0.2)';
 const axisTick = { fill: 'var(--text-muted)', fontSize: 11 };
 
-function MetricCard({ label, value }) {
-  return (
-    <div className="dashboard-metric-card" style={{ background: 'var(--surface-1)', borderRadius: 'var(--radius)', padding: '1rem' }}>
-      <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{label}</div>
-      <div style={{ fontSize: 20, fontWeight: 500, marginTop: 4 }}>{value}</div>
-    </div>
-  );
-}
-
 function MetricGrid({ cards }) {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, marginBottom: 16 }}>
-      {cards.map((c, i) => <MetricCard key={i} label={c.label} value={c.value} />)}
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+        gap: 24,
+        marginBottom: 32,
+      }}
+    >
+      {cards.map((card, index) => (
+        <DataCard key={index} {...card} borderRadius={2} />
+      ))}
     </div>
   );
 }
@@ -60,53 +63,91 @@ function ChartGrid({ children }) {
   );
 }
 
-// ---- page data ----
-const recordsPerUser = [
-  { name: 'Aarav', Quotations: 2, 'Purchase orders': 1, Invoices: 1, Renewals: 1 },
-  { name: 'Diya', Quotations: 1, 'Purchase orders': 1, Invoices: 1, Renewals: 1 },
-  { name: 'Rohan', Quotations: 1, 'Purchase orders': 1, Invoices: 1, Renewals: 1 },
-  { name: 'Isha', Quotations: 1, 'Purchase orders': 1, Invoices: 1, Renewals: 1 },
-  { name: 'Vikram', Quotations: 1, 'Purchase orders': 1, Invoices: 1, Renewals: 1 },
-];
-
-const roleData = [
-  { name: 'Sales', value: 60, color: cove.blue },
-  { name: 'Finance', value: 20, color: cove.aqua },
-  { name: 'Admin', value: 20, color: cove.yellow },
-];
-
-const activeUsersTrend = [
-  { month: 'May', active: 3 },
-  { month: 'Jun', active: 4 },
-  { month: 'Jul', active: 4 },
-  { month: 'Aug', active: 5 },
-  { month: 'Sep', active: 4 },
-];
-
-const moduleUsage = [
-  { name: 'Quotations', value: 40, color: cove.blue },
-  { name: 'Purchase orders', value: 25, color: cove.orange },
-  { name: 'Invoices', value: 20, color: cove.green },
-  { name: 'Renewals', value: 15, color: cove.yellow },
-];
-
-const weeklyActivity = [
-  { name: 'Aarav', actions: 18 },
-  { name: 'Diya', actions: 14 },
-  { name: 'Rohan', actions: 12 },
-  { name: 'Isha', actions: 15 },
-  { name: 'Vikram', actions: 10 },
-];
-
 export default function UsersPage() {
+  const [users, setUsers] = useState([]);
+  const [records, setRecords] = useState({ quotations: [], orders: [], invoices: [], renewals: [] });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let mounted = true;
+    Promise.all([fetchUsers(), fetchQuotations(1, 500), fetchPurchaseOrders(), fetchInvoices(), fetchRenewals()])
+      .then(([userRows, quotations, orders, invoices, renewals]) => {
+        if (!mounted) return;
+        const rows = (value) => Array.isArray(value)
+          ? value
+          : value?.items || value?.data || value?.rows || [];
+        setUsers(Array.isArray(userRows) ? userRows : []);
+        setRecords({ quotations: rows(quotations), orders: rows(orders), invoices: rows(invoices), renewals: rows(renewals) });
+      })
+      .catch((requestError) => {
+        console.error('Failed to load users dashboard data', requestError);
+        if (mounted) setError('Unable to load users dashboard data.');
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  if (loading) return <div className="dashboard-analytics-page">Loading user analytics...</div>;
+  if (error) return <div className="dashboard-analytics-page">{error}</div>;
+
+  const displayName = (user) => `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email;
+  const recordsPerUser = users.map((user) => {
+    const name = displayName(user);
+    const matches = (rows, fields) => rows.filter((row) => fields.some((field) => String(row[field] || '').toLowerCase() === name.toLowerCase() || String(row[field] || '').toLowerCase() === String(user.email || '').toLowerCase())).length;
+    return {
+      name,
+      Quotations: matches(records.quotations, ['createdByUser', 'referenceBy']),
+      'Purchase orders': matches(records.orders, ['uploadedBy']),
+      Invoices: 0,
+      Renewals: 0,
+    };
+  });
+  const roleGroups = new Map();
+  users.forEach((user) => roleGroups.set(user.role || 'Unknown', (roleGroups.get(user.role || 'Unknown') || 0) + 1));
+  const roleData = [...roleGroups.entries()].map(([name, value], index) => ({ name, value, color: [cove.blue, cove.aqua, cove.yellow, cove.orange][index % 4] }));
+  const allRecords = Object.values(records).reduce((sum, rows) => sum + rows.length, 0);
+  const activeUsers = users.filter((user) => user.isActive).length;
+  const moduleUsage = [
+    { name: 'Quotations', value: records.quotations.length, color: cove.blue },
+    { name: 'Purchase orders', value: records.orders.length, color: cove.orange },
+    { name: 'Invoices', value: records.invoices.length, color: cove.green },
+    { name: 'Renewals', value: records.renewals.length, color: cove.yellow },
+  ].filter((item) => item.value > 0);
+  const weeklyActivity = recordsPerUser.map((row) => ({ name: row.name, actions: row.Quotations + row['Purchase orders'] + row.Invoices + row.Renewals }));
+  const activeUsersTrend = [{ month: 'Current', active: activeUsers }];
   return (
     <div className="dashboard-analytics-page">
       <MetricGrid
         cards={[
-          { label: 'Total users', value: '5' },
-          { label: 'Active this month', value: '4' },
-          { label: 'Records created (all users)', value: '21' },
-          { label: 'Avg. records / user', value: '4.2' },
+          {
+            label: 'Total users',
+            value: users.length,
+            icon: <img src="/logo/users.png" alt="Total users" style={{ width: 28, height: 28 }} />,
+            color: 'primary',
+          },
+          {
+            label: 'Active users',
+            value: activeUsers,
+            icon: <img src="/logo/verification.png" alt="Active users" style={{ width: 28, height: 28 }} />,
+            color: 'primary',
+          },
+          {
+            label: 'Records created (all users)',
+            value: allRecords,
+            icon: <img src="/logo/report.png" alt="Records created" style={{ width: 28, height: 28 }} />,
+            color: 'primary',
+          },
+          {
+            label: 'Avg. records / user',
+            value: users.length ? (allRecords / users.length).toFixed(1) : '0.0',
+            icon: <img src="/logo/speedometer.png" alt="Average records per user" style={{ width: 28, height: 28 }} />,
+            color: 'primary',
+          },
         ]}
       />
 
@@ -135,9 +176,7 @@ export default function UsersPage() {
         <ChartCard
           ariaLabel="Pie chart of user role distribution"
           legendItems={[
-            { color: cove.blue, label: 'Sales 60%' },
-            { color: cove.aqua, label: 'Finance 20%' },
-            { color: cove.yellow, label: 'Admin 20%' },
+            ...roleData.map((item) => ({ color: item.color, label: item.name })),
           ]}
         >
           <PieChart>
@@ -164,10 +203,7 @@ export default function UsersPage() {
         <ChartCard
           ariaLabel="Pie chart of module usage by users"
           legendItems={[
-            { color: cove.blue, label: 'Quotations 40%' },
-            { color: cove.orange, label: 'Purchase orders 25%' },
-            { color: cove.green, label: 'Invoices 20%' },
-            { color: cove.yellow, label: 'Renewals 15%' },
+            ...moduleUsage.map((item) => ({ color: item.color, label: item.name })),
           ]}
         >
           <PieChart>

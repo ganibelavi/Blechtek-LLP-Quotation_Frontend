@@ -1,36 +1,71 @@
-import React from 'react';
+import React, { useEffect, useState } from "react";
 import {
-  BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
-} from 'recharts';
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
+import { fetchInvoices } from "../../services/quotationApi";
+import DataCard from "../../components/DataCard";
 
-const cove = { blue: '#2a78d6', orange: '#eb6834', aqua: '#1baf7a', yellow: '#eda100', green: '#008300' };
-const gridStroke = 'rgba(137,135,129,0.2)';
-const axisTick = { fill: 'var(--text-muted)', fontSize: 11 };
-
-function MetricCard({ label, value }) {
-  return (
-    <div className="dashboard-metric-card" style={{ background: 'var(--surface-1)', borderRadius: 'var(--radius)', padding: '1rem' }}>
-      <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{label}</div>
-      <div style={{ fontSize: 20, fontWeight: 500, marginTop: 4 }}>{value}</div>
-    </div>
-  );
-}
+const cove = {
+  blue: "#2a78d6",
+  orange: "#eb6834",
+  aqua: "#1baf7a",
+  yellow: "#eda100",
+  green: "#008300",
+};
+const gridStroke = "rgba(137,135,129,0.2)";
+const axisTick = { fill: "var(--text-muted)", fontSize: 11 };
 
 function MetricGrid({ cards }) {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, marginBottom: 16 }}>
-      {cards.map((c, i) => <MetricCard key={i} label={c.label} value={c.value} />)}
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+        gap: 24,
+        marginBottom: 32,
+      }}
+    >
+      {cards.map((card, index) => (
+        <DataCard key={index} {...card} borderRadius={2} />
+      ))}
     </div>
   );
 }
 
 function Legend({ items }) {
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, marginBottom: 6, fontSize: 12, color: 'var(--text-secondary)' }}>
+    <div
+      style={{
+        display: "flex",
+        flexWrap: "wrap",
+        gap: 14,
+        marginBottom: 6,
+        fontSize: 12,
+        color: "var(--text-secondary)",
+      }}
+    >
       {items.map((it, i) => (
-        <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-          <span style={{ width: 9, height: 9, borderRadius: 2, background: it.color, display: 'inline-block' }} />
+        <span key={i} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+          <span
+            style={{
+              width: 9,
+              height: 9,
+              borderRadius: 2,
+              background: it.color,
+              display: "inline-block",
+            }}
+          />
           {it.label}
         </span>
       ))}
@@ -42,7 +77,11 @@ function ChartCard({ ariaLabel, legendItems, height = 240, children }) {
   return (
     <div className="dashboard-chart-card">
       <Legend items={legendItems} />
-      <div style={{ position: 'relative', height }} role="img" aria-label={ariaLabel}>
+      <div
+        style={{ position: "relative", height }}
+        role="img"
+        aria-label={ariaLabel}
+      >
         <ResponsiveContainer width="100%" height="100%">
           {children}
         </ResponsiveContainer>
@@ -53,129 +92,301 @@ function ChartCard({ ariaLabel, legendItems, height = 240, children }) {
 
 function ChartGrid({ children }) {
   return (
-    <div className="dashboard-chart-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+    <div
+      className="dashboard-chart-grid"
+      style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}
+    >
       {children}
     </div>
   );
 }
 
-// ---- page data ----
-const invoiceValueByMonth = [
-  { month: 'May', value: 80 },
-  { month: 'Jun', value: 120 },
-  { month: 'Jul', value: 150 },
-  { month: 'Aug', value: 90 },
-  { month: 'Sep', value: 260 },
-];
-
-const paymentStatus = [
-  { name: 'Pending', value: 80, color: cove.orange },
-  { name: 'Advance received', value: 20, color: cove.aqua },
-];
-
-const invoiceCountTrend = [
-  { month: 'May', count: 1 },
-  { month: 'Jun', count: 1 },
-  { month: 'Jul', count: 1 },
-  { month: 'Aug', count: 1 },
-  { month: 'Sep', count: 1 },
-];
-
-const byOrg = [
-  { name: 'Org A', value: 200 },
-  { name: 'Org B', value: 150 },
-  { name: 'Org C', value: 120 },
-  { name: 'Org D', value: 130 },
-  { name: 'Org E', value: 100 },
-];
-
-const paymentMode = [
-  { name: 'Bank transfer', value: 50, color: cove.blue },
-  { name: 'UPI', value: 25, color: cove.aqua },
-  { name: 'Cheque', value: 15, color: cove.yellow },
-  { name: 'Cash', value: 10, color: cove.orange },
-];
-
 export default function InvoicesPage() {
+  const [invoices, setInvoices] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let mounted = true;
+    fetchInvoices()
+      .then((data) => {
+        if (mounted) setInvoices(Array.isArray(data) ? data : []);
+      })
+      .catch((requestError) => {
+        console.error("Failed to load invoice dashboard data", requestError);
+        if (mounted) setError("Unable to load invoice dashboard data.");
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  if (loading)
+    return (
+      <div className="dashboard-analytics-page">
+        Loading invoice analytics...
+      </div>
+    );
+  if (error) return <div className="dashboard-analytics-page">{error}</div>;
+
+  const amountOf = (invoice) =>
+    Number(
+      invoice.totalAmount ?? invoice.totals?.grandTotal ?? invoice.amount ?? 0,
+    ) || 0;
+  const nameOf = (invoice) =>
+    invoice.invoice?.companyName ||
+    invoice.companyName ||
+    invoice.invoice?.receiverName ||
+    invoice.receiverName ||
+    "Unknown";
+  const statusOf = (invoice) =>
+    invoice.invoice?.status || invoice.status || "Unknown";
+  const monthOf = (value) => {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime())
+      ? "Unknown"
+      : date.toLocaleString("en-US", { month: "short", year: "numeric" });
+  };
+  const monthly = new Map();
+  invoices.forEach((invoice) => {
+    const month = monthOf(
+      invoice.invoice?.dateOfIssue || invoice.dateOfIssue || invoice.createdAt,
+    );
+    const row = monthly.get(month) || { month, value: 0, count: 0 };
+    row.value += amountOf(invoice) / 1000;
+    row.count += 1;
+    monthly.set(month, row);
+  });
+  const invoiceValueByMonth = [...monthly.values()];
+  const invoiceCountTrend = invoiceValueByMonth;
+  const colors = [cove.orange, cove.aqua, cove.blue, cove.yellow, cove.green];
+  const grouped = (getName) => {
+    const groups = new Map();
+    invoices.forEach((invoice) => {
+      const name = getName(invoice);
+      const current = groups.get(name) || { name, value: 0, count: 0 };
+      current.value += amountOf(invoice);
+      current.count += 1;
+      groups.set(name, current);
+    });
+    return [...groups.values()].sort((a, b) => b.value - a.value);
+  };
+  const paymentStatus = grouped(statusOf).map((item, index) => ({
+    ...item,
+    color: colors[index % colors.length],
+  }));
+  const byOrg = grouped(nameOf).map((item) => ({
+    ...item,
+    value: item.value / 1000,
+  }));
+  const paymentMode = paymentStatus;
+  const totalValue = invoices.reduce(
+    (sum, invoice) => sum + amountOf(invoice),
+    0,
+  );
+  const pending = invoices.filter(
+    (invoice) => !["paid"].includes(String(statusOf(invoice)).toLowerCase()),
+  ).length;
+  const advanceReceived = invoices.filter(
+    (invoice) => String(statusOf(invoice)).toLowerCase() === "advance_received",
+  ).length;
   return (
     <div className="dashboard-analytics-page">
       <MetricGrid
         cards={[
-          { label: 'Total invoices', value: '5' },
-          { label: 'Invoice value', value: '₹7,00,000' },
-          { label: 'Pending', value: '4' },
-          { label: 'Advance received', value: '1' },
+          {
+            label: "Total invoices",
+            value: invoices.length,
+            icon: (
+              <img
+                src="/logo/calculator.png"
+                alt="Total invoices"
+                style={{ width: 28, height: 28 }}
+              />
+            ),
+            color: "primary",
+          },
+          {
+            label: "Invoice value",
+            value: `₹${totalValue.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`,
+            icon: (
+              <img
+                src="/logo/balance.png"
+                alt="Invoice value"
+                style={{ width: 28, height: 28 }}
+              />
+            ),
+            color: "primary",
+          },
+          {
+            label: "Pending",
+            value: pending,
+            icon: (
+              <img
+                src="/logo/clock.png"
+                alt="Pending invoices"
+                style={{ width: 28, height: 28 }}
+              />
+            ),
+            color: "primary",
+          },
+          {
+            label: "Advance received",
+            value: advanceReceived,
+            icon: (
+              <img
+                src="/logo/check-circle.png"
+                alt="Advance received"
+                style={{ width: 28, height: 28 }}
+              />
+            ),
+            color: "primary",
+          },
         ]}
       />
 
       <ChartGrid>
         <ChartCard
           ariaLabel="Bar chart of invoice value by month"
-          legendItems={[{ color: cove.blue, label: 'Invoice value (₹ thousands)' }]}
+          legendItems={[
+            { color: cove.blue, label: "Invoice value (₹ thousands)" },
+          ]}
         >
           <BarChart data={invoiceValueByMonth}>
-            <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
-            <XAxis dataKey="month" tick={axisTick} axisLine={{ stroke: gridStroke }} tickLine={false} />
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke={gridStroke}
+              vertical={false}
+            />
+            <XAxis
+              dataKey="month"
+              tick={axisTick}
+              axisLine={{ stroke: gridStroke }}
+              tickLine={false}
+            />
             <YAxis tick={axisTick} axisLine={false} tickLine={false} />
             <Tooltip />
-            <Bar dataKey="value" fill={cove.blue} radius={[4, 4, 0, 0]} maxBarSize={28} />
+            <Bar
+              dataKey="value"
+              fill={cove.blue}
+              radius={[4, 4, 0, 0]}
+              maxBarSize={28}
+            />
           </BarChart>
         </ChartCard>
 
         <ChartCard
           ariaLabel="Pie chart of invoice payment status"
           legendItems={[
-            { color: cove.orange, label: 'Pending 80%' },
-            { color: cove.aqua, label: 'Advance received 20%' },
+            ...paymentStatus.map((item) => ({
+              color: item.color,
+              label: item.name,
+            })),
           ]}
         >
           <PieChart>
             <Tooltip />
-            <Pie data={paymentStatus} dataKey="value" nameKey="name" outerRadius="80%">
-              {paymentStatus.map((d, i) => <Cell key={i} fill={d.color} />)}
+            <Pie
+              data={paymentStatus}
+              dataKey="value"
+              nameKey="name"
+              outerRadius="80%"
+            >
+              {paymentStatus.map((d, i) => (
+                <Cell key={i} fill={d.color} />
+              ))}
             </Pie>
           </PieChart>
         </ChartCard>
 
         <ChartCard
           ariaLabel="Line chart of invoice count trend"
-          legendItems={[{ color: cove.green, label: 'Invoices raised' }]}
+          legendItems={[{ color: cove.green, label: "Invoices raised" }]}
         >
           <LineChart data={invoiceCountTrend}>
-            <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
-            <XAxis dataKey="month" tick={axisTick} axisLine={{ stroke: gridStroke }} tickLine={false} />
-            <YAxis tick={axisTick} axisLine={false} tickLine={false} allowDecimals={false} />
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke={gridStroke}
+              vertical={false}
+            />
+            <XAxis
+              dataKey="month"
+              tick={axisTick}
+              axisLine={{ stroke: gridStroke }}
+              tickLine={false}
+            />
+            <YAxis
+              tick={axisTick}
+              axisLine={false}
+              tickLine={false}
+              allowDecimals={false}
+            />
             <Tooltip />
-            <Line type="monotone" dataKey="count" stroke={cove.green} strokeWidth={2} dot={{ r: 4 }} />
+            <Line
+              type="monotone"
+              dataKey="count"
+              stroke={cove.green}
+              strokeWidth={2}
+              dot={{ r: 4 }}
+            />
           </LineChart>
         </ChartCard>
 
         <ChartCard
           ariaLabel="Bar chart of invoice value by organization"
-          legendItems={[{ color: cove.orange, label: 'Invoice value (₹ thousands)' }]}
+          legendItems={[
+            {
+              color: cove.orange,
+              label: "Invoice value by customer (₹ thousands)",
+            },
+          ]}
         >
           <BarChart data={byOrg}>
-            <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
-            <XAxis dataKey="name" tick={axisTick} axisLine={{ stroke: gridStroke }} tickLine={false} />
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke={gridStroke}
+              vertical={false}
+            />
+            <XAxis
+              dataKey="name"
+              tick={axisTick}
+              axisLine={{ stroke: gridStroke }}
+              tickLine={false}
+            />
             <YAxis tick={axisTick} axisLine={false} tickLine={false} />
             <Tooltip />
-            <Bar dataKey="value" fill={cove.orange} radius={[4, 4, 0, 0]} maxBarSize={28} />
+            <Bar
+              dataKey="value"
+              fill={cove.orange}
+              radius={[4, 4, 0, 0]}
+              maxBarSize={28}
+            />
           </BarChart>
         </ChartCard>
 
         <ChartCard
-          ariaLabel="Pie chart of invoice payment mode split"
+          ariaLabel="Pie chart of invoice status split"
           legendItems={[
-            { color: cove.blue, label: 'Bank transfer 50%' },
-            { color: cove.aqua, label: 'UPI 25%' },
-            { color: cove.yellow, label: 'Cheque 15%' },
-            { color: cove.orange, label: 'Cash 10%' },
+            ...paymentMode.map((item) => ({
+              color: item.color,
+              label: item.name,
+            })),
           ]}
         >
           <PieChart>
             <Tooltip />
-            <Pie data={paymentMode} dataKey="value" nameKey="name" outerRadius="80%">
-              {paymentMode.map((d, i) => <Cell key={i} fill={d.color} />)}
+            <Pie
+              data={paymentMode}
+              dataKey="value"
+              nameKey="name"
+              outerRadius="80%"
+            >
+              {paymentMode.map((d, i) => (
+                <Cell key={i} fill={d.color} />
+              ))}
             </Pie>
           </PieChart>
         </ChartCard>
