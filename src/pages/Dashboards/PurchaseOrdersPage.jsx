@@ -12,6 +12,7 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  Label,
 } from "recharts";
 import { fetchPurchaseOrders } from "../../services/quotationApi";
 import DataCard from "../../components/DataCard";
@@ -266,13 +267,29 @@ export default function PurchaseOrdersPage() {
               tick={axisTick}
               axisLine={{ stroke: gridStroke }}
               tickLine={false}
-            />
+            >
+              <Label
+                value="Month"
+                offset={-5}
+                position="insideBottom"
+                style={axisTick}
+              />
+            </XAxis>
             <YAxis
               tick={axisTick}
               axisLine={false}
               tickLine={false}
               allowDecimals={false}
-            />
+            >
+              <Label
+                value="Quotes and revenue"
+                angle={-90}
+                position="insideLeft"
+                offset={0}
+                dy={20}
+                style={axisTick}
+              />
+            </YAxis>
             <Tooltip />
             <Line
               type="monotone"
@@ -307,8 +324,24 @@ export default function PurchaseOrdersPage() {
               tick={axisTick}
               axisLine={{ stroke: gridStroke }}
               tickLine={false}
-            />
-            <YAxis tick={axisTick} axisLine={false} tickLine={false} />
+            >
+              <Label
+                value="Month"
+                offset={-5}
+                position="insideBottom"
+                style={axisTick}
+              />
+            </XAxis>
+            <YAxis tick={axisTick} axisLine={false} tickLine={false}>
+              <Label
+                value="Order value (₹ thousands)"
+                angle={-90}
+                position="insideLeft"
+                offset={0}
+                dy={50}
+                style={axisTick}
+              />
+            </YAxis>
             <Tooltip />
             <Bar
               dataKey="value"
@@ -360,13 +393,29 @@ export default function PurchaseOrdersPage() {
               tick={axisTick}
               axisLine={{ stroke: gridStroke }}
               tickLine={false}
-            />
+            >
+              <Label
+                value="Organization"
+                offset={-5}
+                position="insideBottom"
+                style={axisTick}
+              />
+            </XAxis>
             <YAxis
               tick={axisTick}
               axisLine={false}
               tickLine={false}
               allowDecimals={false}
-            />
+            >
+              <Label
+                value="Order count"
+                angle={-90}
+                position="insideLeft"
+                offset={0}
+                dy={12}
+                style={axisTick}
+              />
+            </YAxis>
             <Tooltip />
             <Bar
               dataKey="count"

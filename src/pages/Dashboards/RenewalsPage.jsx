@@ -12,6 +12,7 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  Label,
 } from "recharts";
 import {
   fetchCustomerSubscriptions,
@@ -301,13 +302,17 @@ export default function RenewalsPage() {
               tick={axisTick}
               axisLine={{ stroke: gridStroke }}
               tickLine={false}
-            />
+            >
+              <Label value="Month" offset={-5} position="insideBottom" style={axisTick} />
+            </XAxis>
             <YAxis
               tick={axisTick}
               axisLine={false}
               tickLine={false}
               allowDecimals={false}
-            />
+            >
+              <Label value="Renewals completed" angle={-90} position="insideLeft" offset={0} dy={12} style={axisTick} />
+            </YAxis>
             <Tooltip />
             <Line
               type="monotone"
@@ -334,13 +339,17 @@ export default function RenewalsPage() {
               tick={axisTick}
               axisLine={{ stroke: gridStroke }}
               tickLine={false}
-            />
+            >
+              <Label value="Month" offset={-5} position="insideBottom" style={axisTick} />
+            </XAxis>
             <YAxis
               tick={axisTick}
               axisLine={false}
               tickLine={false}
               allowDecimals={false}
-            />
+            >
+              <Label value="Renewals due" angle={-90} position="insideLeft" offset={0} dy={12} style={axisTick} />
+            </YAxis>
             <Tooltip />
             <Bar
               dataKey="due"
@@ -393,13 +402,17 @@ export default function RenewalsPage() {
               tick={axisTick}
               axisLine={{ stroke: gridStroke }}
               tickLine={false}
-            />
+            >
+              <Label value="Organization" offset={-5} position="insideBottom" style={axisTick} />
+            </XAxis>
             <YAxis
               tick={axisTick}
               axisLine={false}
               tickLine={false}
               allowDecimals={false}
-            />
+            >
+              <Label value="Subscription count" angle={-90} position="insideLeft" offset={0} dy={12} style={axisTick} />
+            </YAxis>
             <Tooltip />
             <Bar
               dataKey="Active"

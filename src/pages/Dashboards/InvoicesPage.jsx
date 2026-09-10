@@ -12,6 +12,7 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  Label,
 } from "recharts";
 import { fetchInvoices } from "../../services/quotationApi";
 import DataCard from "../../components/DataCard";
@@ -266,8 +267,12 @@ export default function InvoicesPage() {
               tick={axisTick}
               axisLine={{ stroke: gridStroke }}
               tickLine={false}
-            />
-            <YAxis tick={axisTick} axisLine={false} tickLine={false} />
+            >
+              <Label value="Month" offset={-5} position="insideBottom" style={axisTick} />
+            </XAxis>
+            <YAxis tick={axisTick} axisLine={false} tickLine={false}>
+              <Label value="Invoice value (₹ thousands)" angle={-90} position="insideLeft" offset={0} dy={12} style={axisTick} />
+            </YAxis>
             <Tooltip />
             <Bar
               dataKey="value"
@@ -317,13 +322,17 @@ export default function InvoicesPage() {
               tick={axisTick}
               axisLine={{ stroke: gridStroke }}
               tickLine={false}
-            />
+            >
+              <Label value="Month" offset={-5} position="insideBottom" style={axisTick} />
+            </XAxis>
             <YAxis
               tick={axisTick}
               axisLine={false}
               tickLine={false}
               allowDecimals={false}
-            />
+            >
+              <Label value="Invoice count" angle={-90} position="insideLeft" offset={0} dy={12} style={axisTick} />
+            </YAxis>
             <Tooltip />
             <Line
               type="monotone"
@@ -355,8 +364,12 @@ export default function InvoicesPage() {
               tick={axisTick}
               axisLine={{ stroke: gridStroke }}
               tickLine={false}
-            />
-            <YAxis tick={axisTick} axisLine={false} tickLine={false} />
+            >
+              <Label value="Organization" offset={-5} position="insideBottom" style={axisTick} />
+            </XAxis>
+            <YAxis tick={axisTick} axisLine={false} tickLine={false}>
+              <Label value="Invoice value (₹ thousands)" angle={-90} position="insideLeft" offset={0} dy={12} style={axisTick} />
+            </YAxis>
             <Tooltip />
             <Bar
               dataKey="value"

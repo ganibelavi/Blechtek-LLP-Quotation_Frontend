@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
+  , Label
 } from 'recharts';
 import { fetchUsers } from '../../services/userApi';
 import { fetchInvoices, fetchPurchaseOrders, fetchQuotations, fetchRenewals } from '../../services/quotationApi';
@@ -163,8 +164,12 @@ export default function UsersPage() {
         >
           <BarChart data={recordsPerUser}>
             <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
-            <XAxis dataKey="name" tick={axisTick} axisLine={{ stroke: gridStroke }} tickLine={false} />
-            <YAxis tick={axisTick} axisLine={false} tickLine={false} allowDecimals={false} />
+            <XAxis dataKey="name" tick={axisTick} axisLine={{ stroke: gridStroke }} tickLine={false}>
+              <Label value="User" offset={-5} position="insideBottom" style={axisTick} />
+            </XAxis>
+            <YAxis tick={axisTick} axisLine={false} tickLine={false} allowDecimals={false}>
+              <Label value="Records created" angle={-90} position="insideLeft" offset={0} dy={12} style={axisTick} />
+            </YAxis>
             <Tooltip />
             <Bar dataKey="Quotations" stackId="a" fill={cove.blue} radius={[4, 4, 0, 0]} maxBarSize={28} />
             <Bar dataKey="Purchase orders" stackId="a" fill={cove.orange} maxBarSize={28} />
@@ -193,8 +198,12 @@ export default function UsersPage() {
         >
           <LineChart data={activeUsersTrend}>
             <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
-            <XAxis dataKey="month" tick={axisTick} axisLine={{ stroke: gridStroke }} tickLine={false} />
-            <YAxis tick={axisTick} axisLine={false} tickLine={false} allowDecimals={false} />
+            <XAxis dataKey="month" tick={axisTick} axisLine={{ stroke: gridStroke }} tickLine={false}>
+              <Label value="Period" offset={-5} position="insideBottom" style={axisTick} />
+            </XAxis>
+            <YAxis tick={axisTick} axisLine={false} tickLine={false} allowDecimals={false}>
+              <Label value="Active users" angle={-90} position="insideLeft" offset={0} dy={12} style={axisTick} />
+            </YAxis>
             <Tooltip />
             <Line type="monotone" dataKey="active" stroke={cove.blue} strokeWidth={2} dot={{ r: 4 }} />
           </LineChart>
@@ -220,8 +229,12 @@ export default function UsersPage() {
         >
           <BarChart data={weeklyActivity}>
             <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
-            <XAxis dataKey="name" tick={axisTick} axisLine={{ stroke: gridStroke }} tickLine={false} />
-            <YAxis tick={axisTick} axisLine={false} tickLine={false} allowDecimals={false} />
+            <XAxis dataKey="name" tick={axisTick} axisLine={{ stroke: gridStroke }} tickLine={false}>
+              <Label value="User" offset={-5} position="insideBottom" style={axisTick} />
+            </XAxis>
+            <YAxis tick={axisTick} axisLine={false} tickLine={false} allowDecimals={false}>
+              <Label value="Actions" angle={-90} position="insideLeft" offset={0} dy={12} style={axisTick} />
+            </YAxis>
             <Tooltip />
             <Bar dataKey="actions" fill={cove.aqua} radius={[4, 4, 0, 0]} maxBarSize={32} />
           </BarChart>
