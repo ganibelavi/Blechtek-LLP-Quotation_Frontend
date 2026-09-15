@@ -268,6 +268,20 @@ export default function RenewalsPage({ onNavigate }) {
           exclusive
           onChange={handleFilterChange}
           size="small"
+          sx={{
+            gap: 1,
+            "& .MuiToggleButtonGroup-grouped": {
+              margin: 0,
+              border: 1,
+              borderColor: "divider",
+              borderRadius: 1,
+              // lineHeight: 0
+            },
+            "& .MuiToggleButton-root": {
+              textTransform: "none",
+              lineHeight: "normal",
+            },
+          }}
         >
           {FILTERS.map((f) => (
             <ToggleButton key={f.value} value={f.value}>
