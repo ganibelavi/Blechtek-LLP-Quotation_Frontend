@@ -26,10 +26,13 @@ const emptyHistoryEntry = {
   date: "",
   status: "Paid",
   amount: "",
+  paymentMode: "",
+  transactionReference: "",
   notes: "",
 };
 
 const HISTORY_STATUS_OPTIONS = ["Paid", "Pending", "Overdue", "Refunded"];
+const PAYMENT_MODE_OPTIONS = ["Cash", "Bank Transfer", "Card", "UPI", "Cheque"];
 
 const toSummary = (data) => ({
   customerName: data.customerName ?? data.CustomerName ?? "",
@@ -76,6 +79,9 @@ const toTableHistory = (row) => ({
   Date: row.date ?? row.Date ?? "",
   Status: row.status ?? row.Status ?? "",
   Amount: row.amount ?? row.Amount ?? null,
+  PaymentMode: row.paymentMode ?? row.PaymentMode ?? "",
+  TransactionReference:
+    row.transactionReference ?? row.TransactionReference ?? "",
   Notes: row.notes ?? row.Notes ?? "",
 });
 
@@ -139,6 +145,8 @@ export default function SubscriptionDetailsPage({ subscriptionId, onNavigate }) 
       date: historyForm.date,
       status: historyForm.status,
       amount: historyForm.amount === "" ? null : Number(historyForm.amount),
+      paymentMode: historyForm.paymentMode || null,
+      transactionReference: historyForm.transactionReference || null,
       notes: historyForm.notes || null,
     };
 
@@ -219,6 +227,12 @@ export default function SubscriptionDetailsPage({ subscriptionId, onNavigate }) 
       render: ({ row }) => <Chip label={row.Status} size="small" />,
     },
     { key: "Amount", label: "Amount", sortable: true, minWidth: 130 },
+    { key: "PaymentMode", label: "Payment Mode", minWidth: 130 },
+    {
+      key: "TransactionReference",
+      label: "Transaction Reference",
+      minWidth: 180,
+    },
     { key: "Notes", label: "Notes", minWidth: 220 },
   ];
 
@@ -397,6 +411,26 @@ export default function SubscriptionDetailsPage({ subscriptionId, onNavigate }) 
               sx={{ gridColumn: { sm: "1 / span 2" } }}
               multiline
               minRows={2}
+            />
+            <TextField
+              select
+              label="Payment Mode"
+              name="paymentMode"
+              value={historyForm.paymentMode}
+              onChange={updateHistoryField}
+            >
+              <MenuItem value="">Not specified</MenuItem>
+              {PAYMENT_MODE_OPTIONS.map((option) => (
+                <MenuItem key={option} value={option}>
+                  {option}
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              label="Transaction Reference"
+              name="transactionReference"
+              value={historyForm.transactionReference}
+              onChange={updateHistoryField}
             />
           </Box>
         </DialogContent>

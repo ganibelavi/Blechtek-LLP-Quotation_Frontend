@@ -50,6 +50,21 @@ const normalizeQuotationValues = (candidate = {}) => ({
   },
 });
 
+const getCustomerContactName = (customer) =>
+  customer?.contactName ??
+  customer?.ContactName ??
+  customer?.name ??
+  customer?.Name ??
+  "";
+
+const getCustomerAddress = (customer) =>
+  customer?.address ?? customer?.Address ?? "";
+
+const getCustomerContactNumber = (customer) =>
+  customer?.contactNumber ?? customer?.ContactNumber ?? "";
+
+const getCustomerEmail = (customer) => customer?.email ?? customer?.Email ?? "";
+
 export default function CreateQuotation({ onNavigate, readOnly = false }) {
   const [modules, setModules] = useState([]);
   const [organizations, setOrganizations] = useState([]);
@@ -301,7 +316,7 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
   const handleCustomerChange = (contactName) => {
     const selectedCustomer = customers.find(
       (customer) =>
-        (customer.contactName || "").trim().toLowerCase() ===
+        getCustomerContactName(customer).trim().toLowerCase() ===
         contactName.trim().toLowerCase(),
     );
 
@@ -314,10 +329,10 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
       ...v,
       quotationTo: {
         ...v.quotationTo,
-        name: selectedCustomer.contactName || contactName,
-        address: selectedCustomer.address || "",
-        contactNo: selectedCustomer.contactNumber || "",
-        email: selectedCustomer.email || "",
+        name: getCustomerContactName(selectedCustomer) || contactName,
+        address: getCustomerAddress(selectedCustomer),
+        contactNo: getCustomerContactNumber(selectedCustomer),
+        email: getCustomerEmail(selectedCustomer),
       },
     }));
   };
@@ -650,9 +665,14 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
                     label="Contact name"
                     value={values.quotationTo.name}
                     onChange={handleCustomerChange}
-                    options={customers
-                      .map((customer) => customer.contactName)
-                      .filter(Boolean)}
+                    options={[
+                      ...new Set(
+                        customers
+                          .map(getCustomerContactName)
+                          .map((name) => name.trim())
+                          .filter(Boolean),
+                      ),
+                    ]}
                     placeholder="Select customer contact"
                     allowFreeText
                     disabled={readOnly}

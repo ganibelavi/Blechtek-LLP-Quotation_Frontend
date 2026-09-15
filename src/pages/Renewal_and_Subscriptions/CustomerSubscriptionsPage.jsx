@@ -16,7 +16,11 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { fetchCustomers, fetchModules } from "../../services/quotationApi";
+import {
+  fetchCustomers,
+  fetchModules,
+  fetchQuotations,
+} from "../../services/quotationApi";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import VisibilityIcon from "@mui/icons-material/Visibility";
@@ -30,6 +34,9 @@ const STATUS_OPTIONS = ["Active", "Expired", "Cancelled"];
 const emptySubscription = {
   customerName: "",
   moduleName: "",
+  quotationId: "",
+  renewalPercentage: "",
+  escalationPercentage: "",
   purchaseDate: "",
   subscriptionStartDate: "",
   subscriptionEndDate: "",
@@ -42,6 +49,11 @@ const toTableSubscription = (sub) => ({
   Id: sub.id ?? sub.Id,
   CustomerName: sub.customerName ?? sub.CustomerName ?? "",
   ModuleName: sub.moduleName ?? sub.ModuleName ?? "",
+  QuotationId: sub.quotationId ?? sub.QuotationId ?? "",
+  RenewalPercentage:
+    sub.renewalPercentage ?? sub.RenewalPercentage ?? null,
+  EscalationPercentage:
+    sub.escalationPercentage ?? sub.EscalationPercentage ?? null,
   PurchaseDate: sub.purchaseDate ?? sub.PurchaseDate ?? "",
   SubscriptionStartDate:
     sub.subscriptionStartDate ?? sub.SubscriptionStartDate ?? "",
@@ -84,6 +96,7 @@ export default function CustomerSubscriptionsPage({ onNavigate }) {
   const [subscriptions, setSubscriptions] = useState([]);
   const [customerOptions, setCustomerOptions] = useState([]);
   const [moduleOptions, setModuleOptions] = useState([]);
+  const [quotationOptions, setQuotationOptions] = useState([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptySubscription);
@@ -115,8 +128,8 @@ export default function CustomerSubscriptionsPage({ onNavigate }) {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([fetchCustomers(), fetchModules()])
-      .then(([customers, modules]) => {
+    Promise.all([fetchCustomers(), fetchModules(), fetchQuotations(1, 500)])
+      .then(([customers, modules, quotations]) => {
         if (cancelled) return;
         setCustomerOptions(
           customers.map(customerName).filter(Boolean).sort((a, b) => a.localeCompare(b)),
@@ -124,6 +137,7 @@ export default function CustomerSubscriptionsPage({ onNavigate }) {
         setModuleOptions(
           modules.map(moduleName).filter(Boolean).sort((a, b) => a.localeCompare(b)),
         );
+        setQuotationOptions(quotations || []);
       })
       .catch(() => {
         if (!cancelled) {
@@ -148,6 +162,9 @@ export default function CustomerSubscriptionsPage({ onNavigate }) {
     setForm({
       customerName: sub.CustomerName,
       moduleName: sub.ModuleName,
+      quotationId: sub.QuotationId || "",
+      renewalPercentage: sub.RenewalPercentage ?? "",
+      escalationPercentage: sub.EscalationPercentage ?? "",
       purchaseDate: sub.PurchaseDate ? sub.PurchaseDate.slice(0, 10) : "",
       subscriptionStartDate: sub.SubscriptionStartDate
         ? sub.SubscriptionStartDate.slice(0, 10)
@@ -178,11 +195,29 @@ export default function CustomerSubscriptionsPage({ onNavigate }) {
   const saveSubscription = async (event) => {
     event.preventDefault();
     if (!form.customerName || !form.moduleName) return;
+    const renewalPercentage = Number(form.renewalPercentage || 0);
+    const escalationPercentage = Number(form.escalationPercentage || 0);
+    if (
+      renewalPercentage < 0 ||
+      renewalPercentage > 100 ||
+      escalationPercentage < 0 ||
+      escalationPercentage > 100
+    ) {
+      const message = "Percentage values must be between 0 and 100.";
+      setApiError(message);
+      setSnackbar({ open: true, message, severity: "error" });
+      return;
+    }
     setApiError("");
 
     const request = {
       customerName: form.customerName,
       moduleName: form.moduleName,
+      quotationId: form.quotationId || null,
+      renewalPercentage:
+        form.renewalPercentage === "" ? null : renewalPercentage,
+      escalationPercentage:
+        form.escalationPercentage === "" ? null : escalationPercentage,
       purchaseDate: form.purchaseDate || null,
       subscriptionStartDate: form.subscriptionStartDate || null,
       subscriptionEndDate: form.subscriptionEndDate || null,
@@ -200,7 +235,17 @@ export default function CustomerSubscriptionsPage({ onNavigate }) {
           "/api/customer-subscriptions",
           request,
         );
-        const newSub = toTableSubscription(data);
+        const newSub = toTableSubscription({
+          ...data,
+          renewalPercentage:
+            data.renewalPercentage ??
+            data.RenewalPercentage ??
+            request.renewalPercentage,
+          escalationPercentage:
+            data.escalationPercentage ??
+            data.EscalationPercentage ??
+            request.escalationPercentage,
+        });
         setSubscriptions((current) => [...current, newSub]);
         setSnackbar({
           open: true,
@@ -212,7 +257,17 @@ export default function CustomerSubscriptionsPage({ onNavigate }) {
           `/api/customer-subscriptions/${editingId}`,
           request,
         );
-        const updatedSub = toTableSubscription(data);
+        const updatedSub = toTableSubscription({
+          ...data,
+          renewalPercentage:
+            data.renewalPercentage ??
+            data.RenewalPercentage ??
+            request.renewalPercentage,
+          escalationPercentage:
+            data.escalationPercentage ??
+            data.EscalationPercentage ??
+            request.escalationPercentage,
+        });
         setSubscriptions((current) =>
           current.map((s) => (s.Id === editingId ? updatedSub : s)),
         );
@@ -311,6 +366,30 @@ export default function CustomerSubscriptionsPage({ onNavigate }) {
           sx={{ fontWeight: 600, ...statusChipColor(row.Status) }}
         />
       ),
+    },
+    {
+      key: "QuotationId",
+      label: "Original Quotation",
+      sortable: true,
+      minWidth: 180,
+    },
+    {
+      key: "RenewalPercentage",
+      label: "Renewal %",
+      sortable: true,
+      minWidth: 110,
+      render: ({ row }) =>
+        row.RenewalPercentage == null ? "-" : `${row.RenewalPercentage}%`,
+    },
+    {
+      key: "EscalationPercentage",
+      label: "Escalation %",
+      sortable: true,
+      minWidth: 120,
+      render: ({ row }) =>
+        row.EscalationPercentage == null
+          ? "-"
+          : `${row.EscalationPercentage}%`,
     },
     {
       key: "actions",
@@ -414,6 +493,33 @@ export default function CustomerSubscriptionsPage({ onNavigate }) {
               freeSolo={false}
             />
             <Autocomplete
+              options={quotationOptions}
+              value={
+                quotationOptions.find(
+                  (quotation) =>
+                    (quotation.quotationId ?? quotation.id) === form.quotationId,
+                ) || null
+              }
+              onChange={(_event, value) =>
+                setForm((current) => ({
+                  ...current,
+                  quotationId: value?.quotationId ?? value?.id ?? "",
+                }))
+              }
+              getOptionLabel={(quotation) =>
+                quotation
+                  ? `${quotation.quotationNo || quotation.quotationId || quotation.id} - ${quotation.quotationToName || ""}`
+                  : ""
+              }
+              renderInput={(params) => (
+                <TextField {...params} label="Original Quotation (Optional)" />
+              )}
+              isOptionEqualToValue={(option, value) =>
+                (option.quotationId ?? option.id) ===
+                (value.quotationId ?? value.id)
+              }
+            />
+            <Autocomplete
               required
               options={[...new Set([...moduleOptions, form.moduleName].filter(Boolean))]}
               value={form.moduleName || null}
@@ -443,6 +549,24 @@ export default function CustomerSubscriptionsPage({ onNavigate }) {
               value={form.currentSubscriptionYear}
               onChange={updateField}
               inputProps={{ min: 1, step: 1 }}
+            />
+            <TextField
+              label="Renewal Percentage (%)"
+              name="renewalPercentage"
+              type="number"
+              value={form.renewalPercentage}
+              onChange={updateField}
+              inputProps={{ min: 0, max: 100, step: "0.01" }}
+              helperText="Applied from renewal year 2"
+            />
+            <TextField
+              label="Annual Escalation Percentage (%)"
+              name="escalationPercentage"
+              type="number"
+              value={form.escalationPercentage}
+              onChange={updateField}
+              inputProps={{ min: 0, max: 100, step: "0.01" }}
+              helperText="Applied from renewal year 3"
             />
             <TextField
               label="Subscription Start Date"
