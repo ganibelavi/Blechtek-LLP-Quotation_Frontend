@@ -3,6 +3,7 @@ import axios from "axios";
 import EntityTable from "../../components/EntityTable";
 import CustomSnackbar from "../../components/CustomSnackbar";
 import {
+  Autocomplete,
   Box,
   Button,
   Chip,
@@ -15,6 +16,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import { fetchCustomers, fetchModules } from "../../services/quotationApi";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import VisibilityIcon from "@mui/icons-material/Visibility";
@@ -51,6 +53,20 @@ const toTableSubscription = (sub) => ({
   Status: sub.status ?? sub.Status ?? "Active",
 });
 
+const customerName = (customer) =>
+  customer?.name ??
+  customer?.Name ??
+  customer?.customerName ??
+  customer?.CustomerName ??
+  "";
+
+const moduleName = (module) =>
+  module?.module ??
+  module?.Module ??
+  module?.moduleName ??
+  module?.ModuleName ??
+  "";
+
 const statusChipColor = (status) => {
   switch (status) {
     case "Active":
@@ -66,6 +82,8 @@ const statusChipColor = (status) => {
 
 export default function CustomerSubscriptionsPage({ onNavigate }) {
   const [subscriptions, setSubscriptions] = useState([]);
+  const [customerOptions, setCustomerOptions] = useState([]);
+  const [moduleOptions, setModuleOptions] = useState([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptySubscription);
@@ -89,6 +107,28 @@ export default function CustomerSubscriptionsPage({ onNavigate }) {
       .catch(() => {
         if (!cancelled)
           setApiError("Could not load customer subscriptions from the database.");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([fetchCustomers(), fetchModules()])
+      .then(([customers, modules]) => {
+        if (cancelled) return;
+        setCustomerOptions(
+          customers.map(customerName).filter(Boolean).sort((a, b) => a.localeCompare(b)),
+        );
+        setModuleOptions(
+          modules.map(moduleName).filter(Boolean).sort((a, b) => a.localeCompare(b)),
+        );
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setApiError("Could not load customers and modules from master data.");
+        }
       });
     return () => {
       cancelled = true;
@@ -320,9 +360,9 @@ export default function CustomerSubscriptionsPage({ onNavigate }) {
         </h1>
         <Button
           variant="contained"
-          startIcon={
-            <img src="/logo/add.png" alt="Add" style={{ width: 20, height: 20 }} />
-          }
+          // startIcon={
+          //   <img src="/logo/add.png" alt="Add" style={{ width: 20, height: 20 }} />
+          // }
           onClick={openAddDialog}
         >
           Add Subscription
@@ -358,19 +398,35 @@ export default function CustomerSubscriptionsPage({ onNavigate }) {
               pt: 1,
             }}
           >
-            <TextField
+            <Autocomplete
               required
-              label="Customer Name"
-              name="customerName"
-              value={form.customerName}
-              onChange={updateField}
+              options={[...new Set([...customerOptions, form.customerName].filter(Boolean))]}
+              value={form.customerName || null}
+              onChange={(_event, value) =>
+                setForm((current) => ({
+                  ...current,
+                  customerName: value || "",
+                }))
+              }
+              renderInput={(params) => (
+                <TextField {...params} required label="Customer Name" />
+              )}
+              freeSolo={false}
             />
-            <TextField
+            <Autocomplete
               required
-              label="Module Name"
-              name="moduleName"
-              value={form.moduleName}
-              onChange={updateField}
+              options={[...new Set([...moduleOptions, form.moduleName].filter(Boolean))]}
+              value={form.moduleName || null}
+              onChange={(_event, value) =>
+                setForm((current) => ({
+                  ...current,
+                  moduleName: value || "",
+                }))
+              }
+              renderInput={(params) => (
+                <TextField {...params} required label="Module Name" />
+              )}
+              freeSolo={false}
             />
             <TextField
               label="Purchase Date"

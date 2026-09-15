@@ -10,6 +10,7 @@ import {
 } from "@mui/material";
 import {
   createInvoice,
+  linkRenewalInvoice,
   updateInvoice,
   updateInvoiceStatus,
   fetchModules,
@@ -333,7 +334,9 @@ const applyQuotationPricing = (items, quotation) => {
     const detail = details.find(
       (module) =>
         getModuleName(module).toLowerCase() ===
-        String(item.description || "").trim().toLowerCase(),
+        String(item.description || "")
+          .trim()
+          .toLowerCase(),
     );
     if (!detail) return item;
 
@@ -442,6 +445,13 @@ export default function InvoiceEntryForm({
     const sourceData = initialData?.invoice
       ? initialData
       : { invoice: initialData, items: initialData?.items || [] };
+    let renewalInvoiceContext = null;
+    try {
+      const storedContext = sessionStorage.getItem("renewalInvoiceContext");
+      renewalInvoiceContext = storedContext ? JSON.parse(storedContext) : null;
+    } catch (error) {
+      console.error("Failed to read renewal invoice context", error);
+    }
     const sourceItems =
       Array.isArray(sourceData?.items) && sourceData.items.length
         ? sourceData.items.map((item) => ({
@@ -455,6 +465,11 @@ export default function InvoiceEntryForm({
       status: sourceData?.invoice?.status || sourceData?.status || "draft",
       items: sourceItems,
       sourceInvoiceId: normalizeId(sourceData?.id || sourceData?.invoice?.id),
+      sourceQuotationId: normalizeQuotationId(
+        sourceData?.invoice?.quotationId ||
+          renewalInvoiceContext?.quotationId ||
+          null,
+      ),
     };
   });
   const [quotationRecords, setQuotationRecords] = useState([]);
@@ -1024,8 +1039,7 @@ export default function InvoiceEntryForm({
             activeQuotation.quotationToName || prev.consigneeName || "",
           consigneeAddress:
             activeQuotation.quotationToAddress || prev.consigneeAddress || "",
-          quotationNo:
-            activeQuotation.quotationNo || prev.quotationNo || "",
+          quotationNo: activeQuotation.quotationNo || prev.quotationNo || "",
           poNoDate: activeQuotation.quotationNo
             ? `Quotation No. ${activeQuotation.quotationNo}`
             : prev.poNoDate || "",
@@ -1054,8 +1068,7 @@ export default function InvoiceEntryForm({
             matchedQuotation.quotationToName || prev.consigneeName || "",
           consigneeAddress:
             matchedQuotation.quotationToAddress || prev.consigneeAddress || "",
-          quotationNo:
-            matchedQuotation.quotationNo || prev.quotationNo || "",
+          quotationNo: matchedQuotation.quotationNo || prev.quotationNo || "",
           poNoDate: matchedQuotation.quotationNo
             ? `Quotation No. ${matchedQuotation.quotationNo}`
             : prev.poNoDate || "",
@@ -1212,6 +1225,15 @@ export default function InvoiceEntryForm({
         saved = await updateInvoice(form.sourceInvoiceId, payload);
       } else {
         saved = await createInvoice(payload);
+      }
+
+      const renewalInvoiceContextRaw = sessionStorage.getItem(
+        "renewalInvoiceContext",
+      );
+      if (renewalInvoiceContextRaw && saved.id) {
+        const renewalContext = JSON.parse(renewalInvoiceContextRaw);
+        await linkRenewalInvoice(renewalContext.renewalId, saved.id);
+        sessionStorage.removeItem("renewalInvoiceContext");
       }
 
       sessionStorage.setItem(

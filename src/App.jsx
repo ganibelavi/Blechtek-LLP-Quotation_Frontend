@@ -28,6 +28,7 @@ import RenewalsPage from "./pages/Renewal_and_Subscriptions/RenewalsPage";
 import RenewalQuotationPage from "./pages/Renewal_and_Subscriptions/RenewalQuotationPage";
 import SubscriptionPricingHistoryPage from "./pages/Renewal_and_Subscriptions/SubscriptionPricingHistoryPage";
 import SubscriptionDetailsPage from "./pages/Renewal_and_Subscriptions/SubscriptionDetailsPage";
+import GuidelinesPage from "./pages/GuidelinesPage";
 import { useAuth } from "./context/AuthContext";
 import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
@@ -75,7 +76,12 @@ export default function App() {
 
   const [subscriptionId, setSubscriptionId] = useState(null);
 
-  const navigate = (newView, initialTab, quotationId, selectedSubscriptionId) => {
+  const navigate = (
+    newView,
+    initialTab,
+    quotationId,
+    selectedSubscriptionId,
+  ) => {
     if (initialTab) setSettingsInitialTab(initialTab);
     if (quotationId) setEditQuotationId(quotationId);
     if (selectedSubscriptionId) setSubscriptionId(selectedSubscriptionId);
@@ -113,6 +119,7 @@ export default function App() {
       "renewal-quotations": "Renewal Quotations",
       "pricing-history": "Pricing History",
       "subscription-details": "Subscription Details",
+      guidelines: "Guidelines",
     }[view] || "";
 
   const menuItems = [
@@ -217,6 +224,15 @@ export default function App() {
                   />
                 </IconButton>
               </Tooltip> */}
+              <Tooltip title="Guidelines">
+                <button
+                  type="button"
+                  className="app-topbar__guidelines-btn"
+                  onClick={() => navigate("guidelines")}
+                >
+                  Guidelines
+                </button>
+              </Tooltip>
               <Tooltip title="Logout">
                 <IconButton
                   className="app-topbar__icon-btn"
@@ -273,43 +289,43 @@ export default function App() {
                         "dashboard-invoices",
                       ].includes(view)
                     : item.view === "created-quotations"
-                    ? [
-                        "created-quotations",
-                        "quotation-detail",
-                        "edit-quotation",
-                        "quotation",
-                        "quotation-history",
-                      ].includes(view)
-                    : item.view === "all-revisions"
-                      ? view === "all-revisions"
-                      : item.view === "settings"
-                        ? [
-                            "settings",
-                            "users",
-                            "modules",
-                            "customers",
-                            "suppliers",
-                            "company-profile",
-                            "bank-accounts",
-                            "gst-rates",
-                            "terms-templates",
-                          ].includes(view)
-                        : item.view === "created-invoices"
+                      ? [
+                          "created-quotations",
+                          "quotation-detail",
+                          "edit-quotation",
+                          "quotation",
+                          "quotation-history",
+                        ].includes(view)
+                      : item.view === "all-revisions"
+                        ? view === "all-revisions"
+                        : item.view === "settings"
                           ? [
-                              "created-invoices",
-                              "invoice-entry",
-                              "invoice",
+                              "settings",
+                              "users",
+                              "modules",
+                              "customers",
+                              "suppliers",
+                              "company-profile",
+                              "bank-accounts",
+                              "gst-rates",
+                              "terms-templates",
                             ].includes(view)
-                          : item.view === "subscriptions"
+                          : item.view === "created-invoices"
                             ? [
-                                "subscriptions",
-                                "customer-subscriptions",
-                                "renewals",
-                                "renewal-quotations",
-                                "pricing-history",
-                                "subscription-details",
+                                "created-invoices",
+                                "invoice-entry",
+                                "invoice",
                               ].includes(view)
-                          : view === item.view;
+                            : item.view === "subscriptions"
+                              ? [
+                                  "subscriptions",
+                                  "customer-subscriptions",
+                                  "renewals",
+                                  "renewal-quotations",
+                                  "pricing-history",
+                                  "subscription-details",
+                                ].includes(view)
+                              : view === item.view;
                 return (
                   <React.Fragment key={item.view}>
                     <button
@@ -371,7 +387,10 @@ export default function App() {
                       !sidebarCollapsed && (
                         <div className="app-sidebar__submenu">
                           {[
-                            ["customer-subscriptions", "Customer subscriptions"],
+                            [
+                              "customer-subscriptions",
+                              "Customer subscriptions",
+                            ],
                             ["renewals", "Renewals"],
                             ["renewal-quotations", "Renewal quotations"],
                             ["pricing-history", "Pricing history"],
@@ -418,6 +437,7 @@ export default function App() {
               "renewal-quotations",
               "pricing-history",
               "subscription-details",
+              "guidelines",
             ].includes(view) && (
               <div className="app-section-title">
                 <h1>{pageTitle}</h1>
@@ -531,7 +551,9 @@ export default function App() {
                     <InvoiceEntryForm
                       onNavigate={navigate}
                       initialData={getInvoiceInitialData()}
-                      viewOnly={sessionStorage.getItem("invoiceViewOnly") === "true"}
+                      viewOnly={
+                        sessionStorage.getItem("invoiceViewOnly") === "true"
+                      }
                       defaultReturnView={
                         sessionStorage.getItem("invoiceBackView") ||
                         "created-invoices"
@@ -560,7 +582,9 @@ export default function App() {
                 case "renewal-quotations":
                   return <RenewalQuotationPage onNavigate={navigate} />;
                 case "pricing-history":
-                  return <SubscriptionPricingHistoryPage onNavigate={navigate} />;
+                  return (
+                    <SubscriptionPricingHistoryPage onNavigate={navigate} />
+                  );
                 case "subscription-details":
                   return (
                     <SubscriptionDetailsPage
@@ -568,6 +592,8 @@ export default function App() {
                       subscriptionId={subscriptionId}
                     />
                   );
+                case "guidelines":
+                  return <GuidelinesPage />;
                 case "create":
                 default:
                   return <CreateQuotation onNavigate={navigate} />;

@@ -164,13 +164,13 @@ export default function SubscriptionPricingHistoryPage() {
           </TextField>
           <Button
             variant="contained"
-            startIcon={
-              <img
-                src="/logo/add.png"
-                alt="Add"
-                style={{ width: 20, height: 20 }}
-              />
-            }
+            // startIcon={
+            //   <img
+            //     src="/logo/add.png"
+            //     alt="Add"
+            //     style={{ width: 20, height: 20 }}
+            //   />
+            // }
             onClick={openAddDialog}
           >
             Add Entry

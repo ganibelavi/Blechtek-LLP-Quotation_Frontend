@@ -18,7 +18,6 @@ import {
 } from "@mui/material";
 import DescriptionIcon from "@mui/icons-material/Description";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
 import {
   dialogPrimaryActionSx,
@@ -33,11 +32,13 @@ const FILTERS = [
 ];
 
 const toTableRenewal = (row) => ({
-  Id: row.id ?? row.Id,
+  SubscriptionId: row.subscriptionId ?? row.SubscriptionId ?? row.id ?? row.Id,
+  RenewalId: row.renewalId ?? row.RenewalId ?? null,
+  QuotationId: row.quotationId ?? row.QuotationId ?? null,
+  InvoiceId: row.invoiceId ?? row.InvoiceId ?? null,
   CustomerName: row.customerName ?? row.CustomerName ?? "",
   ModuleName: row.moduleName ?? row.ModuleName ?? "",
-  SubscriptionEndDate:
-    row.subscriptionEndDate ?? row.SubscriptionEndDate ?? "",
+  SubscriptionEndDate: row.subscriptionEndDate ?? row.SubscriptionEndDate ?? "",
   NextRenewalDate: row.nextRenewalDate ?? row.NextRenewalDate ?? "",
   DaysToRenewal: row.daysToRenewal ?? row.DaysToRenewal ?? null,
   Status: row.status ?? row.Status ?? "",
@@ -56,7 +57,7 @@ const statusChipColor = (status) => {
   }
 };
 
-export default function RenewalsPage() {
+export default function RenewalsPage({ onNavigate }) {
   const [filter, setFilter] = useState("dueThisMonth");
   const [renewals, setRenewals] = useState([]);
   const [apiError, setApiError] = useState("");
@@ -92,9 +93,17 @@ export default function RenewalsPage() {
     if (newFilter !== null) setFilter(newFilter);
   };
 
+  const prepareRenewal = async (renewal) => {
+    const { data } = await axios.post(
+      `/api/renewals/${renewal.SubscriptionId}/prepare`,
+    );
+    return data.renewalId ?? data.RenewalId;
+  };
+
   const generateQuotation = async (renewal) => {
     try {
-      await axios.post(`/api/renewals/${renewal.Id}/generate-quotation`);
+      const renewalId = await prepareRenewal(renewal);
+      await axios.post(`/api/renewals/${renewalId}/generate-quotation`);
       setSnackbar({
         open: true,
         message: `Renewal quotation generated for "${renewal.CustomerName}".`,
@@ -112,17 +121,34 @@ export default function RenewalsPage() {
 
   const generateInvoice = async (renewal) => {
     try {
-      await axios.post(`/api/renewals/${renewal.Id}/generate-invoice`);
+      const renewalId = renewal.RenewalId || (await prepareRenewal(renewal));
+      if (!renewalId) {
+        throw new Error("A renewal record is required before invoicing.");
+      }
+      if (!renewal.QuotationId) {
+        throw new Error("Create and link a renewal quotation before invoicing.");
+      }
+      sessionStorage.setItem(
+        "renewalInvoiceContext",
+        JSON.stringify({
+          renewalId,
+          quotationId: renewal.QuotationId,
+        }),
+      );
+      sessionStorage.setItem("invoiceBackView", "renewals");
+      onNavigate("invoice-entry");
       setSnackbar({
         open: true,
-        message: `Renewal invoice generated for "${renewal.CustomerName}".`,
-        severity: "success",
+        message: "Renewal quotation loaded into the invoice form.",
+        severity: "info",
       });
     } catch (error) {
       setSnackbar({
         open: true,
         message:
-          error.response?.data?.error ?? "Could not generate the invoice.",
+          error.response?.data?.error ??
+          error.message ??
+          "Could not prepare the invoice.",
         severity: "error",
       });
     }
@@ -137,29 +163,26 @@ export default function RenewalsPage() {
   };
 
   const handleConfirmAction = async () => {
-    const { action, renewal } = confirmDialog;
+    const { renewal } = confirmDialog;
     if (!renewal) return;
 
-    const endpoint =
-      action === "markRenewed"
-        ? `/api/renewals/${renewal.Id}/mark-renewed`
-        : `/api/renewals/${renewal.Id}/cancel`;
+    const endpoint = `/api/renewals/${renewal.SubscriptionId}/cancel`;
 
     try {
       await axios.post(endpoint);
-      setRenewals((current) => current.filter((r) => r.Id !== renewal.Id));
+      setRenewals((current) =>
+        current.filter((r) => r.SubscriptionId !== renewal.SubscriptionId),
+      );
       setSnackbar({
         open: true,
-        message:
-          action === "markRenewed"
-            ? `Subscription for "${renewal.CustomerName}" marked as renewed.`
-            : `Subscription for "${renewal.CustomerName}" cancelled.`,
+        message: `Subscription for "${renewal.CustomerName}" cancelled.`,
         severity: "success",
       });
     } catch (error) {
       setSnackbar({
         open: true,
-        message: error.response?.data?.error ?? "Could not complete the action.",
+        message:
+          error.response?.data?.error ?? "Could not complete the action.",
         severity: "error",
       });
     } finally {
@@ -217,14 +240,6 @@ export default function RenewalsPage() {
               <ReceiptLongIcon fontSize="small" />
             </IconButton>
           </Tooltip>
-          <Tooltip title="Mark as Renewed">
-            <IconButton
-              size="small"
-              onClick={() => openConfirm("markRenewed", row)}
-            >
-              <CheckCircleIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
           <Tooltip title="Cancel Subscription">
             <IconButton size="small" onClick={() => openConfirm("cancel", row)}>
               <CancelIcon fontSize="small" />
@@ -276,7 +291,10 @@ export default function RenewalsPage() {
         maxWidth="xs"
         fullWidth
         sx={{
-          "& .MuiDialog-container": { alignItems: "flex-start", paddingTop: "1vh" },
+          "& .MuiDialog-container": {
+            alignItems: "flex-start",
+            paddingTop: "1vh",
+          },
         }}
         PaperProps={{ sx: { borderRadius: 1 } }}
       >
@@ -287,15 +305,11 @@ export default function RenewalsPage() {
             py: 1.5,
           }}
         >
-          {confirmDialog.action === "markRenewed"
-            ? "Confirm Mark as Renewed"
-            : "Confirm Cancel Subscription"}
+          Confirm Cancel Subscription
         </DialogTitle>
         <DialogContent>
           <Typography variant="body1" sx={{ mt: 1, fontSize: "14px" }}>
-            {confirmDialog.action === "markRenewed"
-              ? "Are you sure you want to mark this subscription as renewed?"
-              : "Are you sure you want to cancel this subscription? This action cannot be undone."}{" "}
+            Are you sure you want to cancel this subscription? This action cannot be undone.{" "}
             <strong>
               {confirmDialog.renewal?.CustomerName} (
               {confirmDialog.renewal?.ModuleName})

@@ -64,6 +64,23 @@
   gap: 8px;
 }
 
+.app-topbar__guidelines-btn {
+  border: 1px solid #308aea;
+  border-radius: 8px;
+  padding: 7px 12px;
+  background: #fff;
+  color: #246fc0;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.app-topbar__guidelines-btn:hover {
+  background: #eaf4ff;
+  border-color: #246fc0;
+}
+
 .app-topbar__icon-btn {
   background: transparent;
   border-radius: 8px;

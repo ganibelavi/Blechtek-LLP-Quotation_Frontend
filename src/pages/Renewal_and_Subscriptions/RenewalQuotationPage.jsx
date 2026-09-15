@@ -10,11 +10,15 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  IconButton,
   MenuItem,
   Paper,
   TextField,
   Typography,
 } from "@mui/material";
+import DescriptionIcon from "@mui/icons-material/Description";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import { fetchQuotationById } from "../../services/quotationApi";
 import {
   dialogPrimaryActionSx,
   dialogSecondaryActionSx,
@@ -27,6 +31,9 @@ const emptyForm = {
 
 const toTableQuotation = (row) => ({
   Id: row.id ?? row.Id,
+  RenewalId: row.renewalId ?? row.RenewalId ?? null,
+  SubscriptionId: row.subscriptionId ?? row.SubscriptionId ?? null,
+  QuotationId: row.quotationId ?? row.QuotationId ?? null,
   QuotationNumber: row.quotationNumber ?? row.QuotationNumber ?? "",
   CustomerName: row.customerName ?? row.CustomerName ?? "",
   ModuleName: row.moduleName ?? row.ModuleName ?? "",
@@ -48,7 +55,7 @@ const calculateRenewalAmount = (basePrice, renewalPct, escalationPct, year) => {
   return Math.round(escalated * 100) / 100;
 };
 
-export default function RenewalQuotationPage() {
+export default function RenewalQuotationPage({ onNavigate }) {
   const [quotations, setQuotations] = useState([]);
   const [subscriptions, setSubscriptions] = useState([]);
   const [apiError, setApiError] = useState("");
@@ -91,9 +98,7 @@ export default function RenewalQuotationPage() {
 
   const handleSubscriptionChange = (event) => {
     const id = event.target.value;
-    const sub = subscriptions.find(
-      (s) => String(s.id ?? s.Id) === String(id),
-    );
+    const sub = subscriptions.find((s) => String(s.id ?? s.Id) === String(id));
     setSelectedSubscription(sub || null);
     setForm((current) => ({ ...current, customerSubscriptionId: id }));
   };
@@ -146,29 +151,129 @@ export default function RenewalQuotationPage() {
     if (!form.customerSubscriptionId || !form.year) return;
     setApiError("");
 
-    const request = {
-      customerSubscriptionId: form.customerSubscriptionId,
-      year: Number(form.year),
-      amount: computedAmount,
-      periodStart: subscriptionPeriod?.start ?? null,
-      periodEnd: subscriptionPeriod?.end ?? null,
-    };
-
     try {
-      const { data } = await axios.post("/api/renewal-quotations", request);
-      const newQuotation = toTableQuotation(data);
-      setQuotations((current) => [...current, newQuotation]);
+      const { data: prepared } = await axios.post(
+        `/api/renewals/${form.customerSubscriptionId}/prepare`,
+        null,
+        { params: { year: Number(form.year) } },
+      );
+      sessionStorage.setItem(
+        "renewalQuotationContext",
+        JSON.stringify({
+          renewalId: prepared.renewalId ?? prepared.RenewalId,
+          subscriptionId: prepared.subscriptionId ?? prepared.SubscriptionId,
+          customerName: prepared.customerName ?? prepared.CustomerName ?? "",
+          customerAddress:
+            prepared.customerAddress ?? prepared.CustomerAddress ?? "",
+          customerContactNumber:
+            prepared.customerContactNumber ??
+            prepared.CustomerContactNumber ??
+            "",
+          customerEmail: prepared.customerEmail ?? prepared.CustomerEmail ?? "",
+          moduleName: prepared.moduleName ?? prepared.ModuleName ?? "",
+          year: prepared.year ?? prepared.Year ?? Number(form.year),
+          amount: prepared.amount ?? prepared.Amount ?? computedAmount,
+          periodStart:
+            prepared.periodStartDate ??
+            prepared.PeriodStartDate ??
+            subscriptionPeriod?.start ??
+            null,
+          periodEnd:
+            prepared.periodEndDate ??
+            prepared.PeriodEndDate ??
+            subscriptionPeriod?.end ??
+            null,
+        }),
+      );
+      closeDialog();
+      onNavigate("create");
       setSnackbar({
         open: true,
-        message: `Renewal quotation "${newQuotation.QuotationNumber}" created successfully!`,
-        severity: "success",
+        message: "Renewal details loaded into the quotation form.",
+        severity: "info",
       });
-      closeDialog();
     } catch (error) {
       const msg =
-        error.response?.data?.error ?? "Could not create the renewal quotation.";
+        error.response?.data?.error ??
+        "Could not create the renewal quotation.";
       setApiError(msg);
       setSnackbar({ open: true, message: msg, severity: "error" });
+    }
+  };
+
+  const buildRenewalContext = (renewal) => ({
+    renewalId: renewal.RenewalId,
+    subscriptionId: renewal.SubscriptionId,
+    customerName: renewal.CustomerName,
+    moduleName: renewal.ModuleName,
+    year: renewal.Year,
+    amount: renewal.Amount,
+    periodStart: null,
+    periodEnd: null,
+  });
+
+  const createQuotationForRow = async (renewal) => {
+    try {
+      const { data: prepared } = await axios.post(
+        `/api/renewals/${renewal.SubscriptionId}/prepare`,
+        null,
+        { params: { year: Number(renewal.Year) } },
+      );
+      sessionStorage.setItem(
+        "renewalQuotationContext",
+        JSON.stringify({
+          ...buildRenewalContext(renewal),
+          renewalId: prepared.renewalId ?? prepared.RenewalId,
+          subscriptionId: prepared.subscriptionId ?? prepared.SubscriptionId,
+          customerName:
+            prepared.customerName ??
+            prepared.CustomerName ??
+            renewal.CustomerName,
+          customerAddress:
+            prepared.customerAddress ?? prepared.CustomerAddress ?? "",
+          customerContactNumber:
+            prepared.customerContactNumber ??
+            prepared.CustomerContactNumber ??
+            "",
+          customerEmail: prepared.customerEmail ?? prepared.CustomerEmail ?? "",
+          moduleName:
+            prepared.moduleName ?? prepared.ModuleName ?? renewal.ModuleName,
+          year: prepared.year ?? prepared.Year ?? renewal.Year,
+          amount: prepared.amount ?? prepared.Amount ?? renewal.Amount,
+          periodStart:
+            prepared.periodStartDate ?? prepared.PeriodStartDate ?? null,
+          periodEnd: prepared.periodEndDate ?? prepared.PeriodEndDate ?? null,
+        }),
+      );
+      onNavigate("create");
+    } catch (error) {
+      const message =
+        error.response?.data?.error ??
+        "Could not prepare the renewal quotation.";
+      setSnackbar({ open: true, message, severity: "error" });
+    }
+  };
+
+  const openLinkedQuotation = async (renewal) => {
+    try {
+      const quotation = await fetchQuotationById(renewal.QuotationId);
+      if (!quotation)
+        throw new Error("The linked quotation could not be found.");
+      sessionStorage.setItem(
+        "quotationData",
+        JSON.stringify({
+          quotationId: renewal.QuotationId,
+          QuotationId: renewal.QuotationId,
+        }),
+      );
+      sessionStorage.setItem("quotationFormValues", JSON.stringify({}));
+      onNavigate("quotation-detail");
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: error.message ?? "Could not open the linked quotation.",
+        severity: "error",
+      });
     }
   };
 
@@ -191,6 +296,32 @@ export default function RenewalQuotationPage() {
       minWidth: 120,
       render: ({ row }) => <Chip label={row.Status} size="small" />,
     },
+    {
+      key: "actions",
+      label: "Actions",
+      minWidth: 120,
+      render: ({ row }) => (
+        <IconButton
+          size="small"
+          aria-label={
+            row.QuotationId
+              ? `Open quotation for ${row.CustomerName}`
+              : `Create quotation for ${row.CustomerName}`
+          }
+          onClick={() =>
+            row.QuotationId
+              ? openLinkedQuotation(row)
+              : createQuotationForRow(row)
+          }
+        >
+          {row.QuotationId ? (
+            <VisibilityIcon fontSize="small" />
+          ) : (
+            <DescriptionIcon fontSize="small" />
+          )}
+        </IconButton>
+      ),
+    },
   ];
 
   return (
@@ -207,9 +338,13 @@ export default function RenewalQuotationPage() {
         <h1 className="page-heading page-heading__text">Renewal Quotations</h1>
         <Button
           variant="contained"
-          startIcon={
-            <img src="/logo/add.png" alt="Add" style={{ width: 20, height: 20 }} />
-          }
+          // startIcon={
+          //   <img
+          //     src="/logo/add.png"
+          //     alt="Add"
+          //     style={{ width: 20, height: 20 }}
+          //   />
+          // }
           onClick={openAddDialog}
         >
           Create Quotation
@@ -293,8 +428,7 @@ export default function RenewalQuotationPage() {
                 </Typography>
               )}
               <Typography variant="h6" sx={{ mt: 1 }}>
-                Renewal Amount:{" "}
-                {computedAmount != null ? computedAmount : "-"}
+                Renewal Amount: {computedAmount != null ? computedAmount : "-"}
               </Typography>
             </Paper>
           )}

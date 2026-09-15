@@ -99,6 +99,20 @@ export async function fetchRenewals(filter) {
   return Array.isArray(data) ? data : [];
 }
 
+export async function linkRenewalQuotation(renewalId, quotationId) {
+  const { data } = await client.post(`/api/renewals/${renewalId}/link-quotation`, {
+    quotationId,
+  });
+  return data;
+}
+
+export async function linkRenewalInvoice(renewalId, invoiceId) {
+  const { data } = await client.post(`/api/renewals/${renewalId}/link-invoice`, {
+    invoiceId,
+  });
+  return data;
+}
+
 /** Resolves a relative download URL returned by the API into an absolute one. */
 export function resolveDownloadUrl(path) {
   if (!path) return "";

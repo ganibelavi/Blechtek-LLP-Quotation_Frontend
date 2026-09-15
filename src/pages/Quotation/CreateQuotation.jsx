@@ -8,6 +8,7 @@ import {
   fetchReferences,
   fetchCustomers,
   fetchQuotationById,
+  linkRenewalQuotation,
 } from "../../services/quotationApi";
 import "./CreateQuotation.css";
 import "../../components/QuotationForm.css";
@@ -35,6 +36,19 @@ const initialValues = {
   quotationTo: { name: "", address: "", contactNo: "", email: "" },
   discountPercentage: 0,
 };
+
+const normalizeQuotationValues = (candidate = {}) => ({
+  ...initialValues,
+  ...candidate,
+  selectedModules: Array.isArray(candidate.selectedModules)
+    ? candidate.selectedModules
+    : initialValues.selectedModules,
+  moduleRequirements: candidate.moduleRequirements || {},
+  quotationTo: {
+    ...initialValues.quotationTo,
+    ...(candidate.quotationTo || {}),
+  },
+});
 
 export default function CreateQuotation({ onNavigate, readOnly = false }) {
   const [modules, setModules] = useState([]);
@@ -77,7 +91,7 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
       }
       if (storedValues) {
         try {
-          setValues(JSON.parse(storedValues));
+          setValues(normalizeQuotationValues(JSON.parse(storedValues)));
         } catch (error) {
           console.error("Failed to parse quotation form values", error);
         }
@@ -121,7 +135,7 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
               {},
             );
 
-            setValues((current) => ({
+            setValues((current) => normalizeQuotationValues({
               ...current,
               organizationName:
                 quotation.organizationName || current.organizationName,
@@ -209,12 +223,48 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
             sessionStorage.removeItem("revisionSourceQuotationId");
             sessionStorage.removeItem("revisionReason");
           }
+
         })
         .catch((error) => {
           console.error("Failed to load revision source quotation", error);
           sessionStorage.removeItem("revisionSourceQuotationId");
           sessionStorage.removeItem("revisionReason");
         });
+    }
+
+    const renewalContextRaw = sessionStorage.getItem("renewalQuotationContext");
+    if (renewalContextRaw) {
+      try {
+        const renewal = JSON.parse(renewalContextRaw);
+        setValues((current) => normalizeQuotationValues({
+          ...current,
+          organizationName: renewal.customerName || current.organizationName,
+          validationDate: renewal.periodStart || current.validationDate,
+          date: renewal.periodStart || current.date,
+          selectedModules: renewal.moduleName
+            ? [renewal.moduleName]
+            : current.selectedModules,
+          moduleRequirements: renewal.moduleName
+            ? {
+                ...current.moduleRequirements,
+                [renewal.moduleName]: {
+                  ...(current.moduleRequirements?.[renewal.moduleName] || {}),
+                  modulePriceOverride: renewal.amount,
+                },
+              }
+            : current.moduleRequirements,
+          quotationTo: {
+            name: renewal.customerName || current.quotationTo.name,
+            address: renewal.customerAddress || current.quotationTo.address,
+            contactNo:
+              renewal.customerContactNumber || current.quotationTo.contactNo,
+            email: renewal.customerEmail || current.quotationTo.email,
+          },
+        }));
+      } catch (error) {
+        console.error("Failed to load renewal quotation context", error);
+        sessionStorage.removeItem("renewalQuotationContext");
+      }
     }
 
     // Fetch the next quotation number
@@ -358,6 +408,9 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
           implementationEffortUnit:
             values.moduleRequirements?.[moduleName]
               ?.implementationEffortUnit || null,
+          modulePriceOverride:
+            values.moduleRequirements?.[moduleName]?.modulePriceOverride ??
+            null,
         })),
         quotationTo: {
           name: values.quotationTo.name,
@@ -368,6 +421,17 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
         discountPercentage: values.discountPercentage,
       };
       const data = await generateQuotation(payload);
+      const renewalContextRaw = sessionStorage.getItem(
+        "renewalQuotationContext",
+      );
+      if (renewalContextRaw) {
+        const renewal = JSON.parse(renewalContextRaw);
+        await linkRenewalQuotation(
+          renewal.renewalId,
+          data.quotationId || data.QuotationId,
+        );
+        sessionStorage.removeItem("renewalQuotationContext");
+      }
       setResult(data);
       sessionStorage.setItem("quotationData", JSON.stringify(data));
       sessionStorage.setItem("quotationFormValues", JSON.stringify(values));

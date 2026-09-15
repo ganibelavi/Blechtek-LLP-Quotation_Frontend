@@ -320,15 +320,15 @@ export default function CreatedQuotation({ onNavigate }) {
         <h1 className="page-heading page-heading__text">Quotations</h1>
         <Button
           variant="contained"
-          startIcon={
-            <img
-              src="/logo/add.png"
-              alt="Add"
-              style={{ width: 20, height: 20 }}
-            />
-          }
+          // startIcon={
+          //   <img
+          //     src="/logo/add.png"
+          //     alt="Add"
+          //     style={{ width: 20, height: 20 }}
+          //   />
+          // }
           onClick={handleNewQuotation}
-          sx={{ px: 3, py: 1 }}
+          // sx={{ px: 3, py: 1 }}
         >
           New Quotation
         </Button>

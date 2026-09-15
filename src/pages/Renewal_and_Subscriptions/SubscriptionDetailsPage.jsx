@@ -20,6 +20,7 @@ import {
   dialogPrimaryActionSx,
   dialogSecondaryActionSx,
 } from "../../styles/modalActionButtonStyles";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 
 const emptyHistoryEntry = {
   date: "",
@@ -78,7 +79,7 @@ const toTableHistory = (row) => ({
   Notes: row.notes ?? row.Notes ?? "",
 });
 
-export default function SubscriptionDetailsPage({ subscriptionId }) {
+export default function SubscriptionDetailsPage({ subscriptionId, onNavigate }) {
 
   const [summary, setSummary] = useState(null);
   const [yearPricing, setYearPricing] = useState([]);
@@ -223,15 +224,35 @@ export default function SubscriptionDetailsPage({ subscriptionId }) {
 
   return (
     <Box>
-      <Box sx={{ mb: 2.5 }}>
-        <h1 className="page-heading page-heading__text">
-          Subscription Details
-        </h1>
-        {summary && (
-          <Typography variant="body2" color="text.secondary">
-            {summary.customerName} &middot; {summary.moduleName}
-          </Typography>
-        )}
+      <Box
+        sx={{
+          mb: 2.5,
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+          gap: 2,
+          flexWrap: "wrap",
+        }}
+      >
+        <Box>
+          <h1 className="page-heading page-heading__text">
+            Subscription Details
+          </h1>
+          {summary && (
+            <Typography variant="body2" color="text.secondary">
+              {summary.customerName} &middot; {summary.moduleName}
+            </Typography>
+          )}
+        </Box>
+        <Button
+          variant="contained"
+          color="secondary"
+          aria-label="Back to Customer Subscriptions"
+          onClick={() => onNavigate?.("customer-subscriptions")}
+          sx={{ minWidth: 0, p: 0 }}
+        >
+          <ArrowBackIcon fontSize="small" />
+        </Button>
       </Box>
 
       {apiError && (
