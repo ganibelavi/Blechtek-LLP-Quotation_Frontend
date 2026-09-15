@@ -291,7 +291,7 @@ export default function EditQuotation({ onNavigate, quotationId }) {
   };
 
   const handleViewDetails = () => {
-    onNavigate("quotation");
+    onNavigate("quotation-detail");
   };
 
   const handleNewQuotation = () => {

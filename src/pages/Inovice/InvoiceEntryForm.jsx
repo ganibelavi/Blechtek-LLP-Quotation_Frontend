@@ -24,6 +24,7 @@ import {
   fetchBankAccounts,
   fetchGstRates,
   fetchTermsTemplates,
+  fetchCustomers,
 } from "../../services/quotationApi";
 import "../PurchaseOrder/PurchaseOrder.css";
 import "./InvoiceEntryForm.css";
@@ -440,6 +441,16 @@ export default function InvoiceEntryForm({
   initialData,
   viewOnly = false,
 }) {
+  const [renewalInvoiceContext] = useState(() => {
+    try {
+      const storedContext = sessionStorage.getItem("renewalInvoiceContext");
+      return storedContext ? JSON.parse(storedContext) : null;
+    } catch (error) {
+      console.error("Failed to read renewal invoice context", error);
+      return null;
+    }
+  });
+
   const [form, setForm] = useState(() => {
     const baseForm = defaultForm();
     const sourceData = initialData?.invoice
@@ -480,6 +491,7 @@ export default function InvoiceEntryForm({
   const [bankAccounts, setBankAccounts] = useState([]);
   const [gstRates, setGstRates] = useState([]);
   const [termsTemplates, setTermsTemplates] = useState([]);
+  const [customers, setCustomers] = useState([]);
   const [showQuotationModal, setShowQuotationModal] = useState(false);
   const [selectedQuotationId, setSelectedQuotationId] = useState("");
   const [queueSearch, setQueueSearch] = useState("");
@@ -492,6 +504,8 @@ export default function InvoiceEntryForm({
     message: "",
     severity: "success",
   });
+  const [renewalQuotation, setRenewalQuotation] = useState(null);
+  const isRenewalInvoice = Boolean(renewalInvoiceContext?.renewalId);
   const isPreloadedSource = Boolean(form.sourcePoId || form.sourceQuotationId);
 
   // Fields that are populated from PO/Quotation source data and should be disabled during edit
@@ -570,7 +584,22 @@ export default function InvoiceEntryForm({
     fetchTermsTemplates()
       .then(setTermsTemplates)
       .catch(() => setTermsTemplates([]));
+    fetchCustomers()
+      .then(setCustomers)
+      .catch(() => setCustomers([]));
   }, []);
+
+  useEffect(() => {
+    if (!renewalInvoiceContext?.quotationId) return;
+
+    fetchQuotationById(renewalInvoiceContext.quotationId)
+      .then((quotation) => {
+        if (quotation) setRenewalQuotation(quotation);
+      })
+      .catch((error) =>
+        console.error("Failed to load the renewal quotation", error),
+      );
+  }, [renewalInvoiceContext]);
 
   useEffect(() => {
     if (viewOnly) return;
@@ -612,13 +641,120 @@ export default function InvoiceEntryForm({
     [quotationRecords, poQuotationIds],
   );
 
+  const quotationOptions = useMemo(() => {
+    if (renewalInvoiceContext?.quotationId) {
+      const renewalId = String(renewalInvoiceContext.quotationId);
+      const listedQuotation = quotationRecords.find(
+        (quotation) =>
+          String(quotation.quotationId ?? quotation.id) === renewalId,
+      );
+      return [renewalQuotation || listedQuotation].filter(Boolean);
+    }
+
+    return generatedPoQuotations;
+  }, [
+    generatedPoQuotations,
+    quotationRecords,
+    renewalInvoiceContext,
+    renewalQuotation,
+  ]);
+
   const selectQuotation = async () => {
-    const quotation = generatedPoQuotations.find(
+    const quotation = quotationOptions.find(
       (record) =>
         String(record.quotationId ?? record.id) === String(selectedQuotationId),
     );
     if (!quotation) return;
     const quotationId = String(quotation.quotationId ?? quotation.id);
+    const source = (await fetchQuotationById(quotationId)) || quotation;
+
+    if (renewalInvoiceContext?.quotationId) {
+      const renewalItems = buildQuotationItems(source, moduleCatalog);
+      const moduleTaxDetails = aggregateModuleTaxDetails(renewalItems);
+      const profile =
+        companyProfiles.find(
+          (record) =>
+            String(record.name || "").trim().toLowerCase() ===
+            String(source.organizationName || "").trim().toLowerCase(),
+        ) || companyProfiles.find((record) => record.isActive);
+      const bank =
+        bankAccounts.find((record) => record.isDefault) ||
+        bankAccounts.find((record) => record.isActive);
+      const rate = gstRates.find((record) => record.isActive);
+      const saleTerms =
+        termsTemplates.find(
+          (record) =>
+            record.type === "terms_of_sale" &&
+            record.isDefault &&
+            record.isActive,
+        ) ||
+        termsTemplates.find(
+          (record) => record.type === "terms_of_sale" && record.isActive,
+        );
+      const customer = customers.find(
+        (record) =>
+          String(record.name ?? record.Name ?? "").trim().toLowerCase() ===
+          String(source.quotationToName || "").trim().toLowerCase(),
+      );
+
+      setForm((prev) => ({
+        ...prev,
+        sourcePoId: null,
+        sourceQuotationId: normalizeQuotationId(
+          source.quotationId ?? source.id ?? quotationId,
+        ),
+        quotationNo: source.quotationNo || prev.quotationNo || "",
+        companyName: source.organizationName || prev.companyName || "",
+        supplierName:
+          profile?.name || source.organizationName || prev.supplierName || "",
+        supplierAddress: profile?.address || prev.supplierAddress || "",
+        supplierState: profile?.state || prev.supplierState || "",
+        supplierStateCode: profile?.stateCode || prev.supplierStateCode || "",
+        supplierGSTN: profile?.gstn || prev.supplierGSTN || "",
+        bankName: bank?.bankName || prev.bankName || "",
+        accountNo: bank?.accountNo || prev.accountNo || "",
+        accountType: bank?.accountType || prev.accountType || "Current",
+        ifsc: bank?.ifsc || prev.ifsc || "",
+        msmeNo: bank?.msmeNo || prev.msmeNo || "",
+        sgstPct: rate?.sgstPct ?? prev.sgstPct,
+        cgstPct: rate?.cgstPct ?? prev.cgstPct,
+        igstPct: rate?.igstPct ?? prev.igstPct,
+        hsnCode: moduleTaxDetails.hsnCode,
+        sacCode: moduleTaxDetails.sacCode,
+        reverseCharge: moduleTaxDetails.reverseCharge,
+        termsOfSale: saleTerms?.content || prev.termsOfSale || "",
+        receiverName: source.quotationToName || prev.receiverName || "",
+        receiverAddress:
+          customer?.address ??
+          customer?.Address ??
+          source.quotationToAddress ??
+          prev.receiverAddress ??
+          "",
+        receiverState:
+          customer?.state ?? customer?.State ?? prev.receiverState ?? "",
+        receiverStateCode:
+          customer?.stateCode ??
+          customer?.StateCode ??
+          prev.receiverStateCode ??
+          "",
+        receiverGSTN:
+          customer?.gstn ?? customer?.Gstn ?? prev.receiverGSTN ?? "",
+        consigneeName: source.quotationToName || prev.consigneeName || "",
+        consigneeAddress:
+          customer?.address ??
+          customer?.Address ??
+          source.quotationToAddress ??
+          prev.consigneeAddress ??
+          "",
+        poNoDate: source.quotationNo
+          ? `Quotation No. ${source.quotationNo}`
+          : prev.poNoDate || "",
+        items: renewalItems,
+      }));
+      setShowQuotationModal(false);
+      return;
+    }
+
     const linkedPoSummary = purchaseOrders.find(
       (record) =>
         String(record.quotationId ?? record.po?.quotationId ?? "") ===
@@ -637,7 +773,6 @@ export default function InvoiceEntryForm({
       ? (await fetchPurchaseOrderById(linkedPoId)) || linkedPoSummary
       : linkedPoSummary;
     const po = linkedPo?.po || linkedPo || {};
-    const source = (await fetchQuotationById(quotationId)) || quotation;
     const poItems = Array.isArray(linkedPo?.items || po.items)
       ? (linkedPo?.items || po.items).map((item) => ({
           id: Date.now() + Math.random(),
@@ -996,7 +1131,7 @@ export default function InvoiceEntryForm({
   }, [moduleCatalog, viewOnly]);
 
   useEffect(() => {
-    if (viewOnly) return;
+    if (viewOnly || isRenewalInvoice) return;
     const selectedCompanyName = form.companyName?.trim();
     if (!selectedCompanyName) return;
 
@@ -1078,7 +1213,13 @@ export default function InvoiceEntryForm({
     };
 
     loadMatchedQuotation();
-  }, [form.companyName, quotationRecords, moduleCatalog, viewOnly]);
+  }, [
+    form.companyName,
+    quotationRecords,
+    moduleCatalog,
+    viewOnly,
+    isRenewalInvoice,
+  ]);
 
   const totals = useMemo(() => {
     const totalQty = form.items.reduce(
@@ -1166,9 +1307,20 @@ export default function InvoiceEntryForm({
       return;
     }
 
+    const invoiceQuotationId = isRenewalInvoice
+      ? normalizeQuotationId(renewalInvoiceContext.quotationId)
+      : normalizeQuotationId(form.sourceQuotationId);
+    if (isRenewalInvoice && !invoiceQuotationId) {
+      setSnackbar({
+        open: true,
+        message: "The renewal quotation could not be identified.",
+        severity: "error",
+      });
+      return;
+    }
     const payload = {
       poId: normalizeId(form.sourcePoId),
-      quotationId: normalizeQuotationId(form.sourceQuotationId),
+      quotationId: invoiceQuotationId,
       quotationNo: form.quotationNo || "",
       originalFor: form.originalFor,
       companyName: form.companyName,
@@ -1232,6 +1384,14 @@ export default function InvoiceEntryForm({
       );
       if (renewalInvoiceContextRaw && saved.id) {
         const renewalContext = JSON.parse(renewalInvoiceContextRaw);
+        if (
+          normalizeQuotationId(payload.quotationId) !==
+          normalizeQuotationId(renewalContext.quotationId)
+        ) {
+          throw new Error(
+            "The selected invoice quotation does not match the renewal quotation.",
+          );
+        }
         await linkRenewalInvoice(renewalContext.renewalId, saved.id);
         sessionStorage.removeItem("renewalInvoiceContext");
       }
@@ -2046,32 +2206,39 @@ export default function InvoiceEntryForm({
         </DialogTitle>
         <DialogContent dividers>
           <p className="invoice-quotation-modal-help">
-            Only quotations that already have a purchase order are available.
-            Selecting one fills the quotation, company, party, bank, GST, and
-            terms data.
+            {renewalInvoiceContext?.quotationId
+              ? "Select the renewal quotation for this invoice. The quotation, customer, and renewal amount will be filled automatically."
+              : "Only quotations that already have a purchase order are available. Selecting one fills the quotation, company, party, bank, GST, and terms data."}
           </p>
           <TextField
             select
             fullWidth
             size="small"
-            label="PO-generated quotation"
+            label={
+              renewalInvoiceContext?.quotationId
+                ? "Renewal quotation"
+                : "PO-generated quotation"
+            }
             value={selectedQuotationId}
             onChange={(event) => setSelectedQuotationId(event.target.value)}
           >
             <MenuItem value="">Select quotation...</MenuItem>
-            {generatedPoQuotations.map((quotation, index) => (
+            {quotationOptions.map((quotation, index) => (
               <MenuItem
                 key={quotation.quotationId ?? quotation.id ?? index}
                 value={quotation.quotationId ?? quotation.id}
               >
                 {quotation.quotationNo || `Quotation ${index + 1}`} —{" "}
                 {quotation.organizationName || "Unassigned company"}
+                {renewalInvoiceContext?.quotationId ? " (Renewal)" : ""}
               </MenuItem>
             ))}
           </TextField>
-          {!generatedPoQuotations.length && (
+          {!quotationOptions.length && (
             <p className="invoice-quotation-modal-empty">
-              No purchase-order-generated quotations are available.
+              {renewalInvoiceContext?.quotationId
+                ? "The linked renewal quotation is not available."
+                : "No purchase-order-generated quotations are available."}
             </p>
           )}
         </DialogContent>

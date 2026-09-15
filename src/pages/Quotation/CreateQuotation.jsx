@@ -468,7 +468,7 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
   // d
 
   const handleViewDetails = () => {
-    onNavigate("quotation");
+    onNavigate("quotation-detail");
   };
 
   const handleNewQuotation = () => {

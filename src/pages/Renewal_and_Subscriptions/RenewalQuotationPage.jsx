@@ -18,7 +18,7 @@ import {
 } from "@mui/material";
 import DescriptionIcon from "@mui/icons-material/Description";
 import VisibilityIcon from "@mui/icons-material/Visibility";
-import { fetchQuotationById } from "../../services/quotationApi";
+import { fetchInvoiceById } from "../../services/quotationApi";
 import {
   dialogPrimaryActionSx,
   dialogSecondaryActionSx,
@@ -34,6 +34,7 @@ const toTableQuotation = (row) => ({
   RenewalId: row.renewalId ?? row.RenewalId ?? null,
   SubscriptionId: row.subscriptionId ?? row.SubscriptionId ?? null,
   QuotationId: row.quotationId ?? row.QuotationId ?? null,
+  InvoiceId: row.invoiceId ?? row.InvoiceId ?? null,
   QuotationNumber: row.quotationNumber ?? row.QuotationNumber ?? "",
   CustomerName: row.customerName ?? row.CustomerName ?? "",
   ModuleName: row.moduleName ?? row.ModuleName ?? "",
@@ -254,24 +255,33 @@ export default function RenewalQuotationPage({ onNavigate }) {
     }
   };
 
-  const openLinkedQuotation = async (renewal) => {
+  const openLinkedInvoice = async (renewal) => {
     try {
-      const quotation = await fetchQuotationById(renewal.QuotationId);
-      if (!quotation)
-        throw new Error("The linked quotation could not be found.");
-      sessionStorage.setItem(
-        "quotationData",
-        JSON.stringify({
-          quotationId: renewal.QuotationId,
-          QuotationId: renewal.QuotationId,
-        }),
-      );
-      sessionStorage.setItem("quotationFormValues", JSON.stringify({}));
-      onNavigate("quotation-detail");
+      if (renewal.InvoiceId) {
+        const invoice = await fetchInvoiceById(renewal.InvoiceId);
+        if (!invoice) throw new Error("The linked invoice could not be found.");
+
+        sessionStorage.setItem("invoiceData", JSON.stringify(invoice));
+        sessionStorage.setItem("invoiceBackView", "renewal-quotations");
+        sessionStorage.setItem("invoiceViewOnly", "true");
+      } else {
+        sessionStorage.setItem(
+          "renewalInvoiceContext",
+          JSON.stringify({
+            renewalId: renewal.RenewalId,
+            quotationId: renewal.QuotationId,
+          }),
+        );
+        sessionStorage.setItem("invoiceBackView", "renewal-quotations");
+        sessionStorage.removeItem("invoiceViewOnly");
+        sessionStorage.removeItem("invoiceData");
+      }
+
+      onNavigate("invoice-entry");
     } catch (error) {
       setSnackbar({
         open: true,
-        message: error.message ?? "Could not open the linked quotation.",
+        message: error.message ?? "Could not open the renewal invoice.",
         severity: "error",
       });
     }
@@ -305,12 +315,12 @@ export default function RenewalQuotationPage({ onNavigate }) {
           size="small"
           aria-label={
             row.QuotationId
-              ? `Open quotation for ${row.CustomerName}`
+              ? `Open invoice for ${row.CustomerName}`
               : `Create quotation for ${row.CustomerName}`
           }
           onClick={() =>
             row.QuotationId
-              ? openLinkedQuotation(row)
+              ? openLinkedInvoice(row)
               : createQuotationForRow(row)
           }
         >
