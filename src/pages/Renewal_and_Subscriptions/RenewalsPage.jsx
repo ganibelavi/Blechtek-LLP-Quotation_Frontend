@@ -96,19 +96,47 @@ export default function RenewalsPage({ onNavigate }) {
     const { data } = await axios.post(
       `/api/renewals/${renewal.SubscriptionId}/prepare`,
     );
-    return data.renewalId ?? data.RenewalId;
+    return data;
   };
 
   const generateInvoice = async (renewal) => {
     try {
-      const renewalId = renewal.RenewalId || (await prepareRenewal(renewal));
-      if (!renewalId) {
+      const prepared = renewal.RenewalId
+        ? renewal
+        : await prepareRenewal(renewal);
+      const renewalId = prepared.RenewalId ?? prepared.renewalId;
+      if (
+        !renewalId ||
+        (prepared.Amount == null && prepared.amount == null)
+      ) {
         throw new Error("A renewal record is required before invoicing.");
       }
       sessionStorage.setItem(
         "renewalInvoiceContext",
         JSON.stringify({
           renewalId,
+          subscriptionId:
+            prepared.SubscriptionId ?? prepared.subscriptionId ?? renewal.SubscriptionId,
+          customerId:
+            prepared.CustomerId ?? prepared.customerId ?? renewal.CustomerId ?? null,
+          customerName:
+            prepared.CustomerName ?? prepared.customerName ?? renewal.CustomerName ?? "",
+          customerAddress:
+            prepared.CustomerAddress ?? prepared.customerAddress ?? "",
+          customerContactNumber:
+            prepared.CustomerContactNumber ??
+            prepared.customerContactNumber ??
+            "",
+          customerEmail:
+            prepared.CustomerEmail ?? prepared.customerEmail ?? "",
+          moduleName:
+            prepared.ModuleName ?? prepared.moduleName ?? renewal.ModuleName ?? "",
+          year: prepared.Year ?? prepared.year ?? renewal.Year ?? null,
+          amount: prepared.Amount ?? prepared.amount,
+          periodStart:
+            prepared.PeriodStartDate ?? prepared.periodStartDate ?? null,
+          periodEnd:
+            prepared.PeriodEndDate ?? prepared.periodEndDate ?? null,
         }),
       );
       sessionStorage.setItem("invoiceBackView", "renewals");

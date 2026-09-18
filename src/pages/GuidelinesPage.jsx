@@ -54,7 +54,7 @@ const lifecycle = [
     number: "05",
     title: "Create and issue the invoice",
     description:
-      "Generate the GST invoice from the quotation or purchase order and record its payment status.",
+      "Generate the GST invoice from the quotation or purchase order and record its payment status. The invoice is the source document used for new subscriptions.",
     items: [
       "Enter or load the customer, billing, tax, and line-item information.",
       "Save the invoice before changing its status.",
@@ -66,12 +66,13 @@ const lifecycle = [
     number: "06",
     title: "Create a subscription",
     description:
-      "For recurring module services, create a customer subscription with its commercial terms.",
+      "For recurring module services, create a customer subscription from a finalized customer invoice and its line item.",
     items: [
-      "Select the customer and module.",
-      "Enter the purchase date, subscription period, current year, and initial price.",
+      "Select the customer, then select one of that customer's finalized invoices.",
+      "Select the exact invoice line item when the invoice contains multiple items; the line item identifies the module and initial price.",
+      "Enter the purchase date, subscription period, and current year when required.",
       "Set the renewal percentage and annual escalation percentage.",
-      "The system uses these values to calculate future renewal amounts.",
+      "The system prevents draft, cancelled, and void invoices from creating subscriptions and prevents duplicate invoice/module subscriptions.",
     ],
     action: "Customer subscriptions",
   },
@@ -79,35 +80,36 @@ const lifecycle = [
     number: "07",
     title: "Prepare the renewal",
     description:
-      "When a renewal is due, prepare one renewal record for the next subscription year.",
+      "When a renewal is due, prepare one renewal record for the next subscription year and calculate its renewal amount.",
     items: [
-      "Open Renewals and generate or prepare the renewal quotation.",
+      "Open Renewals and choose Create Renewal Invoice.",
       "The system reuses an open renewal instead of creating duplicates.",
-      "The renewal amount is calculated from the original amount, renewal percentage, escalation percentage, and renewal year.",
+      "For Year 2, the amount is the original annual price multiplied by the renewal percentage.",
+      "For later years, the Year 2 renewal amount is compounded by the annual escalation percentage.",
     ],
     action: "Renewals",
   },
   {
     number: "08",
-    title: "Create the renewal quotation",
+    title: "Review the renewal invoice",
     description:
-      "The renewal uses the standard quotation form, but the calculated renewal amount is passed as a price override.",
+      "Renewal creation now opens the invoice form directly; a new renewal quotation is not required.",
     items: [
-      "Review the prefilled customer, module, period, and renewal amount.",
-      "Save the quotation.",
-      "The quotation is linked to the renewal and the renewal status becomes quoted.",
+      "Review the prefilled customer, receiver, consignee, module, renewal period, and calculated amount.",
+      "The customer is loaded by customer ID, while the active company profile, default bank account, GST rate, module tax details, and terms are loaded for the invoice.",
+      "Confirm the line item, quantity, taxes, TDS, insurance, and final total before saving.",
     ],
-    action: "Renewal quotations",
+    action: "Renewal Invoices",
   },
   {
     number: "09",
-    title: "Create the renewal invoice",
+    title: "Save and link the renewal invoice",
     description:
-      "Create the invoice from the linked renewal quotation so the renewal can be tracked to payment.",
+      "Save the invoice and link it to the prepared renewal so the renewal can be tracked to payment.",
     items: [
-      "Open the invoice action for the renewal.",
-      "Verify the linked quotation and invoice details.",
+      "The invoice must belong to the same customer and contain the subscription module.",
       "Save the invoice; the renewal status becomes invoiced.",
+      "The invoice can be partially paid, overdue, or paid according to its payment progress.",
     ],
     action: "Invoice",
   },
@@ -120,7 +122,7 @@ const lifecycle = [
       "Mark the linked invoice as paid after payment is received.",
       "The renewal becomes paid.",
       "The subscription current year, end date, and next renewal date are advanced automatically.",
-      "Creating a quotation or invoice alone does not renew the subscription.",
+      "Creating an invoice alone does not renew the subscription.",
     ],
     action: "Mark invoice as paid",
   },
@@ -128,7 +130,7 @@ const lifecycle = [
 
 const statusRows = [
   ["Subscription", "pending", "active", "expired / cancelled"],
-  ["Renewal", "pending", "quoted", "invoiced → paid"],
+  ["Renewal", "pending", "invoiced", "paid"],
   ["Invoice", "draft", "advance_received / partially_paid", "paid / overdue"],
 ];
 
@@ -141,7 +143,7 @@ export default function GuidelinesPage() {
           <h1>How the application works</h1>
           <p>
             Follow this guide from initial setup through quotation, invoicing,
-            subscriptions, renewals, and payment completion.
+            invoice-based subscriptions, renewals, and payment completion.
           </p>
         </div>
         <div className="guidelines-hero__badge">10-step business flow</div>
@@ -154,7 +156,7 @@ export default function GuidelinesPage() {
           "Purchase order",
           "Invoice",
           "Payment",
-          "Renewal",
+          "Renewal invoice",
         ].map((step, index) => (
           <React.Fragment key={step}>
             <span className="guidelines-flow__step">
@@ -171,8 +173,9 @@ export default function GuidelinesPage() {
           <p className="guidelines-eyebrow">Step-by-step process</p>
           <h2>Complete module lifecycle</h2>
           <p>
-            Complete each stage in order. The linked quotation and invoice
-            records provide the traceability needed for renewals.
+            Complete each stage in order. The finalized invoice and invoice line
+            item provide the source and traceability needed for subscriptions
+            and renewals.
           </p>
         </div>
         <div className="guidelines-steps">
@@ -222,8 +225,8 @@ export default function GuidelinesPage() {
         <h2>Important rules</h2>
         <div className="guidelines-notes__grid">
           <p>
-            <strong>Payment completes a renewal.</strong> A quotation or invoice
-            does not extend the subscription by itself.
+            <strong>Payment completes a renewal.</strong> An invoice does not
+            extend the subscription until it is marked paid.
           </p>
           <p>
             <strong>One renewal per subscription year.</strong> Preparing an
@@ -235,8 +238,19 @@ export default function GuidelinesPage() {
             subscription or renewal data is loaded.
           </p>
           <p>
-            <strong>Keep linked records together.</strong> Renewal, quotation,
-            invoice, and payment should refer to the same customer and module.
+            <strong>Keep linked records together.</strong> The renewal, invoice,
+            payment, customer, and subscription module must refer to the same
+            business record.
+          </p>
+          <p>
+            <strong>Finalized invoices only.</strong> Draft, cancelled, and void
+            invoices cannot be used to create a subscription. Partially paid
+            invoices are currently allowed unless business rules are changed.
+          </p>
+          <p>
+            <strong>Quotation compatibility.</strong> Existing quotation links
+            are retained for historical records, but new subscriptions and
+            renewals use invoices.
           </p>
         </div>
       </section>

@@ -741,6 +741,32 @@ export default function InvoiceEntryForm({
   ]);
 
   useEffect(() => {
+    const renewalAmount = Number(renewalInvoiceContext?.amount);
+    if (
+      !renewalInvoiceContext?.renewalId ||
+      !Number.isFinite(renewalAmount) ||
+      renewalAmount < 0
+    ) {
+      return;
+    }
+
+    setForm((prev) => {
+      const renewalItemIndex = prev.items.findIndex(
+        (item) =>
+          item.isSourceData ||
+          String(item.description || "").trim().toLowerCase() ===
+            String(renewalInvoiceContext.moduleName || "").trim().toLowerCase(),
+      );
+      if (renewalItemIndex < 0) return prev;
+      const renewalItem = prev.items[renewalItemIndex];
+      if (Number(renewalItem.rate) === renewalAmount) return prev;
+      const items = [...prev.items];
+      items[renewalItemIndex] = { ...renewalItem, rate: renewalAmount };
+      return { ...prev, items };
+    });
+  }, [renewalInvoiceContext]);
+
+  useEffect(() => {
     if (viewOnly) return;
     if (form.sourceInvoiceId || form.invoiceNo) return;
     fetchNextInvoiceNo()
@@ -1498,7 +1524,12 @@ export default function InvoiceEntryForm({
         description: item.description,
         qty: Number(item.qty) || 1,
         uom: item.uom || "Nos.",
-        rate: Number(item.rate) || 0,
+        rate: isRenewalInvoice &&
+          (item.isSourceData ||
+            String(item.description || "").trim().toLowerCase() ===
+              String(renewalInvoiceContext.moduleName || "").trim().toLowerCase())
+          ? Number(renewalInvoiceContext.amount) || 0
+          : Number(item.rate) || 0,
         hsnCode: item.hsnCode || "",
         sacCode: item.sacCode || "",
         reverseChargeDefault: Boolean(item.reverseChargeDefault),
