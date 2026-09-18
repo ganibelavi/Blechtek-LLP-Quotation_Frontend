@@ -16,7 +16,6 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import DescriptionIcon from "@mui/icons-material/Description";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import CancelIcon from "@mui/icons-material/Cancel";
 import {
@@ -100,46 +99,23 @@ export default function RenewalsPage({ onNavigate }) {
     return data.renewalId ?? data.RenewalId;
   };
 
-  const generateQuotation = async (renewal) => {
-    try {
-      const renewalId = await prepareRenewal(renewal);
-      await axios.post(`/api/renewals/${renewalId}/generate-quotation`);
-      setSnackbar({
-        open: true,
-        message: `Renewal quotation generated for "${renewal.CustomerName}".`,
-        severity: "success",
-      });
-    } catch (error) {
-      setSnackbar({
-        open: true,
-        message:
-          error.response?.data?.error ?? "Could not generate the quotation.",
-        severity: "error",
-      });
-    }
-  };
-
   const generateInvoice = async (renewal) => {
     try {
       const renewalId = renewal.RenewalId || (await prepareRenewal(renewal));
       if (!renewalId) {
         throw new Error("A renewal record is required before invoicing.");
       }
-      if (!renewal.QuotationId) {
-        throw new Error("Create and link a renewal quotation before invoicing.");
-      }
       sessionStorage.setItem(
         "renewalInvoiceContext",
         JSON.stringify({
           renewalId,
-          quotationId: renewal.QuotationId,
         }),
       );
       sessionStorage.setItem("invoiceBackView", "renewals");
       onNavigate("invoice-entry");
       setSnackbar({
         open: true,
-        message: "Renewal quotation loaded into the invoice form.",
+        message: "Renewal loaded into the invoice form.",
         severity: "info",
       });
     } catch (error) {
@@ -230,11 +206,6 @@ export default function RenewalsPage({ onNavigate }) {
       minWidth: 180,
       render: ({ row }) => (
         <Box sx={{ whiteSpace: "nowrap" }}>
-          <Tooltip title="Generate Renewal Quotation">
-            <IconButton size="small" onClick={() => generateQuotation(row)}>
-              <DescriptionIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
           <Tooltip title="Generate Invoice">
             <IconButton size="small" onClick={() => generateInvoice(row)}>
               <ReceiptLongIcon fontSize="small" />

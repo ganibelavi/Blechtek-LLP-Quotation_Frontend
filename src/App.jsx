@@ -116,8 +116,8 @@ export default function App() {
       "invoice-print": "GST Invoice Print Preview",
       "customer-subscriptions": "Customer Subscriptions",
       renewals: "Renewals",
-      "renewal-quotations": "Renewal Quotations",
-      "pricing-history": "Pricing History",
+      "renewal-quotations": "Renewal Subscriptions",
+      // "pricing-history": "Pricing History",
       "subscription-details": "Subscription Details",
       guidelines: "Guidelines",
     }[view] || "";
@@ -393,7 +393,7 @@ export default function App() {
                             ],
                             ["renewals", "Renewals"],
                             ["renewal-quotations", "Renewal quotations"],
-                            ["pricing-history", "Pricing history"],
+                            // ["pricing-history", "Pricing history"],
                           ].map(([subscriptionView, label]) => (
                             <button
                               type="button"

@@ -16,13 +16,8 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import DescriptionIcon from "@mui/icons-material/Description";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import { fetchInvoiceById } from "../../services/quotationApi";
-import {
-  dialogPrimaryActionSx,
-  dialogSecondaryActionSx,
-} from "../../styles/modalActionButtonStyles";
 
 const emptyForm = {
   customerSubscriptionId: "",
@@ -39,17 +34,19 @@ const toTableQuotation = (row) => ({
   CustomerName: row.customerName ?? row.CustomerName ?? "",
   ModuleName: row.moduleName ?? row.ModuleName ?? "",
   Year: row.year ?? row.Year,
+  PeriodStartDate: row.periodStartDate ?? row.PeriodStartDate ?? null,
+  PeriodEndDate: row.periodEndDate ?? row.PeriodEndDate ?? null,
   Amount: row.amount ?? row.Amount ?? null,
   Date: row.date ?? row.Date ?? "",
   Status: row.status ?? row.Status ?? "",
 });
 
-// Renewal amount = base (year 1) price, escalated by the escalation % for every
-// year beyond the first, applied on top of the standard renewal %.
-// This mirrors: amount = basePrice * (1 + renewalPct/100) * (1 + escalationPct/100)^(year-2)
+// Renewal amount = renewal percentage of the base (year 1) price, escalated
+// annually from the second renewal year onward.
+// This mirrors: basePrice * (renewalPct/100) * (1 + escalationPct/100)^(year-2)
 const calculateRenewalAmount = (basePrice, renewalPct, escalationPct, year) => {
   if (!basePrice || !year || year < 2) return null;
-  const renewed = basePrice * (1 + (renewalPct || 0) / 100);
+  const renewed = basePrice * ((renewalPct || 0) / 100);
   const yearsOfEscalation = year - 2;
   const escalated =
     renewed * Math.pow(1 + (escalationPct || 0) / 100, yearsOfEscalation);
@@ -147,7 +144,7 @@ export default function RenewalQuotationPage({ onNavigate }) {
     };
   }, [selectedSubscription, form.year]);
 
-  const saveQuotation = async (event) => {
+  const saveRenewalInvoice = async (event) => {
     event.preventDefault();
     if (!form.customerSubscriptionId || !form.year) return;
     setApiError("");
@@ -159,19 +156,46 @@ export default function RenewalQuotationPage({ onNavigate }) {
         { params: { year: Number(form.year) } },
       );
       sessionStorage.setItem(
-        "renewalQuotationContext",
+        "renewalInvoiceContext",
         JSON.stringify({
           renewalId: prepared.renewalId ?? prepared.RenewalId,
           subscriptionId: prepared.subscriptionId ?? prepared.SubscriptionId,
-          customerName: prepared.customerName ?? prepared.CustomerName ?? "",
+          customerId:
+            prepared.customerId ??
+            prepared.CustomerId ??
+            selectedSubscription?.customerId ??
+            selectedSubscription?.CustomerId ??
+            null,
+          customerName:
+            prepared.customerName ??
+            prepared.CustomerName ??
+            selectedSubscription?.customerName ??
+            selectedSubscription?.CustomerName ??
+            "",
           customerAddress:
-            prepared.customerAddress ?? prepared.CustomerAddress ?? "",
+            prepared.customerAddress ??
+            prepared.CustomerAddress ??
+            selectedSubscription?.customerAddress ??
+            selectedSubscription?.CustomerAddress ??
+            "",
           customerContactNumber:
             prepared.customerContactNumber ??
             prepared.CustomerContactNumber ??
+            selectedSubscription?.customerContactNumber ??
+            selectedSubscription?.CustomerContactNumber ??
             "",
-          customerEmail: prepared.customerEmail ?? prepared.CustomerEmail ?? "",
-          moduleName: prepared.moduleName ?? prepared.ModuleName ?? "",
+          customerEmail:
+            prepared.customerEmail ??
+            prepared.CustomerEmail ??
+            selectedSubscription?.customerEmail ??
+            selectedSubscription?.CustomerEmail ??
+            "",
+          moduleName:
+            prepared.moduleName ??
+            prepared.ModuleName ??
+            selectedSubscription?.moduleName ??
+            selectedSubscription?.ModuleName ??
+            "",
           year: prepared.year ?? prepared.Year ?? Number(form.year),
           amount: prepared.amount ?? prepared.Amount ?? computedAmount,
           periodStart:
@@ -187,16 +211,19 @@ export default function RenewalQuotationPage({ onNavigate }) {
         }),
       );
       closeDialog();
-      onNavigate("create");
+      sessionStorage.setItem("invoiceBackView", "renewal-quotations");
+      sessionStorage.removeItem("invoiceViewOnly");
+      sessionStorage.removeItem("invoiceData");
+      onNavigate("invoice-entry");
       setSnackbar({
         open: true,
-        message: "Renewal details loaded into the quotation form.",
+        message: "Renewal details loaded into the invoice form.",
         severity: "info",
       });
     } catch (error) {
       const msg =
         error.response?.data?.error ??
-        "Could not create the renewal quotation.";
+        "Could not prepare the renewal invoice.";
       setApiError(msg);
       setSnackbar({ open: true, message: msg, severity: "error" });
     }
@@ -205,6 +232,7 @@ export default function RenewalQuotationPage({ onNavigate }) {
   const buildRenewalContext = (renewal) => ({
     renewalId: renewal.RenewalId,
     subscriptionId: renewal.SubscriptionId,
+    customerId: renewal.CustomerId ?? renewal.customerId ?? null,
     customerName: renewal.CustomerName,
     moduleName: renewal.ModuleName,
     year: renewal.Year,
@@ -213,7 +241,7 @@ export default function RenewalQuotationPage({ onNavigate }) {
     periodEnd: null,
   });
 
-  const createQuotationForRow = async (renewal) => {
+  const createInvoiceForRow = async (renewal) => {
     try {
       const { data: prepared } = await axios.post(
         `/api/renewals/${renewal.SubscriptionId}/prepare`,
@@ -221,11 +249,17 @@ export default function RenewalQuotationPage({ onNavigate }) {
         { params: { year: Number(renewal.Year) } },
       );
       sessionStorage.setItem(
-        "renewalQuotationContext",
+        "renewalInvoiceContext",
         JSON.stringify({
           ...buildRenewalContext(renewal),
           renewalId: prepared.renewalId ?? prepared.RenewalId,
           subscriptionId: prepared.subscriptionId ?? prepared.SubscriptionId,
+          customerId:
+            prepared.customerId ??
+            prepared.CustomerId ??
+            renewal.CustomerId ??
+            renewal.customerId ??
+            null,
           customerName:
             prepared.customerName ??
             prepared.CustomerName ??
@@ -246,11 +280,14 @@ export default function RenewalQuotationPage({ onNavigate }) {
           periodEnd: prepared.periodEndDate ?? prepared.PeriodEndDate ?? null,
         }),
       );
-      onNavigate("create");
+      sessionStorage.setItem("invoiceBackView", "renewal-quotations");
+      sessionStorage.removeItem("invoiceViewOnly");
+      sessionStorage.removeItem("invoiceData");
+      onNavigate("invoice-entry");
     } catch (error) {
       const message =
         error.response?.data?.error ??
-        "Could not prepare the renewal quotation.";
+        "Could not prepare the renewal invoice.";
       setSnackbar({ open: true, message, severity: "error" });
     }
   };
@@ -269,7 +306,14 @@ export default function RenewalQuotationPage({ onNavigate }) {
           "renewalInvoiceContext",
           JSON.stringify({
             renewalId: renewal.RenewalId,
-            quotationId: renewal.QuotationId,
+            subscriptionId: renewal.SubscriptionId,
+            customerId: renewal.CustomerId ?? renewal.customerId ?? null,
+            customerName: renewal.CustomerName,
+            moduleName: renewal.ModuleName,
+            year: renewal.Year,
+            amount: renewal.Amount,
+            periodStart: renewal.PeriodStartDate ?? null,
+            periodEnd: renewal.PeriodEndDate ?? null,
           }),
         );
         sessionStorage.setItem("invoiceBackView", "renewal-quotations");
@@ -290,7 +334,7 @@ export default function RenewalQuotationPage({ onNavigate }) {
   const columns = [
     {
       key: "QuotationNumber",
-      label: "Quotation #",
+      label: "Legacy Quotation #",
       sortable: true,
       minWidth: 150,
     },
@@ -314,21 +358,17 @@ export default function RenewalQuotationPage({ onNavigate }) {
         <IconButton
           size="small"
           aria-label={
-            row.QuotationId
+            row.InvoiceId
               ? `Open invoice for ${row.CustomerName}`
-              : `Create quotation for ${row.CustomerName}`
+              : `Create invoice for ${row.CustomerName}`
           }
           onClick={() =>
-            row.QuotationId
+            row.InvoiceId
               ? openLinkedInvoice(row)
-              : createQuotationForRow(row)
+              : createInvoiceForRow(row)
           }
         >
-          {row.QuotationId ? (
-            <VisibilityIcon fontSize="small" />
-          ) : (
-            <DescriptionIcon fontSize="small" />
-          )}
+          <VisibilityIcon fontSize="small" />
         </IconButton>
       ),
     },
@@ -345,7 +385,7 @@ export default function RenewalQuotationPage({ onNavigate }) {
           gap: 2,
         }}
       >
-        <h1 className="page-heading page-heading__text">Renewal Quotations</h1>
+        <h1 className="page-heading page-heading__text">Renewal Invoices</h1>
         <Button
           variant="contained"
           // startIcon={
@@ -357,7 +397,7 @@ export default function RenewalQuotationPage({ onNavigate }) {
           // }
           onClick={openAddDialog}
         >
-          Create Quotation
+          Create Invoice
         </Button>
       </Box>
 
@@ -374,12 +414,12 @@ export default function RenewalQuotationPage({ onNavigate }) {
         onClose={closeDialog}
         fullWidth
         maxWidth="sm"
-        PaperProps={{ component: "form", onSubmit: saveQuotation }}
+        PaperProps={{ component: "form", onSubmit: saveRenewalInvoice }}
       >
         <DialogTitle
           sx={{ background: "var(--primary-gradient)", color: "white", p: 1.5 }}
         >
-          Create Renewal Quotation
+          Create Renewal Invoice
         </DialogTitle>
         <DialogContent dividers>
           <Box
@@ -448,7 +488,7 @@ export default function RenewalQuotationPage({ onNavigate }) {
             Cancel
           </Button>
           <Button type="submit" variant="contained">
-            Create Quotation
+            Create Invoice
           </Button>
         </DialogActions>
       </Dialog>

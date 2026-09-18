@@ -469,10 +469,44 @@ export default function InvoiceEntryForm({
             ...item,
             id: item.id || Date.now() + Math.random(),
           }))
+        : renewalInvoiceContext?.moduleName
+          ? [
+              {
+                ...baseForm.items[0],
+                description: renewalInvoiceContext.moduleName,
+                qty: 1,
+                rate: Number(renewalInvoiceContext.amount) || 0,
+                isSourceData: true,
+              },
+            ]
         : baseForm.items;
     return {
       ...baseForm,
       ...(sourceData?.invoice || {}),
+      companyName:
+        sourceData?.invoice?.companyName ||
+        renewalInvoiceContext?.customerName ||
+        baseForm.companyName,
+      dateOfIssue:
+        sourceData?.invoice?.dateOfIssue ||
+        renewalInvoiceContext?.periodStart ||
+        baseForm.dateOfIssue,
+      receiverName:
+        sourceData?.invoice?.receiverName ||
+        renewalInvoiceContext?.customerName ||
+        baseForm.receiverName,
+      receiverAddress:
+        sourceData?.invoice?.receiverAddress ||
+        renewalInvoiceContext?.customerAddress ||
+        baseForm.receiverAddress,
+      consigneeAddress:
+        sourceData?.invoice?.consigneeAddress ||
+        renewalInvoiceContext?.customerAddress ||
+        baseForm.consigneeAddress,
+      consigneeName:
+        sourceData?.invoice?.consigneeName ||
+        renewalInvoiceContext?.customerName ||
+        baseForm.consigneeName,
       status: sourceData?.invoice?.status || sourceData?.status || "draft",
       items: sourceItems,
       sourceInvoiceId: normalizeId(sourceData?.id || sourceData?.invoice?.id),
@@ -600,6 +634,111 @@ export default function InvoiceEntryForm({
         console.error("Failed to load the renewal quotation", error),
       );
   }, [renewalInvoiceContext]);
+
+  useEffect(() => {
+    if (
+      !renewalInvoiceContext?.renewalId ||
+      !customers.length ||
+      !companyProfiles.length ||
+      !bankAccounts.length ||
+      !gstRates.length
+    ) {
+      return;
+    }
+
+    const customer =
+      customers.find(
+        (record) =>
+          String(record.id ?? record.Id) ===
+          String(renewalInvoiceContext.customerId),
+      ) ||
+      customers.find(
+        (record) =>
+          String(record.name ?? record.Name ?? "").trim().toLowerCase() ===
+          String(renewalInvoiceContext.customerName ?? "").trim().toLowerCase(),
+      );
+    const profile =
+      companyProfiles.find((record) => record.isActive) ||
+      companyProfiles[0];
+    const bank =
+      bankAccounts.find((record) => record.isDefault) ||
+      bankAccounts.find((record) => record.isActive) ||
+      bankAccounts[0];
+    const rate = gstRates.find((record) => record.isActive) || gstRates[0];
+    const terms =
+      termsTemplates.find(
+        (record) =>
+          record.type === "terms_of_sale" &&
+          record.isDefault &&
+          record.isActive,
+      ) ||
+      termsTemplates.find(
+        (record) => record.type === "terms_of_sale" && record.isActive,
+      );
+    const module = moduleCatalog.find(
+      (record) =>
+        String(
+          record.module ??
+            record.moduleName ??
+            record.ModuleName ??
+            record.name ??
+            "",
+        )
+          .trim()
+          .toLowerCase() ===
+        String(renewalInvoiceContext.moduleName ?? "").trim().toLowerCase(),
+    );
+    const moduleTaxDetails = getModuleTaxDetails(module, moduleCatalog);
+
+    setForm((prev) => ({
+      ...prev,
+      companyName: profile?.name || prev.companyName,
+      supplierName: profile?.name || prev.supplierName,
+      supplierAddress: profile?.address || prev.supplierAddress,
+      supplierState: profile?.state || prev.supplierState,
+      supplierStateCode: profile?.stateCode || prev.supplierStateCode,
+      supplierGSTN: profile?.gstn || prev.supplierGSTN,
+      bankName: bank?.bankName || prev.bankName,
+      accountNo: bank?.accountNo || prev.accountNo,
+      accountType: bank?.accountType || prev.accountType || "Current",
+      ifsc: bank?.ifsc || prev.ifsc,
+      msmeNo: bank?.msmeNo || prev.msmeNo,
+      receiverName:
+        customer?.name ?? customer?.Name ?? prev.receiverName,
+      receiverAddress:
+        customer?.address ?? customer?.Address ?? prev.receiverAddress,
+      receiverState: customer?.state ?? customer?.State ?? prev.receiverState,
+      receiverStateCode:
+        customer?.stateCode ?? customer?.StateCode ?? prev.receiverStateCode,
+      receiverGSTN: customer?.gstn ?? customer?.Gstn ?? prev.receiverGSTN,
+      consigneeName:
+        customer?.name ?? customer?.Name ?? prev.consigneeName,
+      consigneeAddress:
+        customer?.address ?? customer?.Address ?? prev.consigneeAddress,
+      consigneeState:
+        customer?.state ?? customer?.State ?? prev.consigneeState,
+      consigneeStateCode:
+        customer?.stateCode ?? customer?.StateCode ?? prev.consigneeStateCode,
+      consigneeGSTN:
+        customer?.gstn ?? customer?.Gstn ?? prev.consigneeGSTN,
+      hsnCode: moduleTaxDetails.hsnCode || prev.hsnCode,
+      sacCode: moduleTaxDetails.sacCode || prev.sacCode,
+      reverseCharge: moduleTaxDetails.reverseCharge || prev.reverseCharge,
+      termsOfSale:
+        terms?.content || profile?.defaultTermsOfSale || prev.termsOfSale,
+      sgstPct: rate?.sgstPct ?? prev.sgstPct,
+      cgstPct: rate?.cgstPct ?? prev.cgstPct,
+      igstPct: rate?.igstPct ?? prev.igstPct,
+    }));
+  }, [
+    renewalInvoiceContext,
+    customers,
+    companyProfiles,
+    bankAccounts,
+    gstRates,
+    termsTemplates,
+    moduleCatalog,
+  ]);
 
   useEffect(() => {
     if (viewOnly) return;
@@ -1310,16 +1449,11 @@ export default function InvoiceEntryForm({
     const invoiceQuotationId = isRenewalInvoice
       ? normalizeQuotationId(renewalInvoiceContext.quotationId)
       : normalizeQuotationId(form.sourceQuotationId);
-    if (isRenewalInvoice && !invoiceQuotationId) {
-      setSnackbar({
-        open: true,
-        message: "The renewal quotation could not be identified.",
-        severity: "error",
-      });
-      return;
-    }
     const payload = {
       poId: normalizeId(form.sourcePoId),
+      customerId: isRenewalInvoice
+        ? normalizeId(renewalInvoiceContext.customerId)
+        : null,
       quotationId: invoiceQuotationId,
       quotationNo: form.quotationNo || "",
       originalFor: form.originalFor,
@@ -1384,14 +1518,6 @@ export default function InvoiceEntryForm({
       );
       if (renewalInvoiceContextRaw && saved.id) {
         const renewalContext = JSON.parse(renewalInvoiceContextRaw);
-        if (
-          normalizeQuotationId(payload.quotationId) !==
-          normalizeQuotationId(renewalContext.quotationId)
-        ) {
-          throw new Error(
-            "The selected invoice quotation does not match the renewal quotation.",
-          );
-        }
         await linkRenewalInvoice(renewalContext.renewalId, saved.id);
         sessionStorage.removeItem("renewalInvoiceContext");
       }

@@ -92,6 +92,13 @@ export async function fetchCustomerSubscriptions() {
   return Array.isArray(data) ? data : [];
 }
 
+export async function fetchSubscriptionInvoices(customerName) {
+  const { data } = await client.get("/api/customer-subscriptions/invoices", {
+    params: customerName ? { customerName } : undefined,
+  });
+  return Array.isArray(data) ? data : [];
+}
+
 export async function fetchRenewals(filter) {
   const { data } = await client.get("/api/renewals", {
     params: filter ? { filter } : undefined,

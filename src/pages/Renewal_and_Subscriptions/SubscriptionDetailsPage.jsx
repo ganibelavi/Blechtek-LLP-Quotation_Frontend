@@ -16,10 +16,6 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import {
-  dialogPrimaryActionSx,
-  dialogSecondaryActionSx,
-} from "../../styles/modalActionButtonStyles";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 
 const emptyHistoryEntry = {
@@ -56,15 +52,6 @@ const toTableYearPricing = (row) => ({
   EffectiveDate: row.effectiveDate ?? row.EffectiveDate ?? "",
 });
 
-const toTableQuotation = (row) => ({
-  Id: row.id ?? row.Id,
-  QuotationNumber: row.quotationNumber ?? row.QuotationNumber ?? "",
-  Year: row.year ?? row.Year,
-  Amount: row.amount ?? row.Amount ?? null,
-  Date: row.date ?? row.Date ?? "",
-  Status: row.status ?? row.Status ?? "",
-});
-
 const toTableInvoice = (row) => ({
   Id: row.id ?? row.Id,
   InvoiceNumber: row.invoiceNumber ?? row.InvoiceNumber ?? "",
@@ -89,7 +76,6 @@ export default function SubscriptionDetailsPage({ subscriptionId, onNavigate }) 
 
   const [summary, setSummary] = useState(null);
   const [yearPricing, setYearPricing] = useState([]);
-  const [quotations, setQuotations] = useState([]);
   const [invoices, setInvoices] = useState([]);
   const [history, setHistory] = useState([]);
   const [apiError, setApiError] = useState("");
@@ -108,7 +94,6 @@ export default function SubscriptionDetailsPage({ subscriptionId, onNavigate }) 
       .then(({ data }) => {
         setSummary(toSummary(data));
         setYearPricing((data.yearWisePricing || []).map(toTableYearPricing));
-        setQuotations((data.renewalQuotations || []).map(toTableQuotation));
         setInvoices((data.renewalInvoices || []).map(toTableInvoice));
         setHistory((data.paymentHistory || []).map(toTableHistory));
       })
@@ -181,25 +166,6 @@ export default function SubscriptionDetailsPage({ subscriptionId, onNavigate }) 
       label: "Effective Date",
       sortable: true,
       minWidth: 150,
-    },
-  ];
-
-  const quotationColumns = [
-    {
-      key: "QuotationNumber",
-      label: "Quotation #",
-      sortable: true,
-      minWidth: 150,
-    },
-    { key: "Year", label: "Year", sortable: true, minWidth: 90 },
-    { key: "Amount", label: "Amount", sortable: true, minWidth: 130 },
-    { key: "Date", label: "Date", sortable: true, minWidth: 140 },
-    {
-      key: "Status",
-      label: "Status",
-      sortable: true,
-      minWidth: 120,
-      render: ({ row }) => <Chip label={row.Status} size="small" />,
     },
   ];
 
@@ -322,11 +288,6 @@ export default function SubscriptionDetailsPage({ subscriptionId, onNavigate }) 
         Year-wise Pricing
       </Typography>
       <EntityTable title="" columns={yearPricingColumns} rows={yearPricing} />
-
-      <Typography variant="subtitle1" fontWeight={700} sx={{ mt: 3, mb: 1 }}>
-        Renewal Quotations
-      </Typography>
-      <EntityTable title="" columns={quotationColumns} rows={quotations} />
 
       <Typography variant="subtitle1" fontWeight={700} sx={{ mt: 3, mb: 1 }}>
         Renewal Invoices

@@ -17,9 +17,10 @@ import {
   Typography,
 } from "@mui/material";
 import {
+  fetchCustomerSubscriptions,
   fetchCustomers,
+  fetchSubscriptionInvoices,
   fetchModules,
-  fetchQuotations,
 } from "../../services/quotationApi";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -34,6 +35,8 @@ const STATUS_OPTIONS = ["Active", "Expired", "Cancelled"];
 const emptySubscription = {
   customerName: "",
   moduleName: "",
+  invoiceId: "",
+  invoiceLineItemId: "",
   quotationId: "",
   renewalPercentage: "",
   escalationPercentage: "",
@@ -49,6 +52,7 @@ const toTableSubscription = (sub) => ({
   Id: sub.id ?? sub.Id,
   CustomerName: sub.customerName ?? sub.CustomerName ?? "",
   ModuleName: sub.moduleName ?? sub.ModuleName ?? "",
+  InvoiceId: sub.invoiceId ?? sub.InvoiceId ?? null,
   QuotationId: sub.quotationId ?? sub.QuotationId ?? "",
   RenewalPercentage:
     sub.renewalPercentage ?? sub.RenewalPercentage ?? null,
@@ -62,7 +66,7 @@ const toTableSubscription = (sub) => ({
   CurrentSubscriptionYear:
     sub.currentSubscriptionYear ?? sub.CurrentSubscriptionYear ?? null,
   NextRenewalDate: sub.nextRenewalDate ?? sub.NextRenewalDate ?? "",
-  Status: sub.status ?? sub.Status ?? "Active",
+  Status: normalizeStatus(sub.status ?? sub.Status),
 });
 
 const customerName = (customer) =>
@@ -72,12 +76,26 @@ const customerName = (customer) =>
   customer?.CustomerName ??
   "";
 
+const customerId = (customer) => customer?.id ?? customer?.Id ?? null;
+
 const moduleName = (module) =>
   module?.module ??
   module?.Module ??
   module?.moduleName ??
   module?.ModuleName ??
   "";
+
+const invoiceItems = (invoice) => invoice?.items ?? invoice?.Items ?? [];
+
+const normalizeStatus = (status) => {
+  const normalized = String(status ?? "").trim().toLowerCase();
+  if (normalized === "active") return "Active";
+  if (normalized === "expired") return "Expired";
+  if (normalized === "cancelled" || normalized === "canceled") {
+    return "Cancelled";
+  }
+  return "Active";
+};
 
 const statusChipColor = (status) => {
   switch (status) {
@@ -96,7 +114,7 @@ export default function CustomerSubscriptionsPage({ onNavigate }) {
   const [subscriptions, setSubscriptions] = useState([]);
   const [customerOptions, setCustomerOptions] = useState([]);
   const [moduleOptions, setModuleOptions] = useState([]);
-  const [quotationOptions, setQuotationOptions] = useState([]);
+  const [invoiceOptions, setInvoiceOptions] = useState([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptySubscription);
@@ -111,11 +129,9 @@ export default function CustomerSubscriptionsPage({ onNavigate }) {
 
   useEffect(() => {
     let cancelled = false;
-    axios
-      .get("/api/customer-subscriptions")
-      .then((response) => {
-        if (!cancelled)
-          setSubscriptions((response.data || []).map(toTableSubscription));
+    fetchCustomerSubscriptions()
+      .then((data) => {
+        if (!cancelled) setSubscriptions(data.map(toTableSubscription));
       })
       .catch(() => {
         if (!cancelled)
@@ -128,16 +144,22 @@ export default function CustomerSubscriptionsPage({ onNavigate }) {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([fetchCustomers(), fetchModules(), fetchQuotations(1, 500)])
-      .then(([customers, modules, quotations]) => {
+    Promise.all([fetchCustomers(), fetchModules(), fetchSubscriptionInvoices()])
+      .then(([customers, modules, invoices]) => {
         if (cancelled) return;
         setCustomerOptions(
-          customers.map(customerName).filter(Boolean).sort((a, b) => a.localeCompare(b)),
+          customers
+            .map((customer) => ({
+              id: customerId(customer),
+              name: customerName(customer),
+            }))
+            .filter((customer) => customer.name)
+            .sort((a, b) => a.name.localeCompare(b.name)),
         );
         setModuleOptions(
           modules.map(moduleName).filter(Boolean).sort((a, b) => a.localeCompare(b)),
         );
-        setQuotationOptions(quotations || []);
+        setInvoiceOptions(invoices || []);
       })
       .catch(() => {
         if (!cancelled) {
@@ -162,6 +184,8 @@ export default function CustomerSubscriptionsPage({ onNavigate }) {
     setForm({
       customerName: sub.CustomerName,
       moduleName: sub.ModuleName,
+      invoiceId: sub.InvoiceId || "",
+      invoiceLineItemId: "",
       quotationId: sub.QuotationId || "",
       renewalPercentage: sub.RenewalPercentage ?? "",
       escalationPercentage: sub.EscalationPercentage ?? "",
@@ -209,11 +233,21 @@ export default function CustomerSubscriptionsPage({ onNavigate }) {
       return;
     }
     setApiError("");
+    if (editingId === null && (!form.invoiceId || !form.invoiceLineItemId)) {
+      const message = "Select a finalized invoice and invoice line item.";
+      setApiError(message);
+      setSnackbar({ open: true, message, severity: "error" });
+      return;
+    }
 
     const request = {
       customerName: form.customerName,
       moduleName: form.moduleName,
-      quotationId: form.quotationId || null,
+      invoiceId: form.invoiceId ? Number(form.invoiceId) : null,
+      invoiceLineItemId: form.invoiceLineItemId
+        ? Number(form.invoiceLineItemId)
+        : null,
+      quotationId: editingId === null ? null : form.quotationId || null,
       renewalPercentage:
         form.renewalPercentage === "" ? null : renewalPercentage,
       escalationPercentage:
@@ -232,7 +266,7 @@ export default function CustomerSubscriptionsPage({ onNavigate }) {
     try {
       if (editingId === null) {
         const { data } = await axios.post(
-          "/api/customer-subscriptions",
+          "/api/customer-subscriptions/from-invoice",
           request,
         );
         const newSub = toTableSubscription({
@@ -368,8 +402,8 @@ export default function CustomerSubscriptionsPage({ onNavigate }) {
       ),
     },
     {
-      key: "QuotationId",
-      label: "Original Quotation",
+      key: "InvoiceId",
+      label: "Source Invoice",
       sortable: true,
       minWidth: 180,
     },
@@ -479,45 +513,107 @@ export default function CustomerSubscriptionsPage({ onNavigate }) {
           >
             <Autocomplete
               required
-              options={[...new Set([...customerOptions, form.customerName].filter(Boolean))]}
-              value={form.customerName || null}
-              onChange={(_event, value) =>
-                setForm((current) => ({
-                  ...current,
-                  customerName: value || "",
-                }))
-              }
-              renderInput={(params) => (
-                <TextField {...params} required label="Customer Name" />
-              )}
-              freeSolo={false}
-            />
-            <Autocomplete
-              options={quotationOptions}
+              options={customerOptions}
               value={
-                quotationOptions.find(
-                  (quotation) =>
-                    (quotation.quotationId ?? quotation.id) === form.quotationId,
+                customerOptions.find(
+                  (customer) => customer.name === form.customerName,
                 ) || null
               }
               onChange={(_event, value) =>
                 setForm((current) => ({
                   ...current,
-                  quotationId: value?.quotationId ?? value?.id ?? "",
+                  customerName: value?.name || "",
+                  invoiceId: "",
+                  invoiceLineItemId: "",
+                  moduleName: "",
                 }))
               }
-              getOptionLabel={(quotation) =>
-                quotation
-                  ? `${quotation.quotationNo || quotation.quotationId || quotation.id} - ${quotation.quotationToName || ""}`
+              getOptionLabel={(customer) => customer?.name || ""}
+              renderInput={(params) => (
+                <TextField {...params} required label="Customer Name" />
+              )}
+            />
+            <Autocomplete
+              options={invoiceOptions.filter((invoice) => {
+                const status = String(invoice.status ?? invoice.Status ?? "").toLowerCase();
+                const selectedCustomer = customerOptions.find(
+                  (customer) => customer.name === form.customerName,
+                );
+                return (
+                  selectedCustomer &&
+                  String(invoice.customerId ?? invoice.CustomerId) ===
+                    String(selectedCustomer.id) &&
+                  !["draft", "cancelled", "void"].includes(status)
+                );
+              })}
+              value={
+                invoiceOptions.find(
+                  (invoice) => String(invoice.id ?? invoice.Id) === String(form.invoiceId),
+                ) || null
+              }
+              onChange={(_event, value) =>
+                setForm((current) => ({
+                  ...current,
+                  invoiceId: value?.id ?? value?.Id ?? "",
+                  invoiceLineItemId: "",
+                  moduleName: "",
+                }))
+              }
+              getOptionLabel={(invoice) =>
+                invoice
+                  ? `${invoice.invoiceNo || invoice.InvoiceNo || invoice.id || invoice.Id} - ${invoice.invoiceDate || invoice.InvoiceDate ? new Date(invoice.invoiceDate || invoice.InvoiceDate).toLocaleDateString() : ""} - ${invoice.totalAmount ?? invoice.TotalAmount ?? ""}`
                   : ""
               }
               renderInput={(params) => (
-                <TextField {...params} label="Original Quotation (Optional)" />
+                <TextField {...params} label="Source Invoice (finalized)" />
               )}
               isOptionEqualToValue={(option, value) =>
-                (option.quotationId ?? option.id) ===
-                (value.quotationId ?? value.id)
+                String(option.id ?? option.Id) === String(value.id ?? value.Id)
               }
+            />
+            <Autocomplete
+              options={invoiceItems(
+                invoiceOptions.find(
+                  (invoice) =>
+                    String(invoice.id ?? invoice.Id) === String(form.invoiceId),
+                ),
+              )}
+              value={
+                invoiceItems(
+                  invoiceOptions.find(
+                    (invoice) =>
+                      String(invoice.id ?? invoice.Id) === String(form.invoiceId),
+                  ),
+                ).find(
+                  (item) =>
+                    String(item.id ?? item.Id) === String(form.invoiceLineItemId),
+                ) || null
+              }
+              onChange={(_event, value) => {
+                const selectedModule =
+                  value?.moduleName ??
+                  value?.ModuleName ??
+                  value?.description ??
+                  value?.Description ??
+                  "";
+                setForm((current) => ({
+                  ...current,
+                  invoiceLineItemId: value?.id ?? value?.Id ?? "",
+                  moduleName: selectedModule,
+                }));
+              }}
+              getOptionLabel={(item) =>
+                item
+                  ? `${item.description ?? item.Description ?? ""} x${item.qty ?? item.Qty ?? 0} @ ${item.rate ?? item.Rate ?? 0}`
+                  : ""
+              }
+              renderInput={(params) => (
+                <TextField {...params} required label="Invoice Line Item" />
+              )}
+              isOptionEqualToValue={(option, value) =>
+                String(option.id ?? option.Id) === String(value.id ?? value.Id)
+              }
+              disabled={!form.invoiceId}
             />
             <Autocomplete
               required
