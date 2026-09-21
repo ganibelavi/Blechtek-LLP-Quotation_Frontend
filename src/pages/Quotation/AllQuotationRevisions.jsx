@@ -48,41 +48,15 @@ export default function AllQuotationRevisions({ onNavigate }) {
   const [revisionsCache, setRevisionsCache] = useState({});
   const [revisionLoading, setRevisionLoading] = useState({});
 
-  const hasMeaningfulRevisionHistory = (revisions = []) =>
-    Array.isArray(revisions) && revisions.length > 1;
-
   const loadQuotations = async () => {
     try {
       setLoading(true);
       const data = await fetchQuotations(1, 100);
-      const nextRevisionCache = {};
-      const filteredQuotations = [];
+      const filteredQuotations = (data || []).map((quotation) => ({
+        ...quotation,
+        modules: quotation.modules || [],
+      }));
 
-      for (const quotation of data || []) {
-        try {
-          const revisions = await fetchQuotationRevisions(
-            quotation.quotationId,
-          );
-          const normalizedRevisions = Array.isArray(revisions) ? revisions : [];
-
-          if (!hasMeaningfulRevisionHistory(normalizedRevisions)) {
-            continue;
-          }
-
-          nextRevisionCache[quotation.quotationId] = normalizedRevisions;
-          filteredQuotations.push({
-            ...quotation,
-            modules: quotation.modules || [],
-          });
-        } catch (err) {
-          console.error(
-            `Failed to load revisions for quotation ${quotation.quotationId}`,
-            err,
-          );
-        }
-      }
-
-      setRevisionsCache(nextRevisionCache);
       setQuotations(filteredQuotations);
       setExpandedQuotationId((currentId) =>
         currentId && filteredQuotations.some((q) => q.quotationId === currentId)
@@ -111,10 +85,6 @@ export default function AllQuotationRevisions({ onNavigate }) {
     }
 
     setExpandedQuotationId(quotationId);
-
-    if (revisionsCache[quotationId]) {
-      return;
-    }
 
     setRevisionLoading((prev) => ({ ...prev, [quotationId]: true }));
     try {

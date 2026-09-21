@@ -31,6 +31,7 @@ export async function fetchUsers() {
   }));
 }
 
+
 export async function createUser(user) {
   const { data } = await client.post("/api/users", {
     email: user.email,
