@@ -39,7 +39,15 @@ import "./App.css";
 
 export default function App() {
   const { user, logout } = useAuth();
-  const [view, setView] = useState("dashboard");
+  const [view, setView] = useState(() => {
+    try {
+      const stored = sessionStorage.getItem("appView");
+      if (stored) return stored;
+    } catch (error) {
+      console.error("Failed to read view from session storage", error);
+    }
+    return "dashboard";
+  });
   const [settingsInitialTab, setSettingsInitialTab] = useState("users");
   const [settingsExpanded, setSettingsExpanded] = useState(false);
   const [subscriptionsExpanded, setSubscriptionsExpanded] = useState(false);
@@ -73,7 +81,15 @@ export default function App() {
 
   useEffect(() => {
     if (user) {
-      setView("dashboard");
+      try {
+        const stored = sessionStorage.getItem("appView");
+        if (!stored) {
+          setView("dashboard");
+        }
+      } catch (error) {
+        console.error("Failed to read view from session storage", error);
+        setView("dashboard");
+      }
     }
   }, [user]);
 
@@ -89,6 +105,11 @@ export default function App() {
     if (quotationId) setEditQuotationId(quotationId);
     if (selectedSubscriptionId) setSubscriptionId(selectedSubscriptionId);
     setView(newView);
+    try {
+      sessionStorage.setItem("appView", newView);
+    } catch (error) {
+      console.error("Failed to save view to session storage", error);
+    }
   };
 
   const pageTitle =
