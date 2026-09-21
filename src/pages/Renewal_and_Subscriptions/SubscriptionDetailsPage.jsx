@@ -17,6 +17,8 @@ import {
   Typography,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import EditIcon from "@mui/icons-material/Edit";
+import { fetchInvoiceById } from "../../services/quotationApi";
 
 const emptyHistoryEntry = {
   date: "",
@@ -87,6 +89,30 @@ export default function SubscriptionDetailsPage({ subscriptionId, onNavigate }) 
 
   const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
   const [historyForm, setHistoryForm] = useState(emptyHistoryEntry);
+
+  const openInvoiceForEdit = async (row) => {
+    try {
+      const invoice = await fetchInvoiceById(row.Id);
+      if (!invoice) {
+        throw new Error("The renewal invoice could not be found.");
+      }
+
+      sessionStorage.setItem("invoiceData", JSON.stringify(invoice));
+      sessionStorage.setItem("invoiceBackView", "subscription-details");
+      sessionStorage.setItem("invoiceEditOnly", "true");
+      sessionStorage.removeItem("invoiceViewOnly");
+      onNavigate?.("invoice-entry");
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message:
+          error.response?.data?.error ??
+          error.message ??
+          "Could not open the renewal invoice for editing.",
+        severity: "error",
+      });
+    }
+  };
 
   const loadDetails = () => {
     axios
@@ -180,6 +206,22 @@ export default function SubscriptionDetailsPage({ subscriptionId, onNavigate }) 
       sortable: true,
       minWidth: 120,
       render: ({ row }) => <Chip label={row.Status} size="small" />,
+    },
+    {
+      key: "Actions",
+      label: "Actions",
+      sortable: false,
+      minWidth: 80,
+      render: ({ row }) => (
+        <Button
+          size="small"
+          aria-label={`Edit invoice ${row.InvoiceNumber}`}
+          onClick={() => openInvoiceForEdit(row)}
+          startIcon={<EditIcon fontSize="small" />}
+        >
+          Edit
+        </Button>
+      ),
     },
   ];
 

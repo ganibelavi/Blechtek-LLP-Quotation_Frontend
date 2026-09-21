@@ -90,7 +90,7 @@ export default function LoginPage() {
                 fontFamily: "var(--font-display)",
               }}
             >
-              Laser Quotation Suite
+              Quotation Suite
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
               Secure portal for estimates, rates, and production.

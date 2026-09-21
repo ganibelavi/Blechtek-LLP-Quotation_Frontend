@@ -17,6 +17,7 @@ import {
   Typography,
 } from "@mui/material";
 import VisibilityIcon from "@mui/icons-material/Visibility";
+import EditIcon from "@mui/icons-material/Edit";
 import { fetchInvoiceById } from "../../services/quotationApi";
 
 const emptyForm = {
@@ -301,6 +302,7 @@ export default function RenewalQuotationPage({ onNavigate }) {
         sessionStorage.setItem("invoiceData", JSON.stringify(invoice));
         sessionStorage.setItem("invoiceBackView", "renewal-quotations");
         sessionStorage.setItem("invoiceViewOnly", "true");
+        sessionStorage.removeItem("invoiceEditOnly");
       } else {
         sessionStorage.setItem(
           "renewalInvoiceContext",
@@ -318,6 +320,7 @@ export default function RenewalQuotationPage({ onNavigate }) {
         );
         sessionStorage.setItem("invoiceBackView", "renewal-quotations");
         sessionStorage.removeItem("invoiceViewOnly");
+        sessionStorage.removeItem("invoiceEditOnly");
         sessionStorage.removeItem("invoiceData");
       }
 
@@ -328,6 +331,25 @@ export default function RenewalQuotationPage({ onNavigate }) {
         message: error.message ?? "Could not open the renewal invoice.",
         severity: "error",
       });
+    }
+  };
+
+  const editLinkedInvoice = async (renewal) => {
+    try {
+      const invoice = await fetchInvoiceById(renewal.InvoiceId);
+      if (!invoice) throw new Error("The linked invoice could not be found.");
+
+      sessionStorage.setItem("invoiceData", JSON.stringify(invoice));
+      sessionStorage.setItem("invoiceBackView", "renewal-quotations");
+      sessionStorage.setItem("invoiceEditOnly", "true");
+      sessionStorage.removeItem("invoiceViewOnly");
+      onNavigate("invoice-entry");
+    } catch (error) {
+      const message =
+        error.response?.data?.error ??
+        error.message ??
+        "Could not open the renewal invoice for editing.";
+      setSnackbar({ open: true, message, severity: "error" });
     }
   };
 
@@ -355,21 +377,32 @@ export default function RenewalQuotationPage({ onNavigate }) {
       label: "Actions",
       minWidth: 120,
       render: ({ row }) => (
-        <IconButton
-          size="small"
-          aria-label={
-            row.InvoiceId
-              ? `Open invoice for ${row.CustomerName}`
-              : `Create invoice for ${row.CustomerName}`
-          }
-          onClick={() =>
-            row.InvoiceId
-              ? openLinkedInvoice(row)
-              : createInvoiceForRow(row)
-          }
-        >
-          <VisibilityIcon fontSize="small" />
-        </IconButton>
+        <Box sx={{ display: "flex", alignItems: "center" }}>
+          <IconButton
+            size="small"
+            aria-label={
+              row.InvoiceId
+                ? `Open invoice for ${row.CustomerName}`
+                : `Create invoice for ${row.CustomerName}`
+            }
+            onClick={() =>
+              row.InvoiceId
+                ? openLinkedInvoice(row)
+                : createInvoiceForRow(row)
+            }
+          >
+            <VisibilityIcon fontSize="small" />
+          </IconButton>
+          {row.InvoiceId && (
+            <IconButton
+              size="small"
+              aria-label={`Edit invoice for ${row.CustomerName}`}
+              onClick={() => editLinkedInvoice(row)}
+            >
+              <EditIcon fontSize="small" />
+            </IconButton>
+          )}
+        </Box>
       ),
     },
   ];

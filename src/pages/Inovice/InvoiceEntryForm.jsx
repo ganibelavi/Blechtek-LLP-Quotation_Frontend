@@ -440,6 +440,7 @@ export default function InvoiceEntryForm({
   defaultReturnView = "created-invoices",
   initialData,
   viewOnly = false,
+  editableOnly = false,
 }) {
   const [renewalInvoiceContext] = useState(() => {
     try {
@@ -1570,6 +1571,7 @@ export default function InvoiceEntryForm({
           : "Invoice saved successfully.",
         severity: "success",
       });
+      sessionStorage.removeItem("invoiceEditOnly");
       window.setTimeout(() => onNavigate("invoice"), 700);
     } catch (error) {
       console.error("Failed to save invoice", error);
@@ -1586,6 +1588,7 @@ export default function InvoiceEntryForm({
   };
 
   const handleGenerateInvoice = () => {
+    sessionStorage.removeItem("invoiceEditOnly");
     sessionStorage.setItem(
       "invoiceData",
       JSON.stringify({
@@ -1599,7 +1602,9 @@ export default function InvoiceEntryForm({
   };
 
   return (
-    <div className="invoice-entry-page po-page">
+    <div
+      className={`invoice-entry-page po-page${editableOnly ? " invoice-edit-only" : ""}`}
+    >
       <header className="po-topbar">
         <div className="po-brand">
           <span className="po-brand-mark">BT</span>
@@ -1617,9 +1622,12 @@ export default function InvoiceEntryForm({
             type="button"
             className="app-action-btn app-action-btn--secondary"
             onClick={() =>
-              onNavigate(
-                sessionStorage.getItem("invoiceBackView") || defaultReturnView,
-              )
+              (() => {
+                sessionStorage.removeItem("invoiceEditOnly");
+                onNavigate(
+                  sessionStorage.getItem("invoiceBackView") || defaultReturnView,
+                );
+              })()
             }
             aria-label="Back to previous page"
             title="Back to previous page"
@@ -1915,7 +1923,7 @@ export default function InvoiceEntryForm({
               </div>
             </section>
 
-            <section className="po-card">
+            <section className="po-card invoice-source-section">
               <div className="po-card-title">
                 <span>02</span>
                 <h3>Parties</h3>
@@ -2030,7 +2038,7 @@ export default function InvoiceEntryForm({
               </div>
             </section>
 
-            <section className="po-card">
+            <section className="po-card invoice-source-section">
               <div className="po-card-title">
                 <span>03</span>
                 <h3>Bank details</h3>
@@ -2079,7 +2087,7 @@ export default function InvoiceEntryForm({
               </div>
             </section>
 
-            <section className="po-card">
+            <section className="po-card invoice-source-section invoice-line-items-section">
               <div className="po-card-title">
                 <span>04</span>
                 <h3>
@@ -2312,7 +2320,7 @@ export default function InvoiceEntryForm({
               </div>
             </section>
 
-            <section className="po-card">
+            <section className="po-card invoice-source-section">
               <div className="po-card-title">
                 <span>06</span>
                 <h3>Terms & amounts</h3>

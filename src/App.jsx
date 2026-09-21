@@ -554,6 +554,9 @@ export default function App() {
                       viewOnly={
                         sessionStorage.getItem("invoiceViewOnly") === "true"
                       }
+                      editableOnly={
+                        sessionStorage.getItem("invoiceEditOnly") === "true"
+                      }
                       defaultReturnView={
                         sessionStorage.getItem("invoiceBackView") ||
                         "created-invoices"
