@@ -199,6 +199,21 @@
   padding-bottom: 4px;
 }
 
+.pdf-section--scope-heading {
+  break-after: avoid;
+  page-break-after: avoid;
+}
+
+.pdf-section--scope-table {
+  break-before: avoid;
+  page-break-before: avoid;
+}
+
+.pdf-section--scope-table tr {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
 .pdf-section p {
   margin: 0 0 8px;
   line-height: 1.55;
@@ -206,6 +221,11 @@
 
 .pdf-section p:last-child {
   margin-bottom: 0;
+}
+
+.pdf-body-text {
+  font-style: normal;
+  font-weight: 400;
 }
 
 .pdf-section strong {
@@ -269,17 +289,6 @@
 .pdf-section--bullets li {
   margin: 6px 0;
   line-height: 1.55;
-}
-
-.pdf-section--note {
-  font-style: italic;
-  color: #333;
-  border-left: 3px solid #65aadb;
-  padding-left: 12px;
-  margin: 16px 0;
-  background: #f8fbfa;
-  padding: 10px 12px;
-  border-radius: 4px;
 }
 
 .pdf-section--table {

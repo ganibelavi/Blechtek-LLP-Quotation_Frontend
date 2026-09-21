@@ -303,7 +303,7 @@ export default function QuotationPdfView({ onBack }) {
               for sustainable growth and required digitalization at{" "}
               {organizationName || "{{ORG_NAME}"}.
             </p>
-            <p>
+            <p className="pdf-body-text">
               Digitization of {moduleList || "{{MODULE_LIST}"} replaces manual documentation, significantly accelerates approval process with centralized data management and improved traceability, reduced and lower administrative interfaces.
             </p>
           </div>
@@ -323,15 +323,11 @@ export default function QuotationPdfView({ onBack }) {
               </li>
             </ul>
           </div>
-
-          <div className="pdf-section pdf-section--note">
+          <div className="pdf-section pdf-section--closing">
             <p>
               Deliverables do not include the source code. Use of the solution
               is under license from BlechTek Software Solutions LLP.
             </p>
-          </div>
-
-          <div className="pdf-section pdf-section--closing">
             <p>
               We hope that this Document along with the enclosed Business Proposal
               is in line with your requirements. In case of any query, please feel
@@ -342,11 +338,11 @@ export default function QuotationPdfView({ onBack }) {
             <p>Sushama Inamdar</p>
           </div>
 
-          <div className="pdf-section pdf-section--heading">
+          <div className="pdf-section pdf-section--heading pdf-section--scope-heading">
             <h3>Scope</h3>
           </div>
 
-          <div className="pdf-section pdf-section--table">
+          <div className="pdf-section pdf-section--table pdf-section--scope-table">
             <table className="pdf-table">
               <thead>
                 <tr>
