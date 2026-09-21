@@ -64,6 +64,107 @@ function ChartGrid({ children }) {
   );
 }
 
+// function UserHealthCard({ users }) {
+//   const now = Date.now();
+//   const neverLoggedIn = users.filter((user) => !user.lastLoginAt);
+//   const staleLogins = users.filter((user) => {
+//     if (!user.lastLoginAt) return false;
+//     const loginTime = new Date(user.lastLoginAt).getTime();
+//     return Number.isFinite(loginTime) && now - loginTime > 30 * 24 * 60 * 60 * 1000;
+//   });
+//   const inactiveUsers = users.filter((user) => !user.isActive);
+//   const adminUsers = users.filter(
+//     (user) => String(user.role || "").toLowerCase() === "admin",
+//   );
+
+//   const items = [
+//     {
+//       label: "Never logged in",
+//       value: neverLoggedIn.length,
+//       detail: "Accounts that may need onboarding",
+//       color: "#eb6834",
+//     },
+//     {
+//       label: "No login in 30+ days",
+//       value: staleLogins.length,
+//       detail: "Review access and follow up",
+//       color: "#eda100",
+//     },
+//     {
+//       label: "Inactive accounts",
+//       value: inactiveUsers.length,
+//       detail: "Access is currently disabled",
+//       color: "#6b7280",
+//     },
+//     {
+//       label: "Administrators",
+//       value: adminUsers.length,
+//       detail: "Accounts with elevated access",
+//       color: "#2a78d6",
+//     },
+//   ];
+
+//   return (
+//     <div
+//       className="dashboard-chart-card"
+//       style={{ marginTop: 16, padding: 20 }}
+//       aria-label="User access and onboarding health"
+//     >
+//       <div style={{ marginBottom: 14 }}>
+//         <h2 style={{ margin: 0, fontSize: 18, color: "var(--text-primary)" }}>
+//           User access health
+//         </h2>
+//         <p
+//           style={{
+//             margin: "6px 0 0",
+//             color: "var(--text-secondary)",
+//             fontSize: 13,
+//           }}
+//         >
+//           A quick view of onboarding, account activity, and access risk.
+//         </p>
+//       </div>
+//       <div
+//         style={{
+//           display: "grid",
+//           gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
+//           gap: 12,
+//         }}
+//       >
+//         {items.map((item) => (
+//           <div
+//             key={item.label}
+//             style={{
+//               borderLeft: `4px solid ${item.color}`,
+//               background: "var(--surface-muted, rgba(0, 0, 0, 0.025))",
+//               borderRadius: 6,
+//               padding: "12px 14px",
+//             }}
+//           >
+//             <div style={{ color: "var(--text-secondary)", fontSize: 12 }}>
+//               {item.label}
+//             </div>
+//             <div
+//               style={{
+//                 color: "var(--text-primary)",
+//                 fontSize: 26,
+//                 fontWeight: 700,
+//                 lineHeight: 1.2,
+//                 margin: "4px 0",
+//               }}
+//             >
+//               {item.value}
+//             </div>
+//             <div style={{ color: "var(--text-muted)", fontSize: 11 }}>
+//               {item.detail}
+//             </div>
+//           </div>
+//         ))}
+//       </div>
+//     </div>
+//   );
+// }
+
 export default function UsersPage() {
   const [users, setUsers] = useState([]);
   const [records, setRecords] = useState({ quotations: [], orders: [], invoices: [], renewals: [] });
@@ -119,7 +220,7 @@ export default function UsersPage() {
     { name: 'Invoices', value: records.invoices.length, color: cove.green },
     { name: 'Renewals', value: records.renewals.length, color: cove.yellow },
   ].filter((item) => item.value > 0);
-  const weeklyActivity = recordsPerUser.map((row) => ({ name: row.name, actions: row.Quotations + row['Purchase orders'] + row.Invoices + row.Renewals }));
+  const recordedActivity = recordsPerUser.map((row) => ({ name: row.name, actions: row.Quotations + row['Purchase orders'] + row.Invoices + row.Renewals }));
   const activeUsersTrend = [{ month: 'Current', active: activeUsers }];
   return (
     <div className="dashboard-analytics-page">
@@ -224,22 +325,23 @@ export default function UsersPage() {
         </ChartCard>
 
         <ChartCard
-          ariaLabel="Bar chart of weekly actions per user"
-          legendItems={[{ color: cove.aqua, label: 'Actions this week' }]}
+          ariaLabel="Bar chart of recorded actions per user"
+          legendItems={[{ color: cove.aqua, label: 'Recorded actions' }]}
         >
-          <BarChart data={weeklyActivity}>
+          <BarChart data={recordedActivity}>
             <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
             <XAxis dataKey="name" tick={axisTick} axisLine={{ stroke: gridStroke }} tickLine={false}>
               <Label value="User" offset={-5} position="insideBottom" style={axisTick} />
             </XAxis>
             <YAxis tick={axisTick} axisLine={false} tickLine={false} allowDecimals={false}>
-              <Label value="Actions" angle={-90} position="insideLeft" offset={0} dy={12} style={axisTick} />
+              <Label value="Recorded actions" angle={-90} position="insideLeft" offset={0} dy={12} style={axisTick} />
             </YAxis>
             <Tooltip />
             <Bar dataKey="actions" fill={cove.aqua} radius={[4, 4, 0, 0]} maxBarSize={32} />
           </BarChart>
         </ChartCard>
       </ChartGrid>
+      {/* <UserHealthCard users={users} /> */}
     </div>
   );
 }
