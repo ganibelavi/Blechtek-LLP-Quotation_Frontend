@@ -9,6 +9,7 @@ import PurchaseOrdersDashboardPage from "./pages/Dashboards/PurchaseOrdersPage";
 import InvoicesDashboardPage from "./pages/Dashboards/InvoicesPage";
 import QuotationPdfView from "./pages/Quotation/QuotationPdfView";
 import LoginPage from "./pages/LoginPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import SettingsPage from "./pages/SettingsPage";
 import UsersPage from "./pages/Settings/Masters/UsersPage";
 import ModulesPage from "./pages/Settings/Masters/ModulesPage";
@@ -257,7 +258,11 @@ export default function App() {
         <main
           className={`app-main ${view === "purchase-order-entry" ? "app-main--po" : view === "invoice-entry" ? "app-main--invoice" : ""}`}
         >
-          <LoginPage />
+          {view === "forgot-password" ? (
+            <ForgotPasswordPage onBackToLogin={() => setView("login")} />
+          ) : (
+            <LoginPage onForgotPassword={() => setView("forgot-password")} />
+          )}
         </main>
       ) : (
         <div

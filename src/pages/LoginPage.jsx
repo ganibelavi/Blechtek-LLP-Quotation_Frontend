@@ -16,7 +16,7 @@ import CustomSnackbar from "../components/CustomSnackbar";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 
-export default function LoginPage() {
+export default function LoginPage({ onForgotPassword }) {
   const { login } = useAuth();
   const { register, handleSubmit } = useForm();
   const [error, setError] = useState("");
@@ -184,10 +184,19 @@ export default function LoginPage() {
             </Stack>
           </form>
 
+          <Button
+            type="button"
+            variant="text"
+            onClick={onForgotPassword}
+            sx={{ display: "block", mx: "auto", textTransform: "none", mt: 1 }}
+          >
+            Forgot password?
+          </Button>
+
           <Typography
             variant="caption"
             color="text.secondary"
-            sx={{ display: "block", textAlign: "center", mt: 4 }}
+            sx={{ display: "block", textAlign: "center", mt: 1 }}
           >
             &copy; 2026 BlechTek Solutions India Pvt Ltd.
           </Typography>
