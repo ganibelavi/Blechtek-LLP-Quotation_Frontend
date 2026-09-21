@@ -182,9 +182,18 @@
 
   .app-topbar,
   .app-sidebar,
-  .app-body,
   .app-section-title {
     display: none !important;
+  }
+
+  .app-body {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
   .app-main {
@@ -216,7 +225,7 @@
     max-width: 100% !important;
     border: none !important;
     box-shadow: none !important;
-    padding: 0 !important;
+    padding: 10mm 9mm 8mm !important;
     margin: 0 !important;
     background: #fff !important;
   }

@@ -1589,16 +1589,19 @@ export default function InvoiceEntryForm({
 
   const handleGenerateInvoice = () => {
     sessionStorage.removeItem("invoiceEditOnly");
+    const generatedInvoiceData = {
+      invoice: { ...form, amountInWords },
+      items: form.items,
+      totals,
+      id: form.sourceInvoiceId,
+    };
+
+    sessionStorage.setItem("invoiceData", JSON.stringify(generatedInvoiceData));
     sessionStorage.setItem(
-      "invoiceData",
-      JSON.stringify({
-        invoice: { ...form, amountInWords },
-        items: form.items,
-        totals,
-        id: form.sourceInvoiceId,
-      }),
+      "invoicePrintData",
+      JSON.stringify(generatedInvoiceData),
     );
-    onNavigate("invoice");
+    onNavigate("invoice-print");
   };
 
   return (

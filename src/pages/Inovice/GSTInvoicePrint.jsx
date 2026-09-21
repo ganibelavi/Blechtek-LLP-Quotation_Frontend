@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import "./GSTInvoice.css";
 import { fetchInvoiceById } from "../../services/quotationApi";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 
 const emptyInvoice = {
-  originalFor: "ORIGINAL FOR RECIPIENT",
+  // originalFor: "ORIGINAL FOR RECIPIENT",
   companyName: "Your Company Name",
   invoiceNo: "",
   dateOfIssue: "",
@@ -42,6 +43,22 @@ const emptyInvoice = {
   insurance: 0,
 };
 
+function normalizePrintData(source) {
+  if (!source) {
+    return null;
+  }
+
+  const normalized = source.invoice
+    ? source
+    : { invoice: source, items: source.items || [] };
+
+  return {
+    ...normalized,
+    invoice: { ...emptyInvoice, ...(normalized.invoice || {}) },
+    items: Array.isArray(normalized.items) ? normalized.items : [],
+  };
+}
+
 function formatDate(value) {
   if (!value) return "-";
 
@@ -66,14 +83,19 @@ function currency(n) {
 }
 
 export default function GSTInvoicePrint({ initialData, onBack }) {
-  const [invoice, setInvoice] = useState({ ...emptyInvoice, ...(initialData?.invoice || initialData || {}) });
+  const initialPrintData = normalizePrintData(initialData);
+  const [invoice, setInvoice] = useState(
+    initialPrintData?.invoice || { ...emptyInvoice },
+  );
   const [items, setItems] = useState(
-    initialData?.items?.length
-      ? initialData.items.map((row, index) => ({ ...row, id: row.id ?? index + 1 }))
+    initialPrintData?.items?.length
+      ? initialPrintData.items.map((row, index) => ({
+          ...row,
+          id: row.id ?? index + 1,
+        }))
       : [],
   );
   const [loading, setLoading] = useState(true);
-  const [hasAutoPrinted, setHasAutoPrinted] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -83,8 +105,8 @@ export default function GSTInvoicePrint({ initialData, onBack }) {
         const source = preferred || initialData;
 
         if (source) {
-          const normalized = source.invoice ? source : { invoice: source, items: source.items || [] };
-          setInvoice({ ...emptyInvoice, ...(normalized.invoice || {}) });
+          const normalized = normalizePrintData(source);
+          setInvoice(normalized.invoice);
           setItems(
             normalized.items?.length
               ? normalized.items.map((row, index) => ({ ...row, id: row.id ?? index + 1 }))
@@ -97,10 +119,13 @@ export default function GSTInvoicePrint({ initialData, onBack }) {
         const printId = sessionStorage.getItem("invoicePrintId");
         if (printId) {
           const remote = await fetchInvoiceById(Number(printId));
-          const normalized = remote?.invoice ? remote : { invoice: remote, items: remote?.items || [] };
-          setInvoice({ ...emptyInvoice, ...(normalized.invoice || remote || {}) });
+          const normalized = normalizePrintData(remote);
+          setInvoice(normalized?.invoice || { ...emptyInvoice });
           setItems(
-            (normalized.items || remote?.items || []).map((row, index) => ({ ...row, id: row.id ?? index + 1 })),
+            (normalized?.items || []).map((row, index) => ({
+              ...row,
+              id: row.id ?? index + 1,
+            })),
           );
         }
       } catch (error) {
@@ -130,19 +155,6 @@ export default function GSTInvoicePrint({ initialData, onBack }) {
     return { totalQty, totalPrice, sgst, cgst, igst, subtotal, tds, insurance, grandTotal };
   }, [items, invoice.sgstPct, invoice.cgstPct, invoice.igstPct, invoice.tdsPct, invoice.insurance]);
 
-  useEffect(() => {
-    if (loading || hasAutoPrinted) {
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      setHasAutoPrinted(true);
-      window.print();
-    }, 450);
-
-    return () => clearTimeout(timer);
-  }, [loading, hasAutoPrinted]);
-
   if (loading) {
     return (
       <div className="gi-page">
@@ -161,8 +173,14 @@ export default function GSTInvoicePrint({ initialData, onBack }) {
           Print / Save as PDF
         </button>
         {onBack && (
-          <button type="button" className="gi-btn gi-btn-secondary" onClick={onBack}>
-            Back
+          <button
+            type="button"
+            className="gi-btn gi-btn-secondary gi-btn-back"
+            onClick={onBack}
+            aria-label="Back to invoice entry"
+            title="Back"
+          >
+            <ArrowBackIcon fontSize="small" />
           </button>
         )}
       </div>
@@ -173,7 +191,7 @@ export default function GSTInvoicePrint({ initialData, onBack }) {
             <img src="/logo/logo.png" alt="BlechTek Software Solutions LLP logo" />
           </div>
           <div className="gi-company-name">BlechTek Software Solutions LLP</div>
-          <div className="gi-original-tag">{invoice.originalFor || "ORIGINAL FOR RECIPIENT"}</div>
+          {/* <div className="gi-original-tag">{invoice.originalFor || "ORIGINAL FOR RECIPIENT"}</div> */}
         </div>
 
         <div className="gi-row gi-meta">
@@ -281,47 +299,60 @@ export default function GSTInvoicePrint({ initialData, onBack }) {
           </tbody>
         </table>
 
-        <div className="gi-totals">
-          <div className="gi-totals-row">
-            <span className="gi-label">Total Price:</span>
-            <span>₹ {currency(totals.totalPrice)}</span>
-          </div>
-          <div className="gi-totals-row">
-            <span className="gi-label">SGST:</span>
-            <span>₹ {currency(totals.sgst)}</span>
-          </div>
-          <div className="gi-totals-row">
-            <span className="gi-label">CGST:</span>
-            <span>₹ {currency(totals.cgst)}</span>
-          </div>
-          <div className="gi-totals-row">
-            <span className="gi-label">IGST:</span>
-            <span>₹ {currency(totals.igst)}</span>
-          </div>
-          <div className="gi-totals-row">
-            <span className="gi-label">Subtotal:</span>
-            <span>₹ {currency(totals.subtotal)}</span>
-          </div>
-          <div className="gi-totals-row">
-            <span className="gi-label">TDS:</span>
-            <span>-₹ {currency(totals.tds)}</span>
-          </div>
-          <div className="gi-totals-row">
-            <span className="gi-label">Insurance:</span>
-            <span>₹ {currency(totals.insurance)}</span>
-          </div>
-          <div className="gi-totals-row gi-grand-total">
-            <span className="gi-label">Grand Total:</span>
-            <strong>₹ {currency(totals.grandTotal)}</strong>
-          </div>
-        </div>
-
         <div className="gi-footer-grid">
           <div className="gi-footer-block">
-            <div className="gi-field"><span className="gi-label">Reverse Charge:</span><span>{invoice.reverseCharge || "No"}</span></div>
+            <p className="gi-declaration">
+              Certified that the particulars given above are true and correct
+              and the amount indicated represents the price actually charged
+              and that there is no flow of additional consideration directly or
+              indirectly from the buyer.
+            </p>
+            <div className="gi-field"><span className="gi-label">Tax Payable on Reverse Charge (Yes/No):</span><span>{invoice.reverseCharge || "No"}</span></div>
             <div className="gi-field"><span className="gi-label">Amount in Words:</span><span>{invoice.amountInWords || "-"}</span></div>
+            <p className="gi-declaration gi-return-note">
+              I/We hereby certify that my/our registration certificate under the
+              GST Act, 2017 is in force on the date on which the sale of goods
+              specified in this tax invoice is made by me/us and that the
+              transaction of sale covered by this tax invoice has been effected
+              by me/us and is not liable to be accounted for in the turnover of
+              this tax invoice.
+            </p>
           </div>
           <div className="gi-footer-block">
+            <div className="gi-totals">
+              <div className="gi-totals-row">
+                <span className="gi-label">Total Price:</span>
+                <span>₹ {currency(totals.totalPrice)}</span>
+              </div>
+              <div className="gi-totals-row">
+                <span className="gi-label">SGST:</span>
+                <span>₹ {currency(totals.sgst)}</span>
+              </div>
+              <div className="gi-totals-row">
+                <span className="gi-label">CGST:</span>
+                <span>₹ {currency(totals.cgst)}</span>
+              </div>
+              <div className="gi-totals-row">
+                <span className="gi-label">IGST:</span>
+                <span>₹ {currency(totals.igst)}</span>
+              </div>
+              <div className="gi-totals-row">
+                <span className="gi-label">Subtotal:</span>
+                <span>₹ {currency(totals.subtotal)}</span>
+              </div>
+              <div className="gi-totals-row">
+                <span className="gi-label">TDS:</span>
+                <span>-₹ {currency(totals.tds)}</span>
+              </div>
+              <div className="gi-totals-row">
+                <span className="gi-label">Insurance:</span>
+                <span>₹ {currency(totals.insurance)}</span>
+              </div>
+              <div className="gi-totals-row gi-grand-total">
+                <span className="gi-label">Grand Total:</span>
+                <strong>₹ {currency(totals.grandTotal)}</strong>
+              </div>
+            </div>
             <div className="gi-field"><span className="gi-label">Terms of Sale:</span><span>{invoice.termsOfSale || "-"}</span></div>
           </div>
           <div className="gi-signatory">

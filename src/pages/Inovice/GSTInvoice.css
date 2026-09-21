@@ -55,6 +55,15 @@
   transform: translateY(-1px);
 }
 
+.gi-btn-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 30px;
+  padding: 0;
+}
+
 .gi-btn-secondary {
   background: #757575;
   border-color: #757575;
@@ -239,8 +248,9 @@ input[type="number"] {
 }
 
 .gi-col-sl {
-  width: 46px;
+  width: 48px;
   text-align: center;
+  white-space: nowrap;
 }
 
 .gi-col-qty {
@@ -360,6 +370,203 @@ input[type="number"] {
   font-weight: 600;
 }
 
+/* Final invoice layout used by GSTInvoicePrint */
+.gi-sheet {
+  width: min(100%, 190mm);
+  /* min-height: 277mm; */
+  padding: 18px 20px 16px;
+  font-size: 10px;
+  line-height: 1.25;
+}
+
+.gi-header {
+  grid-template-columns: 78px 1fr auto;
+  gap: 12px;
+  min-height: 62px;
+  margin-bottom: 8px;
+}
+
+.gi-logo {
+  width: 78px;
+  height: 46px;
+}
+
+.gi-company-name {
+  font-size: 15px;
+  padding-left: 0;
+}
+
+.gi-original-tag {
+  font-size: 7px;
+  padding: 4px 7px;
+}
+
+.gi-row.gi-meta {
+  gap: 14px;
+  padding: 4px 0;
+}
+
+.gi-cell {
+  gap: 4px;
+}
+
+.gi-label {
+  font-size: 9px;
+}
+
+.gi-grid-2 {
+  grid-template-columns: 1fr 1fr;
+}
+
+.gi-block {
+  padding: 7px 10px;
+}
+
+.gi-block-title {
+  font-size: 9px;
+  margin-bottom: 5px;
+}
+
+.gi-field {
+  gap: 4px;
+  margin-bottom: 4px;
+  min-height: 14px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.gi-field>span:last-child {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.gi-table {
+  margin-top: 8px;
+  font-size: 9px;
+  table-layout: fixed;
+}
+
+.gi-table th,
+.gi-table td {
+  padding: 4px 5px;
+}
+
+.gi-table thead th {
+  font-size: 9px;
+  background: var(--wash);
+}
+
+.gi-col-sl {
+  width: 48px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.gi-col-qty {
+  width: 42px;
+}
+
+.gi-col-uom {
+  width: 48px;
+}
+
+.gi-col-rate,
+.gi-col-total {
+  width: 74px;
+}
+
+.gi-empty-row {
+  text-align: center;
+  color: #6b7280;
+}
+
+.gi-totals {
+  width: 50%;
+  margin-left: auto;
+  border-left: 1px solid var(--rule);
+  border-right: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  padding: 4px 8px;
+}
+
+.gi-totals-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 3px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.gi-totals-row:last-child {
+  border-bottom: 0;
+}
+
+.gi-grand-total {
+  border-top: 1px solid var(--rule-strong);
+  font-weight: 700;
+  font-size: 10px;
+}
+
+.gi-footer-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  border: 1px solid var(--rule);
+  border-top: 0;
+  min-height: 116px;
+}
+
+.gi-footer-block {
+  padding: 8px 10px;
+  border-right: 1px solid var(--rule);
+}
+
+.gi-declaration {
+  margin: 0 0 7px;
+  color: #444a55;
+  font-size: 8px;
+  line-height: 1.35;
+}
+
+.gi-return-note {
+  margin-top: 8px;
+}
+
+.gi-footer-block .gi-totals {
+  width: 100%;
+  margin: 0 0 8px;
+  border: 0;
+  padding: 0;
+}
+
+.gi-footer-block .gi-field {
+  align-items: flex-start;
+}
+
+.gi-footer-block .gi-field>span:last-child {
+  line-height: 1.35;
+}
+
+.gi-signatory {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 8px 10px;
+  min-height: 108px;
+}
+
+.gi-signatory-space {
+  height: 68px;
+}
+
+.gi-signatory-space img {
+  width: 62px;
+  height: 62px;
+}
+
+.gi-signatory-line {
+  font-size: 9px;
+}
+
 /* Responsive */
 @media (max-width: 700px) {
   .gi-grid-2 {
@@ -383,6 +590,18 @@ input[type="number"] {
 
 /* Print */
 @media print {
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+
   .no-print {
     display: none !important;
   }
@@ -390,12 +609,15 @@ input[type="number"] {
   .gi-page {
     background: #fff;
     padding: 0;
+    min-height: auto;
   }
 
   .gi-sheet {
+    width: 190mm !important;
+    min-height: 277mm;
     border: none;
-    max-width: 100%;
-    padding: 0;
+    max-width: none;
+    padding: 10mm 9mm 8mm;
   }
 
   input {

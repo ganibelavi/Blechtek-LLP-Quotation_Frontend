@@ -59,9 +59,11 @@ export default function App() {
     }
   };
 
-  const getInvoiceInitialData = () => {
+  const getInvoiceInitialData = (preferPrintData = false) => {
     try {
-      const stored = sessionStorage.getItem("invoiceData");
+      const stored = sessionStorage.getItem(
+        preferPrintData ? "invoicePrintData" : "invoiceData",
+      );
       return stored ? JSON.parse(stored) : undefined;
     } catch (error) {
       console.error("Failed to read invoice data from session storage", error);
@@ -579,8 +581,8 @@ export default function App() {
                 case "invoice-print":
                   return (
                     <GSTInvoicePrint
-                      initialData={getInvoiceInitialData()}
-                      onBack={() => navigate("invoice")}
+                      initialData={getInvoiceInitialData(true)}
+                      onBack={() => navigate("invoice-entry")}
                     />
                   );
                 case "customer-subscriptions":
