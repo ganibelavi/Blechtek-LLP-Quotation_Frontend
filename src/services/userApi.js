@@ -16,21 +16,9 @@ const client = axios.create({
   headers: { "Content-Type": "application/json" }
 });
 
-export interface User {
-  id: number;
-  email: string;
-  firstName: string;
-  lastName: string;
-  role: string;
-  isActive: boolean;
-  createdAt: string;
-  lastLoginAt: string | null;
-  passwordHash: string;
-}
-
-export async function fetchUsers(): Promise<User[]> {
+export async function fetchUsers() {
   const { data } = await client.get("/api/users");
-  return data.map((user: any) => ({
+  return data.map((user) => ({
     id: user.id,
     email: user.email,
     firstName: user.firstName,
@@ -43,7 +31,7 @@ export async function fetchUsers(): Promise<User[]> {
   }));
 }
 
-export async function createUser(user: Omit<User, "id" | "createdAt" | "lastLoginAt" | "passwordHash"> & { password: string }): Promise<User> {
+export async function createUser(user) {
   const { data } = await client.post("/api/users", {
     email: user.email,
     password: user.password,
@@ -64,7 +52,7 @@ export async function createUser(user: Omit<User, "id" | "createdAt" | "lastLogi
   };
 }
 
-export async function updateUser(id: number, user: Partial<User> & { password?: string }): Promise<User> {
+export async function updateUser(id, user) {
   const { data } = await client.put(`/api/users/${id}`, {
     firstName: user.firstName,
     lastName: user.lastName,
@@ -86,7 +74,7 @@ export async function updateUser(id: number, user: Partial<User> & { password?: 
   };
 }
 
-export async function deleteUser(id: number): Promise<void> {
+export async function deleteUser(id) {
   await client.delete(`/api/users/${id}`);
 }
 
