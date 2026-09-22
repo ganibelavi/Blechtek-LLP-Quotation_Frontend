@@ -149,7 +149,12 @@ export default function CreatedInvoices({ onNavigate }) {
     },
     { key: "invoiceNo", label: "Invoice No.", sortable: true, minWidth: 180 },
     { key: "receiverName", label: "Customer", sortable: true, minWidth: 180 },
-    { key: "companyName", label: "Company", sortable: true, minWidth: 180 },
+    {
+      key: "organizationName",
+      label: "Organization Name",
+      sortable: true,
+      minWidth: 200,
+    },
     {
       key: "dateOfIssue",
       label: "Invoice Date",
@@ -214,7 +219,13 @@ export default function CreatedInvoices({ onNavigate }) {
     id: invoice.id,
     invoiceNo: invoice.invoice?.invoiceNo || invoice.invoiceNo || "-",
     receiverName: invoice.invoice?.receiverName || invoice.receiverName || "-",
-    companyName: invoice.invoice?.companyName || invoice.companyName || "-",
+    organizationName:
+      invoice.invoice?.organizationName ||
+      invoice.organizationName ||
+      invoice.invoice?.supplierName ||
+      invoice.invoice?.companyName ||
+      invoice.companyName ||
+      "-",
     dateOfIssue: invoice.invoice?.dateOfIssue || invoice.dateOfIssue || "-",
     poNoDate: invoice.invoice?.poNoDate || invoice.poNoDate || "-",
     quotationNo: invoice.invoice?.quotationNo || invoice.quotationNo || "-",
