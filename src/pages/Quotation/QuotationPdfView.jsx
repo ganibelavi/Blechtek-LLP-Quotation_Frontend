@@ -255,7 +255,10 @@ export default function QuotationPdfView({ onBack }) {
                 <p>Name: {quotationTo.name || "{{CONTACT_NAME}}"}</p>
                 <p>Address: {quotationTo.address || "{{CONTACT_ADDRESS}}"}</p>
                 <p>Contact No.: {quotationTo.contactNo || "{{CONTACT_PHONE}}"}</p>
-                <p>Email: {quotationTo.email || "{{CONTACT_EMAIL}}"}</p>
+                <p className="quotation-email">
+                  <strong>Email:</strong>
+                  <span>{quotationTo.email || "{{CONTACT_EMAIL}}"}</span>
+                </p>
                 {/* <p>Reference By: {referenceBy || "{{REFERENCE_BY}"}</p> */}
               </div>
               <div className="quotation-to-right">

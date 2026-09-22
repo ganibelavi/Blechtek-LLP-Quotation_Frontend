@@ -260,6 +260,17 @@
   margin: 4px 0;
 }
 
+.quotation-to-left .quotation-email {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.quotation-to-left .quotation-email strong {
+  color: #000;
+  font-weight: 700;
+}
+
 .quotation-to-right p {
   margin: 4px 0;
   font-size: 11pt;
