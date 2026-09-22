@@ -316,44 +316,55 @@ export default function App() {
                         "dashboard-purchase-orders",
                         "dashboard-invoices",
                       ].includes(view)
-                    : item.view === "created-quotations"
-                      ? [
-                          "created-quotations",
-                          "quotation-detail",
-                          "edit-quotation",
-                          "quotation",
-                          "quotation-history",
-                        ].includes(view)
-                      : item.view === "all-revisions"
-                        ? view === "all-revisions"
-                        : item.view === "settings"
-                          ? [
-                              "settings",
-                              "users",
-                              "modules",
-                              "customers",
-                              "suppliers",
-                              "company-profile",
-                              "bank-accounts",
-                              "gst-rates",
-                              "terms-templates",
-                            ].includes(view)
-                          : item.view === "created-invoices"
+                    : item.view === "create"
+                      ? ["create"].includes(view)
+                      : item.view === "created-quotations"
+                        ? [
+                            "created-quotations",
+                            "quotation-detail",
+                            "edit-quotation",
+                            "quotation",
+                            "quotation-history",
+                            "all-revisions",
+                          ].includes(view)
+                        : item.view === "all-revisions"
+                          ? ["all-revisions"].includes(view)
+                          : item.view === "created-purchase-orders"
                             ? [
-                                "created-invoices",
-                                "invoice-entry",
-                                "invoice",
+                                "created-purchase-orders",
+                                "purchase-order",
+                                "purchase-order-entry",
+                                "purchase-order-print",
                               ].includes(view)
-                            : item.view === "subscriptions"
+                            : item.view === "created-invoices"
                               ? [
-                                  "subscriptions",
-                                  "customer-subscriptions",
-                                  "renewals",
-                                  "renewal-quotations",
-                                  "pricing-history",
-                                  "subscription-details",
+                                  "created-invoices",
+                                  "invoice-entry",
+                                  "invoice",
+                                  "invoice-print",
                                 ].includes(view)
-                              : view === item.view;
+                              : item.view === "subscriptions"
+                                ? [
+                                    "subscriptions",
+                                    "customer-subscriptions",
+                                    "renewals",
+                                    "renewal-quotations",
+                                    "pricing-history",
+                                    "subscription-details",
+                                  ].includes(view)
+                                : item.view === "settings"
+                                  ? [
+                                      "settings",
+                                      "users",
+                                      "modules",
+                                      "customers",
+                                      "suppliers",
+                                      "company-profile",
+                                      "bank-accounts",
+                                      "gst-rates",
+                                      "terms-templates",
+                                    ].includes(view)
+                                  : view === item.view;
                 return (
                   <React.Fragment key={item.view}>
                     <button
