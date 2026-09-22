@@ -25,12 +25,17 @@ import {
 } from "@mui/material";
 import { sendQuotationEmail } from "../../services/quotationApi";
 
+const today = new Date().toISOString().split("T")[0];
+const thirtyDaysLater = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+  .toISOString()
+  .split("T")[0];
+
 const initialValues = {
   referenceBy: "",
   organizationName: "",
-  validationDate: "",
+  validationDate: thirtyDaysLater,
   quotationNo: "",
-  date: new Date().toISOString().slice(0, 10),
+  date: today,
   selectedModules: [],
   moduleRequirements: {},
   quotationTo: { name: "", address: "", contactNo: "", email: "" },
@@ -501,11 +506,16 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
   };
 
   const handleNewQuotation = () => {
+    const todayStr = new Date().toISOString().split("T")[0];
+    const newValidationDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .split("T")[0];
     setValues({
       ...initialValues,
       referenceBy: "",
       quotationNo: "",
-      date: new Date().toISOString().slice(0, 10),
+      date: todayStr,
+      validationDate: newValidationDate,
     });
     setValidityPeriod(30);
     setResult(null);
