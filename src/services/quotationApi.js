@@ -160,6 +160,11 @@ export async function createPurchaseOrder(payload) {
   return data;
 }
 
+export async function updatePurchaseOrder(id, payload) {
+  const { data } = await client.put(`/api/purchase-order/${id}`, payload);
+  return data;
+}
+
 export async function fetchNextPurchaseOrderNo() {
   const { data } = await client.get("/api/purchase-order/next-number");
   return data.poNo;

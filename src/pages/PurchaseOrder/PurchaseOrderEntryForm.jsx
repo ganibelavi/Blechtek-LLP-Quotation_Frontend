@@ -12,6 +12,7 @@ import {
 import "./PurchaseOrder.css";
 import {
   createPurchaseOrder,
+  updatePurchaseOrder,
   fetchModules,
   fetchQuotationById,
   fetchQuotations,
@@ -558,7 +559,9 @@ export default function PurchaseOrderEntryForm({
     };
 
     try {
-      const saved = await createPurchaseOrder(payload);
+      const saved = activePurchaseOrderId
+        ? await updatePurchaseOrder(activePurchaseOrderId, payload)
+        : await createPurchaseOrder(payload);
       setActivePurchaseOrderId(normalizeId(saved.id));
 
       sessionStorage.setItem(
