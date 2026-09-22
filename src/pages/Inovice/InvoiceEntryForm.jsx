@@ -532,6 +532,7 @@ export default function InvoiceEntryForm({
   const [queueSearch, setQueueSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [statusActionDialogOpen, setStatusActionDialogOpen] = useState(false);
+  const viewOnlyEnrichmentDoneRef = React.useRef(false);
   const [invoiceForStatusAction, setInvoiceForStatusAction] = useState(null);
   const [statusActionLoading, setStatusActionLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({
@@ -1297,6 +1298,70 @@ export default function InvoiceEntryForm({
   }, [moduleCatalog, viewOnly]);
 
   useEffect(() => {
+    if (!viewOnly || !form.sourceInvoiceId) return;
+    if (!moduleCatalog.length) return;
+
+    if (viewOnlyEnrichmentDoneRef.current) return;
+
+    const hasMissingPrices = form.items.some(
+      (item) =>
+        String(item.description || "").trim() &&
+        Number(item.rate) > 0 &&
+        !Number(item.modulePrice) &&
+        !Number(item.implementationPrice),
+    );
+    if (!hasMissingPrices) {
+      viewOnlyEnrichmentDoneRef.current = true;
+      return;
+    }
+
+    const resolveQuotationId = () => {
+      const directId = normalizeQuotationId(form.sourceQuotationId);
+      if (directId) return directId;
+      const match = quotationRecords.find(
+        (quotation) =>
+          String(quotation.quotationNo || "")
+            .trim()
+            .toLowerCase() === String(form.quotationNo || "").trim().toLowerCase(),
+      );
+      return normalizeQuotationId(match?.quotationId ?? match?.id);
+    };
+
+    const sourceQuotationId = resolveQuotationId();
+    if (!sourceQuotationId) return;
+
+    let cancelled = false;
+
+    const enrichFromQuotation = async () => {
+      try {
+        const quotation = await fetchQuotationById(sourceQuotationId);
+        if (cancelled || !quotation) return;
+
+        setForm((prev) => ({
+          ...prev,
+          sourceQuotationId:
+            normalizeQuotationId(quotation.quotationId || quotation.id) ||
+            prev.sourceQuotationId,
+          items: applyQuotationPricing(prev.items, quotation),
+        }));
+        viewOnlyEnrichmentDoneRef.current = true;
+      } catch (error) {
+        console.error("Failed to enrich invoice items from quotation", error);
+      }
+    };
+
+    enrichFromQuotation();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [viewOnly, form.sourceInvoiceId, form.quotationNo, form.sourceQuotationId, form.items, moduleCatalog, quotationRecords]);
+
+  useEffect(() => {
+    viewOnlyEnrichmentDoneRef.current = false;
+  }, [form.sourceInvoiceId]);
+
+  useEffect(() => {
     if (viewOnly || isRenewalInvoice) return;
     const selectedCompanyName = form.companyName?.trim();
     if (!selectedCompanyName) return;
@@ -1531,6 +1596,8 @@ export default function InvoiceEntryForm({
               String(renewalInvoiceContext.moduleName || "").trim().toLowerCase())
           ? Number(renewalInvoiceContext.amount) || 0
           : Number(item.rate) || 0,
+        modulePrice: Number(item.modulePrice) || 0,
+        implementationPrice: Number(item.implementationPrice) || 0,
         hsnCode: item.hsnCode || "",
         sacCode: item.sacCode || "",
         reverseChargeDefault: Boolean(item.reverseChargeDefault),

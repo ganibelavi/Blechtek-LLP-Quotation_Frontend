@@ -18,6 +18,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import EntityTable from "../../components/EntityTable";
 import {
   fetchInvoices,
+  fetchInvoiceById,
   deleteInvoice as deleteInvoiceApi,
 } from "../../services/quotationApi";
 import {
@@ -66,44 +67,64 @@ export default function CreatedInvoices({ onNavigate }) {
     loadInvoices();
   }, []);
 
-  const openInvoice = (row) => {
-    const invoiceData = row.data || row;
-    const normalizedData = invoiceData?.invoice
-      ? invoiceData
-      : {
-          invoice: invoiceData,
-          items: invoiceData?.items || [],
-          totals: invoiceData?.totals || {
-            grandTotal: invoiceData?.totalAmount || 0,
-          },
-          id: invoiceData?.id,
-          invoiceNo: invoiceData?.invoiceNo,
-        };
+  const openInvoice = async (row) => {
+    try {
+      const invoiceData = row.data || row;
+      const invoiceId = invoiceData?.id || invoiceData?.invoice?.id;
+      if (!invoiceId) return;
 
-    sessionStorage.setItem("invoiceData", JSON.stringify(normalizedData));
-    sessionStorage.setItem("invoiceBackView", "created-invoices");
-    sessionStorage.setItem("invoiceViewOnly", "true");
-    onNavigate("invoice-entry");
+      const remoteInvoice = await fetchInvoiceById(invoiceId);
+      if (!remoteInvoice) return;
+
+      const normalizedData = remoteInvoice?.invoice
+        ? remoteInvoice
+        : {
+            invoice: remoteInvoice,
+            items: remoteInvoice?.items || [],
+            totals: remoteInvoice?.totals || {
+              grandTotal: remoteInvoice?.totalAmount || 0,
+            },
+            id: remoteInvoice?.id,
+            invoiceNo: remoteInvoice?.invoiceNo,
+          };
+
+      sessionStorage.setItem("invoiceData", JSON.stringify(normalizedData));
+      sessionStorage.setItem("invoiceBackView", "created-invoices");
+      sessionStorage.setItem("invoiceViewOnly", "true");
+      onNavigate("invoice-entry");
+    } catch (err) {
+      console.error("Failed to open invoice", err);
+    }
   };
 
-  const openInvoiceForEdit = (row) => {
-    const invoiceData = row.data || row;
-    const normalizedData = invoiceData?.invoice
-      ? invoiceData
-      : {
-          invoice: invoiceData,
-          items: invoiceData?.items || [],
-          totals: invoiceData?.totals || {
-            grandTotal: invoiceData?.totalAmount || 0,
-          },
-          id: invoiceData?.id,
-          invoiceNo: invoiceData?.invoiceNo,
-        };
+  const openInvoiceForEdit = async (row) => {
+    try {
+      const invoiceData = row.data || row;
+      const invoiceId = invoiceData?.id || invoiceData?.invoice?.id;
+      if (!invoiceId) return;
 
-    sessionStorage.setItem("invoiceData", JSON.stringify(normalizedData));
-    sessionStorage.setItem("invoiceBackView", "created-invoices");
-    sessionStorage.removeItem("invoiceViewOnly");
-    onNavigate("invoice-entry");
+      const remoteInvoice = await fetchInvoiceById(invoiceId);
+      if (!remoteInvoice) return;
+
+      const normalizedData = remoteInvoice?.invoice
+        ? remoteInvoice
+        : {
+            invoice: remoteInvoice,
+            items: remoteInvoice?.items || [],
+            totals: remoteInvoice?.totals || {
+              grandTotal: remoteInvoice?.totalAmount || 0,
+            },
+            id: remoteInvoice?.id,
+            invoiceNo: remoteInvoice?.invoiceNo,
+          };
+
+      sessionStorage.setItem("invoiceData", JSON.stringify(normalizedData));
+      sessionStorage.setItem("invoiceBackView", "created-invoices");
+      sessionStorage.removeItem("invoiceViewOnly");
+      onNavigate("invoice-entry");
+    } catch (err) {
+      console.error("Failed to open invoice for edit", err);
+    }
   };
 
   const handleRemoveInvoice = (row) => {
