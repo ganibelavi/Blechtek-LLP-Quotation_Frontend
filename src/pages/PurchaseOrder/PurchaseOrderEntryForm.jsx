@@ -132,7 +132,9 @@ const buildQuotationItems = (quotation, moduleCatalog = []) => {
       const name = getModuleName(module);
       if (!name) return null;
       const modulePrice = Number(
-        module?.modulePrice ?? module?.ModulePrice ?? getModulePrice(module, moduleCatalog),
+        module?.modulePrice ??
+          module?.ModulePrice ??
+          getModulePrice(module, moduleCatalog),
       );
       const implementationPrice = Number(
         module?.implementationPrice ?? module?.ImplementationPrice ?? 0,
@@ -140,7 +142,9 @@ const buildQuotationItems = (quotation, moduleCatalog = []) => {
       const finalPrice = Number(
         module?.finalPrice ??
           module?.FinalPrice ??
-          (Number.isFinite(modulePrice) ? modulePrice + implementationPrice : 0),
+          (Number.isFinite(modulePrice)
+            ? modulePrice + implementationPrice
+            : 0),
       );
 
       return emptyItem(
@@ -254,6 +258,7 @@ export default function PurchaseOrderEntryForm({
           supplierGSTN: purchaseOrder.supplierGSTN || "",
           deliveryTerms: purchaseOrder.deliveryTerms || "",
           paymentTerms: purchaseOrder.paymentTerms || "",
+          notes: purchaseOrder.notes || purchaseOrder.verificationNotes || "",
           items:
             Array.isArray(purchaseOrder.items) && purchaseOrder.items.length > 0
               ? purchaseOrder.items.map((item) => ({
@@ -277,14 +282,14 @@ export default function PurchaseOrderEntryForm({
     if (purchaseOrderId || form.poNo) return;
     fetchNextPurchaseOrderNo()
       .then((poNo) => setForm((prev) => (prev.poNo ? prev : { ...prev, poNo })))
-        .catch((error) => {
-          console.error("Failed to load next purchase order number", error);
-          setSnackbar({
-            open: true,
-            message: "Unable to generate the next purchase order number.",
-            severity: "error",
-          });
+      .catch((error) => {
+        console.error("Failed to load next purchase order number", error);
+        setSnackbar({
+          open: true,
+          message: "Unable to generate the next purchase order number.",
+          severity: "error",
         });
+      });
   }, [purchaseOrderId, form.poNo]);
 
   // Sync intakeForm.poNo with auto-generated form.poNo
@@ -522,7 +527,7 @@ export default function PurchaseOrderEntryForm({
       verificationStatus: form.verificationStatus,
       verifiedBy: form.verifiedBy,
       verifiedAt: form.verifiedAt,
-      verificationNotes: form.verificationNotes,
+      verificationNotes: form.notes,
       uploadedBy: form.uploadedBy,
       receivedAt: form.receivedAt,
       quotationRefNo: form.quotationRefNo,
@@ -547,6 +552,8 @@ export default function PurchaseOrderEntryForm({
         qty: Number(item.qty) || 1,
         uom: item.uom || "Nos.",
         rate: Number(item.rate) || 0,
+        modulePrice: Number(item.modulePrice) || 0,
+        implementationPrice: Number(item.implementationPrice) || 0,
       })),
     };
 
@@ -748,6 +755,8 @@ export default function PurchaseOrderEntryForm({
         supplier?.gstn || purchaseOrder.supplierGSTN || prev.supplierGSTN,
       deliveryTerms: purchaseOrder.deliveryTerms || prev.deliveryTerms,
       paymentTerms: purchaseOrder.paymentTerms || prev.paymentTerms,
+      notes:
+        purchaseOrder.notes || purchaseOrder.verificationNotes || prev.notes,
       receivedFromEmail:
         purchaseOrder.receivedFromEmail || prev.receivedFromEmail,
       attachmentUrl: purchaseOrder.attachmentUrl || prev.attachmentUrl,
@@ -774,13 +783,14 @@ export default function PurchaseOrderEntryForm({
         activePurchaseOrderId,
         {
           verificationStatus: status,
-          verificationNotes: form.verificationNotes,
+          verificationNotes: form.notes || form.verificationNotes,
         },
       );
       setForm((prev) => ({
         ...prev,
         verificationStatus: result.verificationStatus,
         verificationNotes: result.verificationNotes || "",
+        notes: result.verificationNotes || "",
         verifiedAt: result.verifiedAt || "",
       }));
       setPurchaseOrderRecords((records) =>
@@ -1010,18 +1020,18 @@ export default function PurchaseOrderEntryForm({
             <div className="po-detail-actions">
               {!viewOnly && !activePurchaseOrderId && (
                 <button
-                type="button"
-                className="app-action-btn app-action-btn--secondary"
-                onClick={() => setShowUpload(true)}
+                  type="button"
+                  className="app-action-btn app-action-btn--secondary"
+                  onClick={() => setShowUpload(true)}
                 >
                   New PO
                 </button>
               )}
               {!viewOnly && (
                 <button
-                type="submit"
-                form="po-entry-form"
-                className="app-action-btn app-action-btn--primary"
+                  type="submit"
+                  form="po-entry-form"
+                  className="app-action-btn app-action-btn--primary"
                 >
                   Save
                 </button>
@@ -1038,7 +1048,8 @@ export default function PurchaseOrderEntryForm({
                   Edit
                 </button>
               )} */}
-              {!viewOnly && activePurchaseOrderId &&
+              {!viewOnly &&
+                activePurchaseOrderId &&
                 form.verificationStatus === "pending" && (
                   <>
                     <button
@@ -1064,7 +1075,8 @@ export default function PurchaseOrderEntryForm({
                     </button>
                   </>
                 )}
-              {!viewOnly && activePurchaseOrderId &&
+              {!viewOnly &&
+                activePurchaseOrderId &&
                 form.verificationStatus === "rejected" && (
                   <button
                     type="button"
@@ -1086,7 +1098,8 @@ export default function PurchaseOrderEntryForm({
                     Create Quotation Revision
                   </button>
                 )}
-              {!viewOnly && activePurchaseOrderId &&
+              {!viewOnly &&
+                activePurchaseOrderId &&
                 form.verificationStatus !== "pending" && (
                   <button
                     type="button"
@@ -1277,7 +1290,9 @@ export default function PurchaseOrderEntryForm({
                               {formatMoney(Number(item.modulePrice) || 0)}
                             </td>
                             <td className="po-amount">
-                              {formatMoney(Number(item.implementationPrice) || 0)}
+                              {formatMoney(
+                                Number(item.implementationPrice) || 0,
+                              )}
                             </td>
                             <td>
                               <input
