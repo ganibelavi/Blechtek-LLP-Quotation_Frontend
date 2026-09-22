@@ -1375,6 +1375,7 @@ export default function PurchaseOrderEntryForm({
             {/*
             <aside className="po-comparison"><div className="po-comparison-head"><span className="po-eyebrow">SOURCE CHECK</span><h2>Quotation comparison</h2><p>Review source data before saving this order.</p></div><div className="po-check-row"><span>Quotation linked</span><strong className={form.sourceQuotationId ? "good" : "pending"}>{form.sourceQuotationId ? "MATCHED" : "MANUAL ENTRY"}</strong></div><CompareRow label="Company" value={form.companyName} /><CompareRow label="Reference" value={form.quotationRefNo || "Not provided"} /><CompareRow label="Buyer" value={form.buyerName || "Not provided"} /><CompareRow label="Line items" value={`${form.items.length} item${form.items.length === 1 ? "" : "s"}`} /><div className="po-compare-total"><span>Order value</span><strong>{formatMoney(totals.totalPrice)}</strong></div><div className="po-audit"><span className="po-eyebrow">WORKFLOW NOTE</span><p>Fields hydrated from the selected quotation remain locked. Manual details can be completed before submission.</p></div></aside>
             */}
+            {/* //oaeinsklawopr */}
           </div>
         </section>
       </main>
