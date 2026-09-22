@@ -49,7 +49,8 @@
 }
 
 .q-field input,
-.q-field textarea {
+.q-field textarea,
+.q-field select {
   border: 1.5px solid var(--border);
   border-radius: var(--radius-sm);
   padding: 10px 12px;
@@ -58,6 +59,12 @@
   background: var(--surface);
   resize: vertical;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.q-field select {
+  min-height: 38px;
 }
 
 .q-field input:focus,

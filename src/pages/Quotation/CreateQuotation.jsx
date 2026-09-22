@@ -30,7 +30,7 @@ const initialValues = {
   organizationName: "",
   validationDate: "",
   quotationNo: "",
-  date: "",
+  date: new Date().toISOString().slice(0, 10),
   selectedModules: [],
   moduleRequirements: {},
   quotationTo: { name: "", address: "", contactNo: "", email: "" },
@@ -72,6 +72,7 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
   const [customers, setCustomers] = useState([]);
   const [values, setValues] = useState(initialValues);
   const [errors, setErrors] = useState({});
+  const [validityPeriod, setValidityPeriod] = useState(30);
   const [submitting, setSubmitting] = useState(false);
   const [apiError, setApiError] = useState("");
   const [result, setResult] = useState(null);
@@ -294,8 +295,36 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
       });
   }, [readOnly]);
 
+  useEffect(() => {
+    if (values.date && values.validationDate) {
+      const days = getDaysBetween(values.date, values.validationDate);
+      if (days && days !== validityPeriod) {
+        setValidityPeriod(days);
+      }
+    }
+  }, [values.date, values.validationDate, validityPeriod]);
+
   const handleFieldChange = (field, value) => {
     setValues((v) => ({ ...v, [field]: value }));
+    if (field === "date" && validityPeriod) {
+      calculateValidationDate(value, validityPeriod);
+    }
+  };
+
+  const calculateValidationDate = (dateStr, days) => {
+    if (!dateStr) return;
+    const date = new Date(dateStr);
+    date.setDate(date.getDate() + days);
+    const formattedDate = date.toISOString().split("T")[0];
+    setValues((v) => ({ ...v, validationDate: formattedDate }));
+  };
+
+  const handleValidityPeriodChange = (e) => {
+    const days = Number(e.target.value);
+    setValidityPeriod(days);
+    if (values.date) {
+      calculateValidationDate(values.date, days);
+    }
   };
 
   const handleAddNewOrganization = () => {
@@ -476,7 +505,9 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
       ...initialValues,
       referenceBy: "",
       quotationNo: "",
+      date: new Date().toISOString().slice(0, 10),
     });
+    setValidityPeriod(30);
     setResult(null);
     setErrors({});
     setApiError("");
@@ -561,20 +592,33 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
                   />
                 </div>
                 <div className="q-field q-field--narrow">
-                  <label htmlFor="validationDate">Valid until</label>
+                  <label htmlFor="date">Date</label>
                   <input
-                    id="validationDate"
+                    id="date"
                     type="date"
-                    value={values.validationDate}
-                    onChange={(e) =>
-                      handleFieldChange("validationDate", e.target.value)
-                    }
+                    value={values.date}
+                    onChange={(e) => handleFieldChange("date", e.target.value)}
+                    disabled={readOnly}
+                    className={readOnly ? "q-field__input--readonly" : ""}
                   />
-                  {errors.validationDate && (
-                    <span className="q-field__error">
-                      {errors.validationDate}
-                    </span>
+                  {errors.date && (
+                    <span className="q-field__error">{errors.date}</span>
                   )}
+                </div>
+                <div className="q-field q-field--narrow">
+                  <label htmlFor="validityPeriod">Valid for (days)</label>
+                  <select
+                    id="validityPeriod"
+                    value={validityPeriod}
+                    onChange={handleValidityPeriodChange}
+                    disabled={readOnly}
+                    className={readOnly ? "q-field__input--readonly" : ""}
+                  >
+                    <option value={15}>15 Days</option>
+                    <option value={30}>30 Days</option>
+                    <option value={45}>45 Days</option>
+                    <option value={60}>60 Days</option>
+                  </select>
                 </div>
               </div>
               <div className="q-form__row">
@@ -637,18 +681,23 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
                     <span className="q-field__error">{errors.quotationNo}</span>
                   )}
                 </div>
+                
                 <div className="q-field q-field--narrow">
-                  <label htmlFor="date">Date</label>
+                  <label htmlFor="validationDate">Valid until</label>
                   <input
-                    id="date"
+                    id="validationDate"
                     type="date"
-                    value={values.date}
-                    onChange={(e) => handleFieldChange("date", e.target.value)}
-                    disabled={readOnly}
-                    className={readOnly ? "q-field__input--readonly" : ""}
+                    value={values.validationDate}
+                    onChange={(e) =>
+                      handleFieldChange("validationDate", e.target.value)
+                    }
+                    readOnly
+                    className="q-field__input--readonly"
                   />
-                  {errors.date && (
-                    <span className="q-field__error">{errors.date}</span>
+                  {errors.validationDate && (
+                    <span className="q-field__error">
+                      {errors.validationDate}
+                    </span>
                   )}
                 </div>
               </div>
@@ -1188,6 +1237,17 @@ function formatDate(iso) {
     month: "short",
     year: "numeric",
   });
+}
+
+function getDaysBetween(start, end) {
+  if (!start || !end) return null;
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  startDate.setHours(0, 0, 0, 0);
+  endDate.setHours(0, 0, 0, 0);
+  const diffTime = endDate - startDate;
+  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays > 0 ? diffDays : null;
 }
 
 function validate(values) {

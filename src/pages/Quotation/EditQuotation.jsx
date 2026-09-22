@@ -428,20 +428,17 @@ export default function EditQuotation({ onNavigate, quotationId }) {
                   )}
                 </div>
                 <div className="q-field q-field--narrow">
-                  <label htmlFor="validationDate">Valid until</label>
+                  <label htmlFor="date">Date</label>
                   <input
-                    id="validationDate"
+                    id="date"
                     type="date"
-                    value={values.validationDate}
-                    onChange={(e) => {
-                      handleFieldChange("validationDate", e.target.value);
-                      setDetailsChanged(true);
-                    }}
+                    value={values.date}
+                    onChange={(e) => handleFieldChange("date", e.target.value)}
+                    readOnly
+                    style={disabledFieldStyle}
                   />
-                  {errors.validationDate && (
-                    <span className="q-field__error">
-                      {errors.validationDate}
-                    </span>
+                  {errors.date && (
+                    <span className="q-field__error">{errors.date}</span>
                   )}
                 </div>
               </div>
@@ -503,19 +500,23 @@ export default function EditQuotation({ onNavigate, quotationId }) {
                   )}
                 </div>
                 <div className="q-field q-field--narrow">
-                  <label htmlFor="date">Date</label>
+                  <label htmlFor="validationDate">Valid until</label>
                   <input
-                    id="date"
+                    id="validationDate"
                     type="date"
-                    value={values.date}
-                    onChange={(e) => handleFieldChange("date", e.target.value)}
-                    readOnly
-                    style={disabledFieldStyle}
+                    value={values.validationDate}
+                    onChange={(e) => {
+                      handleFieldChange("validationDate", e.target.value);
+                      setDetailsChanged(true);
+                    }}
                   />
-                  {errors.date && (
-                    <span className="q-field__error">{errors.date}</span>
+                  {errors.validationDate && (
+                    <span className="q-field__error">
+                      {errors.validationDate}
+                    </span>
                   )}
                 </div>
+                
                 <div className="q-field q-field--narrow">
                   <label htmlFor="discountPercentage">Discount %</label>
                   <input
