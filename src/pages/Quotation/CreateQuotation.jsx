@@ -71,7 +71,11 @@ const getCustomerContactNumber = (customer) =>
 
 const getCustomerEmail = (customer) => customer?.email ?? customer?.Email ?? "";
 
-export default function CreateQuotation({ onNavigate, readOnly = false }) {
+export default function CreateQuotation({
+  onNavigate,
+  readOnly = false,
+  editMode = false,
+}) {
   const [modules, setModules] = useState([]);
   const [references, setReferences] = useState([]);
   const [customers, setCustomers] = useState([]);
@@ -115,7 +119,7 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
   const [savingReference, setSavingReference] = useState(false);
 
   useEffect(() => {
-    if (readOnly) {
+    if (readOnly || editMode) {
       setLoadingQuotationNo(false);
       const storedResult = sessionStorage.getItem("quotationData");
       const storedValues = sessionStorage.getItem("quotationFormValues");
@@ -304,6 +308,8 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
       }
     }
 
+    if (editMode) return;
+
     // Fetch the next quotation number
     fetchNextQuotationNo()
       .then((quotationNo) => {
@@ -314,7 +320,7 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
         setValues((v) => ({ ...v, quotationNo: "Auto-generated" }));
         setLoadingQuotationNo(false);
       });
-  }, [readOnly]);
+  }, [readOnly, editMode]);
 
   useEffect(() => {
     if (values.date && values.validationDate) {
@@ -555,6 +561,7 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
       setResult(data);
       sessionStorage.setItem("quotationData", JSON.stringify(data));
       sessionStorage.setItem("quotationFormValues", JSON.stringify(values));
+      onNavigate("quotation-detail");
       setSnackbar({
         open: true,
         message: "Quotation created successfully!",
@@ -658,39 +665,72 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
       <div className="create-quotation__header">
         <div className="create-quotation__title">
           <h2 className="page-heading page-heading__text">
-            {readOnly ? "View Quotation" : "New Quotation"}
+            {readOnly ? "View Quotation" : editMode ? "Edit Quotation" : "New Quotation"}
           </h2>
-          <p>
-            {readOnly
-              ? "Review the quotation details and selected modules."
-              : "Fill in the client details and pick the modules in scope — everything else follows the standard BlechTek format."}
-          </p>
+          <p></p>
         </div>
-        <button
-          className="create-quotation__back-btn"
-          onClick={() => onNavigate("settings", "created-quotations")}
-          aria-label="Back to quotations list"
-        >
-          <svg
-            className="create-quotation__back-icon"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+        <div className="create-quotation__header-actions">
+          {!readOnly && (
+            <button
+              type="submit"
+              form="quotation-form"
+              className="q-submit"
+              disabled={submitting}
+            >
+              {submitting ? "Generating quotation…" : "Generate quotation"}
+            </button>
+          )}
+          {result && !editMode && (
+            <>
+              <button
+                type="button"
+                className="q-result__btn q-result__btn--primary create-quotation__header-action-btn"
+                onClick={handleDownloadPdf}
+              >
+                Download PDF
+              </button>
+              <button
+                type="button"
+                className="q-result__btn q-result__btn--primary create-quotation__header-action-btn"
+                onClick={() => {
+                  setEmailRecipient(values.quotationTo.email || "");
+                  setEmailSubject(`Quotation ${result.quotationNo}`);
+                  setEmailMessage("Please find attached the quotation.");
+                  setEmailDialogOpen(true);
+                }}
+              >
+                Send Email
+              </button>
+            </>
+          )}
+          <button
+            className="create-quotation__back-btn"
+            onClick={() => onNavigate("settings", "created-quotations")}
+            aria-label="Back to quotations list"
           >
-            <path d="M19 12H5M12 19l-7-7 7-7" />
-          </svg>
-          <span className="create-quotation__back-text"></span>
-        </button>
+            <svg
+              className="create-quotation__back-icon"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+            <span className="create-quotation__back-text"></span>
+          </button>
+        </div>
       </div>
 
       <div className="create-quotation__layout">
-        <div className="create-quotation__card">
+        <div className="create-quotation__card create-quotation__details-preview-card">
+          <div className="create-quotation__details-card">
           <form
+            id="quotation-form"
             className="q-form"
             onSubmit={readOnly ? undefined : handleSubmit}
             noValidate
@@ -832,45 +872,10 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
                 </div>
               </div>
             </section>
-
-            <section className="q-form__section">
-              <h3 className="q-form__heading">Scope & modules</h3>
-              <p className="q-form__hint">
-                Only the modules checked here will appear in the generated
-                quotation's Scope section.
-              </p>
-              <ModuleSelector
-                modules={modules}
-                selected={values.selectedModules}
-                onToggle={handleToggleModule}
-                error={errors.selectedModules}
-                disabled={readOnly}
-              />
-              {values.selectedModules.length > 0 && (
-                <ModuleRequirements
-                  selectedModules={values.selectedModules}
-                  requirements={values.moduleRequirements || {}}
-                  onChange={handleModuleRequirementChange}
-                  disabled={readOnly}
-                />
-              )}
-            </section>
-
-            <div className="q-form__row" style={{ justifyContent: "flex-end" }}>
-              {!readOnly && (
-                <button
-                  type="submit"
-                  className="q-submit"
-                  disabled={submitting}
-                >
-                  {submitting ? "Generating quotation…" : "Generate quotation"}
-                </button>
-              )}
-            </div>
           </form>
-        </div>
+          </div>
 
-        <aside className="q-preview">
+          <div className="q-preview create-quotation__preview-card">
           <div className="q-ticket">
             <div className="q-ticket__top">
               <span className="q-ticket__brand">BlechTek</span>
@@ -926,64 +931,35 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
 
           {apiError && <div className="q-preview__error">{apiError}</div>}
 
-          {result && (
-            <div className="q-result">
-              <p className="q-result__title">Quotation generated</p>
-              <p className="q-result__id">{result.quotationNo}</p>
-              <div className="q-result__actions">
-                {!readOnly && (
-                  <button
-                    className="q-result__btn q-result__btn--primary"
-                    onClick={handleViewDetails}
-                  >
-                    View Details
-                  </button>
-                )}
-                <button
-                  className="q-result__btn q-result__btn--primary"
-                  onClick={handleDownloadPdf}
-                >
-                  Download PDF
-                </button>
-                {/* <button
-                  className="q-result__btn q-result__btn--primary"
-                  onClick={() => {
-                    const url = resolveDownloadUrl(result.wordDownloadUrl);
-                    if (url) window.open(url, "_blank");
-                  }}
-                >
-                  Download Word
-                </button> */}
-                <button
-                  className="q-result__btn q-result__btn--primary"
-                  onClick={() => {
-                    setEmailRecipient(values.quotationTo.email || "");
-                    setEmailSubject(`Quotation ${result.quotationNo}`);
-                    setEmailMessage("Please find attached the quotation.");
-                    setEmailDialogOpen(true);
-                  }}
-                >
-                  Send Email
-                </button>
-              </div>
-            </div>
-          )}
+          </div>
+        </div>
 
-          {!result && !apiError && (
-            <div className="q-preview__hint">
-              <p>
-                Complete the form and click "Generate quotation" to see download
-                options.
+        <div className="create-quotation__card create-quotation__scope-card">
+          <form className="q-form" noValidate>
+            <section className="q-form__section">
+              <h3 className="q-form__heading">Scope & modules</h3>
+              <p className="q-form__hint">
               </p>
-            </div>
-          )}
+              <ModuleSelector
+                modules={modules}
+                selected={values.selectedModules}
+                onToggle={handleToggleModule}
+                error={errors.selectedModules}
+                disabled={readOnly}
+              />
+              {values.selectedModules.length > 0 && (
+                <ModuleRequirements
+                  selectedModules={values.selectedModules}
+                  requirements={values.moduleRequirements || {}}
+                  onChange={handleModuleRequirementChange}
+                  disabled={readOnly}
+                />
+              )}
+            </section>
 
-          {/* {result && (
-            <button className="q-result__btn q-result__btn--secondary q-result__btn--full" onClick={handleNewQuotation}>
-              New Quotation
-            </button>
-          )} */}
-        </aside>
+            
+          </form>
+        </div>
 
         <Dialog
           open={customerDialogOpen}
@@ -1327,13 +1303,13 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
             </Button>
           </DialogActions>
         </Dialog>
+        <CustomSnackbar
+          open={snackbar.open}
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          message={snackbar.message}
+        />
       </div>
-      <CustomSnackbar
-        open={snackbar.open}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-        severity={snackbar.severity}
-        message={snackbar.message}
-      />
     </div>
   );
 }
@@ -1351,19 +1327,30 @@ function ModuleSelector({ modules, selected, onToggle, error, disabled }) {
       <div className="module-selector__groups">
         {Object.entries(grouped).map(([pillar, modules]) => (
           <div key={pillar} className="module-selector__group">
-            <h4 className="module-selector__pillar">{pillar}</h4>
             <div className="module-selector__modules">
-              {modules.map((module) => (
-                <label key={module} className="module-selector__item">
-                  <input
-                    type="checkbox"
-                    checked={selected.includes(module)}
-                    onChange={() => onToggle(module)}
-                    disabled={disabled}
-                  />
-                  <span>{module}</span>
-                </label>
-              ))}
+              {modules.map((module) => {
+                const isSelected = selected.includes(module);
+                return (
+                  <label
+                    key={module}
+                    className={`module-selector__item ${
+                      isSelected ? "module-selector__item--selected" : ""
+                    }`}
+                  >
+                    <div className="module-selector__text">
+                      <span className="module-selector__pillar-name">{pillar}</span>
+                      <span className="module-selector__name">{module}</span>
+                      
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => onToggle(module)}
+                      disabled={disabled}
+                    />
+                  </label>
+                );
+              })}
             </div>
           </div>
         ))}
@@ -1443,9 +1430,6 @@ function ModuleRequirements({
                     disabled={disabled}
                   />
                 </div>
-              </div>
-
-              <div className="q-form__row">
                 <div className="q-field">
                   <label htmlFor={`${moduleName}-unit`}>
                     Implementation Effort

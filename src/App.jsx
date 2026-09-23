@@ -13,7 +13,7 @@ import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import SettingsPage from "./pages/SettingsPage";
 import UsersPage from "./pages/Settings/Masters/UsersPage";
 import ModulesPage from "./pages/Settings/Masters/ModulesPage";
-import EditQuotation from "./pages/Quotation/EditQuotation";
+
 import QuotationHistory from "./pages/Quotation/QuotationHistory";
 import AllQuotationRevisions from "./pages/Quotation/AllQuotationRevisions";
 import PurchaseOrder from "./pages/PurchaseOrder/PurchaseOrder";
@@ -55,6 +55,7 @@ export default function App() {
   const [settingsExpanded, setSettingsExpanded] = useState(false);
   const [subscriptionsExpanded, setSubscriptionsExpanded] = useState(false);
   const [editQuotationId, setEditQuotationId] = useState(null);
+
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
@@ -528,12 +529,7 @@ export default function App() {
                 case "created-quotations":
                   return <CreatedQuotation onNavigate={navigate} />;
                 case "edit-quotation":
-                  return (
-                    <EditQuotation
-                      onNavigate={navigate}
-                      quotationId={editQuotationId}
-                    />
-                  );
+                  return <CreateQuotation onNavigate={navigate} editMode />;
                 case "quotation-history":
                   return (
                     <QuotationHistory
