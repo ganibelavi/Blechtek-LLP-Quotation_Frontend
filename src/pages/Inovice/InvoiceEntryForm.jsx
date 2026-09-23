@@ -27,6 +27,7 @@ import {
 import "../PurchaseOrder/PurchaseOrder.css";
 import "./InvoiceEntryForm.css";
 import CustomSnackbar from "../../components/CustomSnackbar";
+import SearchDropdown from "../../components/SearchDropdown";
 
 const readStoredPurchaseOrder = () => {
   try {
@@ -2017,21 +2018,16 @@ export default function InvoiceEntryForm({
                 <h3>Invoice identity</h3>
               </div>
               <div className="po-fields po-fields-3">
-                <label>
-                  Company name
-                  <select
-                    value={form.companyName}
-                    onChange={(e) => handleOrganizationChange(e.target.value)}
-                    disabled={isFieldDisabled("companyName")}
-                  >
-                    <option value="">Select organization...</option>
-                    {organizationOptions.map((organization) => (
-                      <option key={organization} value={organization}>
-                        {organization}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <SearchDropdown
+                  label="Company name"
+                  name="companyName"
+                  value={form.companyName}
+                  onChange={handleOrganizationChange}
+                  options={organizationOptions}
+                  placeholder="Search organization..."
+                  allowFreeText={false}
+                  disabled={isFieldDisabled("companyName")}
+                />
                 <label>
                   Invoice No.
                   <input
