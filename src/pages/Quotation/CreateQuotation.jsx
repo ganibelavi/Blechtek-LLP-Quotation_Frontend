@@ -4,9 +4,10 @@ import {
   generateQuotation,
   resolveDownloadUrl,
   fetchNextQuotationNo,
-  fetchOrganizations,
   fetchReferences,
   fetchCustomers,
+  createCustomer,
+  createReference,
   fetchQuotationById,
   linkRenewalQuotation,
 } from "../../services/quotationApi";
@@ -72,7 +73,6 @@ const getCustomerEmail = (customer) => customer?.email ?? customer?.Email ?? "";
 
 export default function CreateQuotation({ onNavigate, readOnly = false }) {
   const [modules, setModules] = useState([]);
-  const [organizations, setOrganizations] = useState([]);
   const [references, setReferences] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [values, setValues] = useState(initialValues);
@@ -93,6 +93,26 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
   const [emailSubject, setEmailSubject] = useState("");
   const [emailMessage, setEmailMessage] = useState("");
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
+  const [newCustomer, setNewCustomer] = useState({
+    name: "",
+    address: "",
+    state: "",
+    stateCode: "",
+    gstn: "",
+    contactName: "",
+    contactNumber: "",
+    email: "",
+  });
+  const [savingCustomer, setSavingCustomer] = useState(false);
+  const [referenceDialogOpen, setReferenceDialogOpen] = useState(false);
+  const [newReference, setNewReference] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+  });
+  const [savingReference, setSavingReference] = useState(false);
 
   useEffect(() => {
     if (readOnly) {
@@ -196,10 +216,6 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
       );
 
     if (readOnly) return;
-
-    fetchOrganizations()
-      .then(setOrganizations)
-      .catch(() => setOrganizations([]));
 
     fetchReferences()
       .then(setReferences)
@@ -316,6 +332,27 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
     }
   };
 
+  const handleOrganizationChange = (organizationName) => {
+    const selectedCustomer = customers.find(
+      (customer) =>
+        String(customer.name ?? customer.Name ?? "").trim().toLowerCase() ===
+        organizationName.trim().toLowerCase(),
+    );
+
+    setValues((current) => ({
+      ...current,
+      organizationName,
+      quotationTo: selectedCustomer
+        ? {
+            name: getCustomerContactName(selectedCustomer),
+            address: getCustomerAddress(selectedCustomer),
+            contactNo: getCustomerContactNumber(selectedCustomer),
+            email: getCustomerEmail(selectedCustomer),
+          }
+        : current.quotationTo,
+    }));
+  };
+
   const calculateValidationDate = (dateStr, days) => {
     if (!dateStr) return;
     const date = new Date(dateStr);
@@ -333,42 +370,76 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
   };
 
   const handleAddNewOrganization = () => {
-    // Clear field for new entry - direct typing now works
+    setNewCustomer({
+      name: "",
+      address: "",
+      state: "",
+      stateCode: "",
+      gstn: "",
+      contactName: "",
+      contactNumber: "",
+      email: "",
+    });
+    setCustomerDialogOpen(true);
+  };
+
+  const handleCreateCustomer = async () => {
+    const name = newCustomer.name.trim();
+    if (!name) return;
+
+    try {
+      setSavingCustomer(true);
+      const createdCustomer = await createCustomer({
+        ...newCustomer,
+        name,
+      });
+      const savedCustomer = createdCustomer || { name };
+      setCustomers((current) => [...current, savedCustomer]);
+      handleFieldChange("organizationName", savedCustomer.name || name);
+      setCustomerDialogOpen(false);
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: error?.response?.data?.error || "Unable to add customer.",
+        severity: "error",
+      });
+    } finally {
+      setSavingCustomer(false);
+    }
   };
 
   const handleAddNewReference = () => {
-    // Clear field for new entry - direct typing now works
+    setNewReference({ name: "", email: "", phone: "", address: "" });
+    setReferenceDialogOpen(true);
   };
 
-  const handleQuotationToChange = (field, value) => {
-    setValues((v) => ({
-      ...v,
-      quotationTo: { ...v.quotationTo, [field]: value },
-    }));
-  };
+  const handleCreateReference = async () => {
+    const name = newReference.name.trim();
+    if (!name) return;
 
-  const handleCustomerChange = (contactName) => {
-    const selectedCustomer = customers.find(
-      (customer) =>
-        getCustomerContactName(customer).trim().toLowerCase() ===
-        contactName.trim().toLowerCase(),
-    );
-
-    if (!selectedCustomer) {
-      handleQuotationToChange("name", contactName);
-      return;
+    try {
+      setSavingReference(true);
+      const createdReference = await createReference({
+        ...newReference,
+        name,
+      });
+      const savedName = createdReference?.name || createdReference?.Name || name;
+      setReferences((current) =>
+        [...new Set([...current, savedName])].sort((first, second) =>
+          first.localeCompare(second),
+        ),
+      );
+      handleFieldChange("referenceBy", savedName);
+      setReferenceDialogOpen(false);
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: error?.response?.data?.error || "Unable to add reference.",
+        severity: "error",
+      });
+    } finally {
+      setSavingReference(false);
     }
-
-    setValues((v) => ({
-      ...v,
-      quotationTo: {
-        ...v.quotationTo,
-        name: getCustomerContactName(selectedCustomer) || contactName,
-        address: getCustomerAddress(selectedCustomer),
-        contactNo: getCustomerContactNumber(selectedCustomer),
-        email: getCustomerEmail(selectedCustomer),
-      },
-    }));
   };
 
   const handleToggleModule = (moduleName) => {
@@ -505,6 +576,50 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
     onNavigate("quotation-detail");
   };
 
+  const handleDownloadPdf = async () => {
+    const quotationId = result?.quotationId || result?.QuotationId;
+    const path =
+      result?.pdfDownloadUrl ||
+      result?.PdfDownloadUrl ||
+      (quotationId
+        ? `/api/quotation/${quotationId}/download/pdf`
+        : "");
+    const url = resolveDownloadUrl(path);
+
+    if (!url) {
+      setSnackbar({
+        open: true,
+        message: "PDF download link is not available.",
+        severity: "error",
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`PDF download failed with status ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const downloadUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = `${result?.quotationNo || quotationId || "quotation"}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error("Failed to download quotation PDF", error);
+      setSnackbar({
+        open: true,
+        message: "Unable to download the quotation PDF.",
+        severity: "error",
+      });
+    }
+  };
+
   const handleNewQuotation = () => {
     const todayStr = new Date().toISOString().split("T")[0];
     const newValidationDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
@@ -586,17 +701,22 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
                 <div className="q-field">
                   <SearchDropdown
                     name="organizationName"
-                    label="Organization name"
+                    label="Customer"
                     value={values.organizationName}
-                    onChange={(val) =>
-                      handleFieldChange("organizationName", val)
-                    }
+                    onChange={handleOrganizationChange}
                     disabled={readOnly}
-                    options={organizations}
-                    placeholder="e.g. Vantage Auto Components Pvt. Ltd."
+                    options={[
+                      ...new Set(
+                        customers
+                          .map((customer) => customer.name ?? customer.Name ?? "")
+                          .map((name) => name.trim())
+                          .filter(Boolean),
+                      ),
+                    ]}
+                    placeholder="Search customer..."
                     error={errors.organizationName}
                     onAddNew={handleAddNewOrganization}
-                    addNewLabel="Add new organization"
+                    addNewLabel="Add new customer"
                     required
                     allowFreeText
                   />
@@ -713,89 +833,6 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
               </div>
             </section>
 
-            <section
-              className={`q-form__section ${readOnly ? "q-form__section--disabled" : ""}`}
-            >
-              <h3 className="q-form__heading">Quotation to</h3>
-              <div className="q-form__row">
-                <div className="q-field">
-                  <SearchDropdown
-                    name="contactName"
-                    label="Contact name"
-                    value={values.quotationTo.name}
-                    onChange={handleCustomerChange}
-                    options={[
-                      ...new Set(
-                        customers
-                          .map(getCustomerContactName)
-                          .map((name) => name.trim())
-                          .filter(Boolean),
-                      ),
-                    ]}
-                    placeholder="Select customer contact"
-                    allowFreeText
-                    disabled={readOnly}
-                  />
-                  {errors.contactName && (
-                    <span className="q-field__error">{errors.contactName}</span>
-                  )}
-                </div>
-                <div className="q-field">
-                  <label htmlFor="contactNo">Contact number</label>
-                  <input
-                    id="contactNo"
-                    type="tel"
-                    placeholder="+91 98815 50000"
-                    value={values.quotationTo.contactNo}
-                    onChange={(e) =>
-                      handleQuotationToChange("contactNo", e.target.value)
-                    }
-                    disabled={readOnly}
-                  />
-                  {errors.contactNo && (
-                    <span className="q-field__error">{errors.contactNo}</span>
-                  )}
-                </div>
-              </div>
-
-              <div className="q-form__row">
-                <div className="q-field">
-                  <label htmlFor="address">Address</label>
-                  <textarea
-                    id="address"
-                    rows={2}
-                    placeholder="Full postal address"
-                    value={values.quotationTo.address}
-                    onChange={(e) =>
-                      handleQuotationToChange("address", e.target.value)
-                    }
-                    disabled={readOnly}
-                  />
-                  {errors.contactAddress && (
-                    <span className="q-field__error">
-                      {errors.contactAddress}
-                    </span>
-                  )}
-                </div>
-                <div className="q-field">
-                  <label htmlFor="email">Email</label>
-                  <input
-                    id="email"
-                    type="email"
-                    placeholder="name@company.com"
-                    value={values.quotationTo.email}
-                    onChange={(e) =>
-                      handleQuotationToChange("email", e.target.value)
-                    }
-                    disabled={readOnly}
-                  />
-                  {errors.email && (
-                    <span className="q-field__error">{errors.email}</span>
-                  )}
-                </div>
-              </div>
-            </section>
-
             <section className="q-form__section">
               <h3 className="q-form__heading">Scope & modules</h3>
               <p className="q-form__hint">
@@ -843,7 +880,7 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
             <div className="q-ticket__body">
               <p className="q-ticket__label">Prepared for</p>
               <p className="q-ticket__value">
-                {values.organizationName || "Organization name"}
+                {values.organizationName || "Customer"}
               </p>
 
               <p className="q-ticket__label">Reference By</p>
@@ -904,10 +941,7 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
                 )}
                 <button
                   className="q-result__btn q-result__btn--primary"
-                  onClick={() => {
-                    const url = resolveDownloadUrl(result.pdfDownloadUrl);
-                    if (url) window.open(url, "_blank");
-                  }}
+                  onClick={handleDownloadPdf}
                 >
                   Download PDF
                 </button>
@@ -951,6 +985,212 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
           )} */}
         </aside>
 
+        <Dialog
+          open={customerDialogOpen}
+          onClose={() => setCustomerDialogOpen(false)}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle>Add Customer</DialogTitle>
+          <DialogContent>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                gap: 12,
+                paddingTop: 8,
+              }}
+            >
+              <TextField
+                autoFocus
+                required
+                size="small"
+                label="Name"
+                value={newCustomer.name}
+                onChange={(event) =>
+                  setNewCustomer((current) => ({
+                    ...current,
+                    name: event.target.value,
+                  }))
+                }
+              />
+              <TextField
+                size="small"
+                label="State"
+                value={newCustomer.state}
+                onChange={(event) =>
+                  setNewCustomer((current) => ({
+                    ...current,
+                    state: event.target.value,
+                  }))
+                }
+              />
+              <TextField
+                size="small"
+                label="State Code"
+                value={newCustomer.stateCode}
+                onChange={(event) =>
+                  setNewCustomer((current) => ({
+                    ...current,
+                    stateCode: event.target.value,
+                  }))
+                }
+              />
+              <TextField
+                size="small"
+                label="GSTN"
+                value={newCustomer.gstn}
+                onChange={(event) =>
+                  setNewCustomer((current) => ({
+                    ...current,
+                    gstn: event.target.value,
+                  }))
+                }
+              />
+              <TextField
+                size="small"
+                label="Contact Name"
+                value={newCustomer.contactName}
+                onChange={(event) =>
+                  setNewCustomer((current) => ({
+                    ...current,
+                    contactName: event.target.value,
+                  }))
+                }
+              />
+              <TextField
+                size="small"
+                label="Contact Number"
+                value={newCustomer.contactNumber}
+                onChange={(event) =>
+                  setNewCustomer((current) => ({
+                    ...current,
+                    contactNumber: event.target.value,
+                  }))
+                }
+              />
+              <TextField
+                size="small"
+                type="email"
+                label="Email"
+                value={newCustomer.email}
+                onChange={(event) =>
+                  setNewCustomer((current) => ({
+                    ...current,
+                    email: event.target.value,
+                  }))
+                }
+              />
+              <TextField
+                size="small"
+                multiline
+                minRows={2}
+                label="Address"
+                value={newCustomer.address}
+                onChange={(event) =>
+                  setNewCustomer((current) => ({
+                    ...current,
+                    address: event.target.value,
+                  }))
+                }
+                sx={{ gridColumn: "1 / -1" }}
+              />
+            </div>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setCustomerDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleCreateCustomer}
+              disabled={!newCustomer.name.trim() || savingCustomer}
+            >
+              {savingCustomer ? "Adding..." : "Add customer"}
+            </Button>
+          </DialogActions>
+        </Dialog>
+        <Dialog
+          open={referenceDialogOpen}
+          onClose={() => setReferenceDialogOpen(false)}
+          maxWidth="xs"
+          fullWidth
+        >
+          <DialogTitle>Add Reference</DialogTitle>
+          <DialogContent>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                gap: 12,
+                paddingTop: 8,
+              }}
+            >
+              <TextField
+                autoFocus
+                required
+                size="small"
+                label="Name"
+                value={newReference.name}
+                onChange={(event) =>
+                  setNewReference((current) => ({
+                    ...current,
+                    name: event.target.value,
+                  }))
+                }
+              />
+              <TextField
+                size="small"
+                type="email"
+                label="Email"
+                value={newReference.email}
+                onChange={(event) =>
+                  setNewReference((current) => ({
+                    ...current,
+                    email: event.target.value,
+                  }))
+                }
+              />
+              <TextField
+                size="small"
+                label="Phone"
+                value={newReference.phone}
+                onChange={(event) =>
+                  setNewReference((current) => ({
+                    ...current,
+                    phone: event.target.value,
+                  }))
+                }
+              />
+              <TextField
+                size="small"
+                multiline
+                minRows={2}
+                label="Address"
+                value={newReference.address}
+                onChange={(event) =>
+                  setNewReference((current) => ({
+                    ...current,
+                    address: event.target.value,
+                  }))
+                }
+                sx={{ gridColumn: "1 / -1" }}
+              />
+            </div>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setReferenceDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleCreateReference}
+              disabled={!newReference.name.trim() || savingReference}
+            >
+              {savingReference ? "Adding..." : "Add reference"}
+            </Button>
+          </DialogActions>
+        </Dialog>
         <Dialog
           open={emailDialogOpen}
           onClose={() => setEmailDialogOpen(false)}
@@ -1262,22 +1502,12 @@ function getDaysBetween(start, end) {
 
 function validate(values) {
   const errors = {};
-  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  const PHONE_RE = /^\+?[\d\s-]{7,15}$/;
 
   if (!values.organizationName.trim())
-    errors.organizationName = "Organization name is required.";
+    errors.organizationName = "Customer is required.";
   if (!values.validationDate) errors.validationDate = "Pick a validity date.";
   if (!values.date) errors.date = "Date is required.";
   if (values.selectedModules.length === 0)
     errors.selectedModules = "Select at least one module.";
-  if (!values.quotationTo.name.trim())
-    errors.contactName = "Contact name is required.";
-  if (!values.quotationTo.address.trim())
-    errors.contactAddress = "Address is required.";
-  if (!PHONE_RE.test(values.quotationTo.contactNo.trim()))
-    errors.contactNo = "Enter a valid phone number.";
-  if (!EMAIL_RE.test(values.quotationTo.email.trim()))
-    errors.email = "Enter a valid email address.";
   return errors;
 }

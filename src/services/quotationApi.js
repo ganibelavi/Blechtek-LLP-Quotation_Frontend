@@ -240,6 +240,23 @@ export async function fetchCustomers() {
   return Array.isArray(data) ? data : [];
 }
 
+export async function fetchReferences() {
+  const { data } = await client.get("/api/references");
+  return Array.isArray(data)
+    ? data.map((reference) => reference.name ?? reference.Name ?? "").filter(Boolean)
+    : [];
+}
+
+export async function createReference(payload) {
+  const { data } = await client.post("/api/references", payload);
+  return data;
+}
+
+export async function createCustomer(payload) {
+  const { data } = await client.post("/api/customers", payload);
+  return data;
+}
+
 /** GET /api/suppliers reads the database-backed Suppliers master table. */
 export async function fetchSuppliers() {
   const { data } = await client.get("/api/suppliers");
@@ -274,18 +291,6 @@ export async function fetchPurchaseOrderCompanies() {
       .filter(Boolean),
   )];
   return companies.sort();
-}
-
-/**
- * Fetch unique reference by names from quotation history
- * Returns a list of unique reference by names
- */
-export async function fetchReferences() {
-  const { data } = await client.get("/api/quotation/history", {
-    params: { page: 1, pageSize: 500 }
-  });
-  const references = [...new Set(data.map((q) => q.referenceBy).filter(Boolean))];
-  return references.sort();
 }
 
 export default client;

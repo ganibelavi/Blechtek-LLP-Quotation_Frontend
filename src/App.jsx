@@ -34,11 +34,14 @@ import { useAuth } from "./context/AuthContext";
 import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import { useLocation, useNavigate } from "react-router-dom";
 // Use local icons from public/logo instead of @mui/icons-material in topbar buttons
 import "./App.css";
 
 export default function App() {
   const { user, logout } = useAuth();
+  const location = useLocation();
+  const routerNavigate = useNavigate();
   const [view, setView] = useState(() => {
     try {
       const stored = sessionStorage.getItem("appView");
@@ -53,6 +56,11 @@ export default function App() {
   const [subscriptionsExpanded, setSubscriptionsExpanded] = useState(false);
   const [editQuotationId, setEditQuotationId] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  useEffect(() => {
+    const routeView = location.pathname.replace(/^\/+/, "") || "dashboard";
+    setView(routeView);
+  }, [location.pathname]);
 
   const getPurchaseOrderInitialData = () => {
     try {
@@ -84,14 +92,16 @@ export default function App() {
       try {
         const stored = sessionStorage.getItem("appView");
         if (!stored) {
-          setView("dashboard");
+          routerNavigate("/dashboard", { replace: true });
+        } else if (location.pathname === "/" || location.pathname === "") {
+          routerNavigate(`/${stored}`, { replace: true });
         }
       } catch (error) {
         console.error("Failed to read view from session storage", error);
-        setView("dashboard");
+        routerNavigate("/dashboard", { replace: true });
       }
     }
-  }, [user]);
+  }, [user, location.pathname, routerNavigate]);
 
   const [subscriptionId, setSubscriptionId] = useState(null);
 
@@ -105,6 +115,7 @@ export default function App() {
     if (quotationId) setEditQuotationId(quotationId);
     if (selectedSubscriptionId) setSubscriptionId(selectedSubscriptionId);
     setView(newView);
+    routerNavigate(`/${newView}`);
     try {
       sessionStorage.setItem("appView", newView);
     } catch (error) {
@@ -282,9 +293,9 @@ export default function App() {
           className={`app-main ${view === "purchase-order-entry" ? "app-main--po" : view === "invoice-entry" ? "app-main--invoice" : ""}`}
         >
           {view === "forgot-password" ? (
-            <ForgotPasswordPage onBackToLogin={() => setView("login")} />
+            <ForgotPasswordPage onBackToLogin={() => navigate("login")} />
           ) : (
-            <LoginPage onForgotPassword={() => setView("forgot-password")} />
+            <LoginPage onForgotPassword={() => navigate("forgot-password")} />
           )}
         </main>
       ) : (
