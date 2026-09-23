@@ -39,6 +39,7 @@ const initialValues = {
   date: today,
   selectedModules: [],
   moduleRequirements: {},
+  additionalScopes: [],
   quotationTo: { name: "", address: "", contactNo: "", email: "" },
   discountPercentage: 0,
 };
@@ -484,6 +485,52 @@ export default function CreateQuotation({
           [field]: value,
         },
       },
+    }));
+  };
+
+  const handleAdditionalScopeChange = (index, field, value) => {
+    setValues((current) => ({
+      ...current,
+      additionalScopes: current.additionalScopes.map((scope, scopeIndex) => {
+        if (scopeIndex !== index) return scope;
+
+        const updatedScope = { ...scope, [field]: value };
+        if (["manPower", "days", "rate"].includes(field)) {
+          const manPower = Number(updatedScope.manPower) || 0;
+          const days = Number(updatedScope.days) || 0;
+          const rate = Number(updatedScope.rate) || 0;
+          updatedScope.amount = manPower && days && rate
+            ? manPower * days * rate
+            : "";
+        }
+        return updatedScope;
+      }),
+    }));
+  };
+
+  const handleAddAdditionalScope = () => {
+    setValues((current) => ({
+      ...current,
+      additionalScopes: [
+        ...current.additionalScopes,
+        {
+          requirement: "",
+          module: "",
+          manPower: "",
+          days: "",
+          rate: "",
+          amount: "",
+        },
+      ],
+    }));
+  };
+
+  const handleRemoveAdditionalScope = (index) => {
+    setValues((current) => ({
+      ...current,
+      additionalScopes: current.additionalScopes.filter(
+        (_, scopeIndex) => scopeIndex !== index,
+      ),
     }));
   };
 
@@ -959,6 +1006,180 @@ export default function CreateQuotation({
 
             
           </form>
+        </div>
+
+        <div className="create-quotation__card create-quotation__additional-scope-card">
+          <div className="additional-scope__header">
+            <div>
+              <h3 className="q-form__heading">Additional scope</h3>
+              <p className="q-form__hint">
+                Add any additional requirements outside the selected modules.
+              </p>
+            </div>
+            {!readOnly && (
+              <button
+                type="button"
+                className="additional-scope__add-btn"
+                onClick={handleAddAdditionalScope}
+              >
+                Add scope
+              </button>
+            )}
+          </div>
+
+          <div className="additional-scope__table-wrap">
+            <table className="additional-scope__table">
+              <thead>
+                <tr>
+                  <th>Requirement</th>
+                  <th>Module</th>
+                  <th>Number of Man Power</th>
+                  <th>Number of Days</th>
+                  <th>Rate</th>
+                  <th>Amount</th>
+                  {!readOnly && <th aria-label="Actions" />}
+                </tr>
+              </thead>
+              <tbody>
+                {values.additionalScopes.length === 0 ? (
+                  <tr>
+                    <td
+                      className="additional-scope__empty"
+                      colSpan={readOnly ? 6 : 7}
+                    >
+                      No additional scope added.
+                    </td>
+                  </tr>
+                ) : (
+                  values.additionalScopes.map((scope, index) => (
+                    <tr key={`additional-scope-${index}`}>
+                      <td>
+                        <input
+                          type="text"
+                          value={scope.requirement}
+                          onChange={(event) =>
+                            handleAdditionalScopeChange(
+                              index,
+                              "requirement",
+                              event.target.value,
+                            )
+                          }
+                          disabled={readOnly}
+                          placeholder="Requirement"
+                        />
+                      </td>
+                      <td>
+                        <select
+                              value={scope.module}
+                              onChange={(event) =>
+                                handleAdditionalScopeChange(
+                                  index,
+                                  "module",
+                                  event.target.value,
+                                )
+                              }
+                              disabled={readOnly}
+                            >
+                              <option value="">Select module</option>
+
+                              {values.selectedModules.map((moduleName) => (
+                                <option key={moduleName} value={moduleName}>
+                                  {moduleName}
+                                </option>
+                              ))}
+
+                              <option value="Other">Other</option>
+                            </select>
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={scope.manPower}
+                          onChange={(event) =>
+                            handleAdditionalScopeChange(
+                              index,
+                              "manPower",
+                              event.target.value,
+                            )
+                          }
+                          disabled={readOnly}
+                          placeholder="0"
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={scope.days}
+                          onChange={(event) =>
+                            handleAdditionalScopeChange(
+                              index,
+                              "days",
+                              event.target.value,
+                            )
+                          }
+                          disabled={readOnly}
+                          placeholder="0"
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={scope.rate}
+                          onChange={(event) =>
+                            handleAdditionalScopeChange(
+                              index,
+                              "rate",
+                              event.target.value,
+                            )
+                          }
+                          disabled={readOnly}
+                          placeholder="0.00"
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          value={scope.amount}
+                          readOnly
+                          placeholder="0.00"
+                        />
+                      </td>
+                      {!readOnly && (
+                        <td>
+                          <button
+                            type="button"
+                            className="additional-scope__remove-btn"
+                            onClick={() => handleRemoveAdditionalScope(index)}
+                            aria-label={`Remove additional scope ${index + 1}`}
+                            title="Remove additional scope"
+                          >
+                            <svg
+                              viewBox="0 0 24 24"
+                              width="16"
+                              height="16"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2.5"
+                              strokeLinecap="round"
+                              aria-hidden="true"
+                            >
+                              <path d="M6 6l12 12M18 6 6 18" />
+                            </svg>
+                          </button>
+                        </td>
+                      )}
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         <Dialog
