@@ -4,9 +4,10 @@ import {
   generateQuotation,
   resolveDownloadUrl,
   fetchNextQuotationNo,
-  fetchOrganizations,
   fetchReferences,
   fetchCustomers,
+  createCustomer,
+  createReference,
   fetchQuotationById,
   linkRenewalQuotation,
 } from "../../services/quotationApi";
@@ -38,6 +39,7 @@ const initialValues = {
   date: today,
   selectedModules: [],
   moduleRequirements: {},
+  additionalScopes: [],
   quotationTo: { name: "", address: "", contactNo: "", email: "" },
   discountPercentage: 0,
 };
@@ -70,9 +72,12 @@ const getCustomerContactNumber = (customer) =>
 
 const getCustomerEmail = (customer) => customer?.email ?? customer?.Email ?? "";
 
-export default function CreateQuotation({ onNavigate, readOnly = false }) {
+export default function CreateQuotation({
+  onNavigate,
+  readOnly = false,
+  editMode = false,
+}) {
   const [modules, setModules] = useState([]);
-  const [organizations, setOrganizations] = useState([]);
   const [references, setReferences] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [values, setValues] = useState(initialValues);
@@ -93,9 +98,29 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
   const [emailSubject, setEmailSubject] = useState("");
   const [emailMessage, setEmailMessage] = useState("");
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
+  const [newCustomer, setNewCustomer] = useState({
+    name: "",
+    address: "",
+    state: "",
+    stateCode: "",
+    gstn: "",
+    contactName: "",
+    contactNumber: "",
+    email: "",
+  });
+  const [savingCustomer, setSavingCustomer] = useState(false);
+  const [referenceDialogOpen, setReferenceDialogOpen] = useState(false);
+  const [newReference, setNewReference] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+  });
+  const [savingReference, setSavingReference] = useState(false);
 
   useEffect(() => {
-    if (readOnly) {
+    if (readOnly || editMode) {
       setLoadingQuotationNo(false);
       const storedResult = sessionStorage.getItem("quotationData");
       const storedValues = sessionStorage.getItem("quotationFormValues");
@@ -197,10 +222,6 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
 
     if (readOnly) return;
 
-    fetchOrganizations()
-      .then(setOrganizations)
-      .catch(() => setOrganizations([]));
-
     fetchReferences()
       .then(setReferences)
       .catch(() => setReferences([]));
@@ -288,6 +309,8 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
       }
     }
 
+    if (editMode) return;
+
     // Fetch the next quotation number
     fetchNextQuotationNo()
       .then((quotationNo) => {
@@ -298,7 +321,7 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
         setValues((v) => ({ ...v, quotationNo: "Auto-generated" }));
         setLoadingQuotationNo(false);
       });
-  }, [readOnly]);
+  }, [readOnly, editMode]);
 
   useEffect(() => {
     if (values.date && values.validationDate) {
@@ -314,6 +337,27 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
     if (field === "date" && validityPeriod) {
       calculateValidationDate(value, validityPeriod);
     }
+  };
+
+  const handleOrganizationChange = (organizationName) => {
+    const selectedCustomer = customers.find(
+      (customer) =>
+        String(customer.name ?? customer.Name ?? "").trim().toLowerCase() ===
+        organizationName.trim().toLowerCase(),
+    );
+
+    setValues((current) => ({
+      ...current,
+      organizationName,
+      quotationTo: selectedCustomer
+        ? {
+            name: getCustomerContactName(selectedCustomer),
+            address: getCustomerAddress(selectedCustomer),
+            contactNo: getCustomerContactNumber(selectedCustomer),
+            email: getCustomerEmail(selectedCustomer),
+          }
+        : current.quotationTo,
+    }));
   };
 
   const calculateValidationDate = (dateStr, days) => {
@@ -333,42 +377,76 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
   };
 
   const handleAddNewOrganization = () => {
-    // Clear field for new entry - direct typing now works
+    setNewCustomer({
+      name: "",
+      address: "",
+      state: "",
+      stateCode: "",
+      gstn: "",
+      contactName: "",
+      contactNumber: "",
+      email: "",
+    });
+    setCustomerDialogOpen(true);
+  };
+
+  const handleCreateCustomer = async () => {
+    const name = newCustomer.name.trim();
+    if (!name) return;
+
+    try {
+      setSavingCustomer(true);
+      const createdCustomer = await createCustomer({
+        ...newCustomer,
+        name,
+      });
+      const savedCustomer = createdCustomer || { name };
+      setCustomers((current) => [...current, savedCustomer]);
+      handleFieldChange("organizationName", savedCustomer.name || name);
+      setCustomerDialogOpen(false);
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: error?.response?.data?.error || "Unable to add customer.",
+        severity: "error",
+      });
+    } finally {
+      setSavingCustomer(false);
+    }
   };
 
   const handleAddNewReference = () => {
-    // Clear field for new entry - direct typing now works
+    setNewReference({ name: "", email: "", phone: "", address: "" });
+    setReferenceDialogOpen(true);
   };
 
-  const handleQuotationToChange = (field, value) => {
-    setValues((v) => ({
-      ...v,
-      quotationTo: { ...v.quotationTo, [field]: value },
-    }));
-  };
+  const handleCreateReference = async () => {
+    const name = newReference.name.trim();
+    if (!name) return;
 
-  const handleCustomerChange = (contactName) => {
-    const selectedCustomer = customers.find(
-      (customer) =>
-        getCustomerContactName(customer).trim().toLowerCase() ===
-        contactName.trim().toLowerCase(),
-    );
-
-    if (!selectedCustomer) {
-      handleQuotationToChange("name", contactName);
-      return;
+    try {
+      setSavingReference(true);
+      const createdReference = await createReference({
+        ...newReference,
+        name,
+      });
+      const savedName = createdReference?.name || createdReference?.Name || name;
+      setReferences((current) =>
+        [...new Set([...current, savedName])].sort((first, second) =>
+          first.localeCompare(second),
+        ),
+      );
+      handleFieldChange("referenceBy", savedName);
+      setReferenceDialogOpen(false);
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: error?.response?.data?.error || "Unable to add reference.",
+        severity: "error",
+      });
+    } finally {
+      setSavingReference(false);
     }
-
-    setValues((v) => ({
-      ...v,
-      quotationTo: {
-        ...v.quotationTo,
-        name: getCustomerContactName(selectedCustomer) || contactName,
-        address: getCustomerAddress(selectedCustomer),
-        contactNo: getCustomerContactNumber(selectedCustomer),
-        email: getCustomerEmail(selectedCustomer),
-      },
-    }));
   };
 
   const handleToggleModule = (moduleName) => {
@@ -407,6 +485,52 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
           [field]: value,
         },
       },
+    }));
+  };
+
+  const handleAdditionalScopeChange = (index, field, value) => {
+    setValues((current) => ({
+      ...current,
+      additionalScopes: current.additionalScopes.map((scope, scopeIndex) => {
+        if (scopeIndex !== index) return scope;
+
+        const updatedScope = { ...scope, [field]: value };
+        if (["manPower", "days", "rate"].includes(field)) {
+          const manPower = Number(updatedScope.manPower) || 0;
+          const days = Number(updatedScope.days) || 0;
+          const rate = Number(updatedScope.rate) || 0;
+          updatedScope.amount = manPower && days && rate
+            ? manPower * days * rate
+            : "";
+        }
+        return updatedScope;
+      }),
+    }));
+  };
+
+  const handleAddAdditionalScope = () => {
+    setValues((current) => ({
+      ...current,
+      additionalScopes: [
+        ...current.additionalScopes,
+        {
+          requirement: "",
+          module: "",
+          manPower: "",
+          days: "",
+          rate: "",
+          amount: "",
+        },
+      ],
+    }));
+  };
+
+  const handleRemoveAdditionalScope = (index) => {
+    setValues((current) => ({
+      ...current,
+      additionalScopes: current.additionalScopes.filter(
+        (_, scopeIndex) => scopeIndex !== index,
+      ),
     }));
   };
 
@@ -484,6 +608,7 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
       setResult(data);
       sessionStorage.setItem("quotationData", JSON.stringify(data));
       sessionStorage.setItem("quotationFormValues", JSON.stringify(values));
+      onNavigate("quotation-detail");
       setSnackbar({
         open: true,
         message: "Quotation created successfully!",
@@ -503,6 +628,50 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
 
   const handleViewDetails = () => {
     onNavigate("quotation-detail");
+  };
+
+  const handleDownloadPdf = async () => {
+    const quotationId = result?.quotationId || result?.QuotationId;
+    const path =
+      result?.pdfDownloadUrl ||
+      result?.PdfDownloadUrl ||
+      (quotationId
+        ? `/api/quotation/${quotationId}/download/pdf`
+        : "");
+    const url = resolveDownloadUrl(path);
+
+    if (!url) {
+      setSnackbar({
+        open: true,
+        message: "PDF download link is not available.",
+        severity: "error",
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`PDF download failed with status ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const downloadUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = `${result?.quotationNo || quotationId || "quotation"}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error("Failed to download quotation PDF", error);
+      setSnackbar({
+        open: true,
+        message: "Unable to download the quotation PDF.",
+        severity: "error",
+      });
+    }
   };
 
   const handleNewQuotation = () => {
@@ -543,39 +712,72 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
       <div className="create-quotation__header">
         <div className="create-quotation__title">
           <h2 className="page-heading page-heading__text">
-            {readOnly ? "View Quotation" : "New Quotation"}
+            {readOnly ? "View Quotation" : editMode ? "Edit Quotation" : "New Quotation"}
           </h2>
-          <p>
-            {readOnly
-              ? "Review the quotation details and selected modules."
-              : "Fill in the client details and pick the modules in scope — everything else follows the standard BlechTek format."}
-          </p>
+          <p></p>
         </div>
-        <button
-          className="create-quotation__back-btn"
-          onClick={() => onNavigate("settings", "created-quotations")}
-          aria-label="Back to quotations list"
-        >
-          <svg
-            className="create-quotation__back-icon"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+        <div className="create-quotation__header-actions">
+          {!readOnly && (
+            <button
+              type="submit"
+              form="quotation-form"
+              className="q-submit"
+              disabled={submitting}
+            >
+              {submitting ? "Generating quotation…" : "Generate quotation"}
+            </button>
+          )}
+          {result && !editMode && (
+            <>
+              <button
+                type="button"
+                className="q-result__btn q-result__btn--primary create-quotation__header-action-btn"
+                onClick={handleDownloadPdf}
+              >
+                Download PDF
+              </button>
+              <button
+                type="button"
+                className="q-result__btn q-result__btn--primary create-quotation__header-action-btn"
+                onClick={() => {
+                  setEmailRecipient(values.quotationTo.email || "");
+                  setEmailSubject(`Quotation ${result.quotationNo}`);
+                  setEmailMessage("Please find attached the quotation.");
+                  setEmailDialogOpen(true);
+                }}
+              >
+                Send Email
+              </button>
+            </>
+          )}
+          <button
+            className="create-quotation__back-btn"
+            onClick={() => onNavigate("settings", "created-quotations")}
+            aria-label="Back to quotations list"
           >
-            <path d="M19 12H5M12 19l-7-7 7-7" />
-          </svg>
-          <span className="create-quotation__back-text"></span>
-        </button>
+            <svg
+              className="create-quotation__back-icon"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+            <span className="create-quotation__back-text"></span>
+          </button>
+        </div>
       </div>
 
       <div className="create-quotation__layout">
-        <div className="create-quotation__card">
+        <div className="create-quotation__card create-quotation__details-preview-card">
+          <div className="create-quotation__details-card">
           <form
+            id="quotation-form"
             className="q-form"
             onSubmit={readOnly ? undefined : handleSubmit}
             noValidate
@@ -586,17 +788,22 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
                 <div className="q-field">
                   <SearchDropdown
                     name="organizationName"
-                    label="Organization name"
+                    label="Customer"
                     value={values.organizationName}
-                    onChange={(val) =>
-                      handleFieldChange("organizationName", val)
-                    }
+                    onChange={handleOrganizationChange}
                     disabled={readOnly}
-                    options={organizations}
-                    placeholder="e.g. Vantage Auto Components Pvt. Ltd."
+                    options={[
+                      ...new Set(
+                        customers
+                          .map((customer) => customer.name ?? customer.Name ?? "")
+                          .map((name) => name.trim())
+                          .filter(Boolean),
+                      ),
+                    ]}
+                    placeholder="Search customer..."
                     error={errors.organizationName}
                     onAddNew={handleAddNewOrganization}
-                    addNewLabel="Add new organization"
+                    addNewLabel="Add new customer"
                     required
                     allowFreeText
                   />
@@ -712,128 +919,10 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
                 </div>
               </div>
             </section>
-
-            <section
-              className={`q-form__section ${readOnly ? "q-form__section--disabled" : ""}`}
-            >
-              <h3 className="q-form__heading">Quotation to</h3>
-              <div className="q-form__row">
-                <div className="q-field">
-                  <SearchDropdown
-                    name="contactName"
-                    label="Contact name"
-                    value={values.quotationTo.name}
-                    onChange={handleCustomerChange}
-                    options={[
-                      ...new Set(
-                        customers
-                          .map(getCustomerContactName)
-                          .map((name) => name.trim())
-                          .filter(Boolean),
-                      ),
-                    ]}
-                    placeholder="Select customer contact"
-                    allowFreeText
-                    disabled={readOnly}
-                  />
-                  {errors.contactName && (
-                    <span className="q-field__error">{errors.contactName}</span>
-                  )}
-                </div>
-                <div className="q-field">
-                  <label htmlFor="contactNo">Contact number</label>
-                  <input
-                    id="contactNo"
-                    type="tel"
-                    placeholder="+91 98815 50000"
-                    value={values.quotationTo.contactNo}
-                    onChange={(e) =>
-                      handleQuotationToChange("contactNo", e.target.value)
-                    }
-                    disabled={readOnly}
-                  />
-                  {errors.contactNo && (
-                    <span className="q-field__error">{errors.contactNo}</span>
-                  )}
-                </div>
-              </div>
-
-              <div className="q-form__row">
-                <div className="q-field">
-                  <label htmlFor="address">Address</label>
-                  <textarea
-                    id="address"
-                    rows={2}
-                    placeholder="Full postal address"
-                    value={values.quotationTo.address}
-                    onChange={(e) =>
-                      handleQuotationToChange("address", e.target.value)
-                    }
-                    disabled={readOnly}
-                  />
-                  {errors.contactAddress && (
-                    <span className="q-field__error">
-                      {errors.contactAddress}
-                    </span>
-                  )}
-                </div>
-                <div className="q-field">
-                  <label htmlFor="email">Email</label>
-                  <input
-                    id="email"
-                    type="email"
-                    placeholder="name@company.com"
-                    value={values.quotationTo.email}
-                    onChange={(e) =>
-                      handleQuotationToChange("email", e.target.value)
-                    }
-                    disabled={readOnly}
-                  />
-                  {errors.email && (
-                    <span className="q-field__error">{errors.email}</span>
-                  )}
-                </div>
-              </div>
-            </section>
-
-            <section className="q-form__section">
-              <h3 className="q-form__heading">Scope & modules</h3>
-              <p className="q-form__hint">
-                Only the modules checked here will appear in the generated
-                quotation's Scope section.
-              </p>
-              <ModuleSelector
-                modules={modules}
-                selected={values.selectedModules}
-                onToggle={handleToggleModule}
-                error={errors.selectedModules}
-                disabled={readOnly}
-              />
-              {values.selectedModules.length > 0 && (
-                <ModuleRequirements
-                  selectedModules={values.selectedModules}
-                  requirements={values.moduleRequirements || {}}
-                  onChange={handleModuleRequirementChange}
-                  disabled={readOnly}
-                />
-              )}
-            </section>
-
-            <div className="q-form__row" style={{ justifyContent: "flex-end" }}>
-              {!readOnly && (
-                <button
-                  type="submit"
-                  className="q-submit"
-                  disabled={submitting}
-                >
-                  {submitting ? "Generating quotation…" : "Generate quotation"}
-                </button>
-              )}
-            </div>
           </form>
-        </div>
+          </div>
 
-        <aside className="q-preview">
+          <div className="q-preview create-quotation__preview-card">
           <div className="q-ticket">
             <div className="q-ticket__top">
               <span className="q-ticket__brand">BlechTek</span>
@@ -843,7 +932,7 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
             <div className="q-ticket__body">
               <p className="q-ticket__label">Prepared for</p>
               <p className="q-ticket__value">
-                {values.organizationName || "Organization name"}
+                {values.organizationName || "Customer"}
               </p>
 
               <p className="q-ticket__label">Reference By</p>
@@ -889,68 +978,416 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
 
           {apiError && <div className="q-preview__error">{apiError}</div>}
 
-          {result && (
-            <div className="q-result">
-              <p className="q-result__title">Quotation generated</p>
-              <p className="q-result__id">{result.quotationNo}</p>
-              <div className="q-result__actions">
-                {!readOnly && (
-                  <button
-                    className="q-result__btn q-result__btn--primary"
-                    onClick={handleViewDetails}
-                  >
-                    View Details
-                  </button>
-                )}
-                <button
-                  className="q-result__btn q-result__btn--primary"
-                  onClick={() => {
-                    const url = resolveDownloadUrl(result.pdfDownloadUrl);
-                    if (url) window.open(url, "_blank");
-                  }}
-                >
-                  Download PDF
-                </button>
-                {/* <button
-                  className="q-result__btn q-result__btn--primary"
-                  onClick={() => {
-                    const url = resolveDownloadUrl(result.wordDownloadUrl);
-                    if (url) window.open(url, "_blank");
-                  }}
-                >
-                  Download Word
-                </button> */}
-                <button
-                  className="q-result__btn q-result__btn--primary"
-                  onClick={() => {
-                    setEmailRecipient(values.quotationTo.email || "");
-                    setEmailSubject(`Quotation ${result.quotationNo}`);
-                    setEmailMessage("Please find attached the quotation.");
-                    setEmailDialogOpen(true);
-                  }}
-                >
-                  Send Email
-                </button>
-              </div>
-            </div>
-          )}
+          </div>
+        </div>
 
-          {!result && !apiError && (
-            <div className="q-preview__hint">
-              <p>
-                Complete the form and click "Generate quotation" to see download
-                options.
+        <div className="create-quotation__card create-quotation__scope-card">
+          <form className="q-form" noValidate>
+            <section className="q-form__section">
+              <h3 className="q-form__heading">Scope & modules</h3>
+              <p className="q-form__hint">
+              </p>
+              <ModuleSelector
+                modules={modules}
+                selected={values.selectedModules}
+                onToggle={handleToggleModule}
+                error={errors.selectedModules}
+                disabled={readOnly}
+              />
+              {values.selectedModules.length > 0 && (
+                <ModuleRequirements
+                  selectedModules={values.selectedModules}
+                  requirements={values.moduleRequirements || {}}
+                  onChange={handleModuleRequirementChange}
+                  disabled={readOnly}
+                />
+              )}
+            </section>
+
+            
+          </form>
+        </div>
+
+        <div className="create-quotation__card create-quotation__additional-scope-card">
+          <div className="additional-scope__header">
+            <div>
+              <h3 className="q-form__heading">Additional scope</h3>
+              <p className="q-form__hint">
+                Add any additional requirements outside the selected modules.
               </p>
             </div>
-          )}
+            {!readOnly && (
+              <button
+                type="button"
+                className="additional-scope__add-btn"
+                onClick={handleAddAdditionalScope}
+              >
+                Add scope
+              </button>
+            )}
+          </div>
 
-          {/* {result && (
-            <button className="q-result__btn q-result__btn--secondary q-result__btn--full" onClick={handleNewQuotation}>
-              New Quotation
-            </button>
-          )} */}
-        </aside>
+          <div className="additional-scope__table-wrap">
+            <table className="additional-scope__table">
+              <thead>
+                <tr>
+                  <th>Requirement</th>
+                  <th>Module</th>
+                  <th>Number of Man Power</th>
+                  <th>Number of Days</th>
+                  <th>Rate</th>
+                  <th>Amount</th>
+                  {!readOnly && <th aria-label="Actions" />}
+                </tr>
+              </thead>
+              <tbody>
+                {values.additionalScopes.length === 0 ? (
+                  <tr>
+                    <td
+                      className="additional-scope__empty"
+                      colSpan={readOnly ? 6 : 7}
+                    >
+                      No additional scope added.
+                    </td>
+                  </tr>
+                ) : (
+                  values.additionalScopes.map((scope, index) => (
+                    <tr key={`additional-scope-${index}`}>
+                      <td>
+                        <input
+                          type="text"
+                          value={scope.requirement}
+                          onChange={(event) =>
+                            handleAdditionalScopeChange(
+                              index,
+                              "requirement",
+                              event.target.value,
+                            )
+                          }
+                          disabled={readOnly}
+                          placeholder="Requirement"
+                        />
+                      </td>
+                      <td>
+                        <select
+                              value={scope.module}
+                              onChange={(event) =>
+                                handleAdditionalScopeChange(
+                                  index,
+                                  "module",
+                                  event.target.value,
+                                )
+                              }
+                              disabled={readOnly}
+                            >
+                              <option value="">Select module</option>
 
+                              {values.selectedModules.map((moduleName) => (
+                                <option key={moduleName} value={moduleName}>
+                                  {moduleName}
+                                </option>
+                              ))}
+
+                              <option value="Other">Other</option>
+                            </select>
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={scope.manPower}
+                          onChange={(event) =>
+                            handleAdditionalScopeChange(
+                              index,
+                              "manPower",
+                              event.target.value,
+                            )
+                          }
+                          disabled={readOnly}
+                          placeholder="0"
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={scope.days}
+                          onChange={(event) =>
+                            handleAdditionalScopeChange(
+                              index,
+                              "days",
+                              event.target.value,
+                            )
+                          }
+                          disabled={readOnly}
+                          placeholder="0"
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={scope.rate}
+                          onChange={(event) =>
+                            handleAdditionalScopeChange(
+                              index,
+                              "rate",
+                              event.target.value,
+                            )
+                          }
+                          disabled={readOnly}
+                          placeholder="0.00"
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          value={scope.amount}
+                          readOnly
+                          placeholder="0.00"
+                        />
+                      </td>
+                      {!readOnly && (
+                        <td>
+                          <button
+                            type="button"
+                            className="additional-scope__remove-btn"
+                            onClick={() => handleRemoveAdditionalScope(index)}
+                            aria-label={`Remove additional scope ${index + 1}`}
+                            title="Remove additional scope"
+                          >
+                            <svg
+                              viewBox="0 0 24 24"
+                              width="16"
+                              height="16"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2.5"
+                              strokeLinecap="round"
+                              aria-hidden="true"
+                            >
+                              <path d="M6 6l12 12M18 6 6 18" />
+                            </svg>
+                          </button>
+                        </td>
+                      )}
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <Dialog
+          open={customerDialogOpen}
+          onClose={() => setCustomerDialogOpen(false)}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle>Add Customer</DialogTitle>
+          <DialogContent>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                gap: 12,
+                paddingTop: 8,
+              }}
+            >
+              <TextField
+                autoFocus
+                required
+                size="small"
+                label="Name"
+                value={newCustomer.name}
+                onChange={(event) =>
+                  setNewCustomer((current) => ({
+                    ...current,
+                    name: event.target.value,
+                  }))
+                }
+              />
+              <TextField
+                size="small"
+                label="State"
+                value={newCustomer.state}
+                onChange={(event) =>
+                  setNewCustomer((current) => ({
+                    ...current,
+                    state: event.target.value,
+                  }))
+                }
+              />
+              <TextField
+                size="small"
+                label="State Code"
+                value={newCustomer.stateCode}
+                onChange={(event) =>
+                  setNewCustomer((current) => ({
+                    ...current,
+                    stateCode: event.target.value,
+                  }))
+                }
+              />
+              <TextField
+                size="small"
+                label="GSTN"
+                value={newCustomer.gstn}
+                onChange={(event) =>
+                  setNewCustomer((current) => ({
+                    ...current,
+                    gstn: event.target.value,
+                  }))
+                }
+              />
+              <TextField
+                size="small"
+                label="Contact Name"
+                value={newCustomer.contactName}
+                onChange={(event) =>
+                  setNewCustomer((current) => ({
+                    ...current,
+                    contactName: event.target.value,
+                  }))
+                }
+              />
+              <TextField
+                size="small"
+                label="Contact Number"
+                value={newCustomer.contactNumber}
+                onChange={(event) =>
+                  setNewCustomer((current) => ({
+                    ...current,
+                    contactNumber: event.target.value,
+                  }))
+                }
+              />
+              <TextField
+                size="small"
+                type="email"
+                label="Email"
+                value={newCustomer.email}
+                onChange={(event) =>
+                  setNewCustomer((current) => ({
+                    ...current,
+                    email: event.target.value,
+                  }))
+                }
+              />
+              <TextField
+                size="small"
+                multiline
+                minRows={2}
+                label="Address"
+                value={newCustomer.address}
+                onChange={(event) =>
+                  setNewCustomer((current) => ({
+                    ...current,
+                    address: event.target.value,
+                  }))
+                }
+                sx={{ gridColumn: "1 / -1" }}
+              />
+            </div>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setCustomerDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleCreateCustomer}
+              disabled={!newCustomer.name.trim() || savingCustomer}
+            >
+              {savingCustomer ? "Adding..." : "Add customer"}
+            </Button>
+          </DialogActions>
+        </Dialog>
+        <Dialog
+          open={referenceDialogOpen}
+          onClose={() => setReferenceDialogOpen(false)}
+          maxWidth="xs"
+          fullWidth
+        >
+          <DialogTitle>Add Reference</DialogTitle>
+          <DialogContent>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                gap: 12,
+                paddingTop: 8,
+              }}
+            >
+              <TextField
+                autoFocus
+                required
+                size="small"
+                label="Name"
+                value={newReference.name}
+                onChange={(event) =>
+                  setNewReference((current) => ({
+                    ...current,
+                    name: event.target.value,
+                  }))
+                }
+              />
+              <TextField
+                size="small"
+                type="email"
+                label="Email"
+                value={newReference.email}
+                onChange={(event) =>
+                  setNewReference((current) => ({
+                    ...current,
+                    email: event.target.value,
+                  }))
+                }
+              />
+              <TextField
+                size="small"
+                label="Phone"
+                value={newReference.phone}
+                onChange={(event) =>
+                  setNewReference((current) => ({
+                    ...current,
+                    phone: event.target.value,
+                  }))
+                }
+              />
+              <TextField
+                size="small"
+                multiline
+                minRows={2}
+                label="Address"
+                value={newReference.address}
+                onChange={(event) =>
+                  setNewReference((current) => ({
+                    ...current,
+                    address: event.target.value,
+                  }))
+                }
+                sx={{ gridColumn: "1 / -1" }}
+              />
+            </div>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setReferenceDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleCreateReference}
+              disabled={!newReference.name.trim() || savingReference}
+            >
+              {savingReference ? "Adding..." : "Add reference"}
+            </Button>
+          </DialogActions>
+        </Dialog>
         <Dialog
           open={emailDialogOpen}
           onClose={() => setEmailDialogOpen(false)}
@@ -1087,13 +1524,13 @@ export default function CreateQuotation({ onNavigate, readOnly = false }) {
             </Button>
           </DialogActions>
         </Dialog>
+        <CustomSnackbar
+          open={snackbar.open}
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          message={snackbar.message}
+        />
       </div>
-      <CustomSnackbar
-        open={snackbar.open}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-        severity={snackbar.severity}
-        message={snackbar.message}
-      />
     </div>
   );
 }
@@ -1111,19 +1548,30 @@ function ModuleSelector({ modules, selected, onToggle, error, disabled }) {
       <div className="module-selector__groups">
         {Object.entries(grouped).map(([pillar, modules]) => (
           <div key={pillar} className="module-selector__group">
-            <h4 className="module-selector__pillar">{pillar}</h4>
             <div className="module-selector__modules">
-              {modules.map((module) => (
-                <label key={module} className="module-selector__item">
-                  <input
-                    type="checkbox"
-                    checked={selected.includes(module)}
-                    onChange={() => onToggle(module)}
-                    disabled={disabled}
-                  />
-                  <span>{module}</span>
-                </label>
-              ))}
+              {modules.map((module) => {
+                const isSelected = selected.includes(module);
+                return (
+                  <label
+                    key={module}
+                    className={`module-selector__item ${
+                      isSelected ? "module-selector__item--selected" : ""
+                    }`}
+                  >
+                    <div className="module-selector__text">
+                      <span className="module-selector__pillar-name">{pillar}</span>
+                      <span className="module-selector__name">{module}</span>
+                      
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => onToggle(module)}
+                      disabled={disabled}
+                    />
+                  </label>
+                );
+              })}
             </div>
           </div>
         ))}
@@ -1203,9 +1651,6 @@ function ModuleRequirements({
                     disabled={disabled}
                   />
                 </div>
-              </div>
-
-              <div className="q-form__row">
                 <div className="q-field">
                   <label htmlFor={`${moduleName}-unit`}>
                     Implementation Effort
@@ -1262,22 +1707,12 @@ function getDaysBetween(start, end) {
 
 function validate(values) {
   const errors = {};
-  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  const PHONE_RE = /^\+?[\d\s-]{7,15}$/;
 
   if (!values.organizationName.trim())
-    errors.organizationName = "Organization name is required.";
+    errors.organizationName = "Customer is required.";
   if (!values.validationDate) errors.validationDate = "Pick a validity date.";
   if (!values.date) errors.date = "Date is required.";
   if (values.selectedModules.length === 0)
     errors.selectedModules = "Select at least one module.";
-  if (!values.quotationTo.name.trim())
-    errors.contactName = "Contact name is required.";
-  if (!values.quotationTo.address.trim())
-    errors.contactAddress = "Address is required.";
-  if (!PHONE_RE.test(values.quotationTo.contactNo.trim()))
-    errors.contactNo = "Enter a valid phone number.";
-  if (!EMAIL_RE.test(values.quotationTo.email.trim()))
-    errors.email = "Enter a valid email address.";
   return errors;
 }

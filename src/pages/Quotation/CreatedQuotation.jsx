@@ -188,7 +188,7 @@ export default function CreatedQuotation({ onNavigate }) {
     },
     {
       key: "OrganizationName",
-      label: "Organization",
+      label: "Customer ",
       sortable: true,
       minWidth: 220,
     },
