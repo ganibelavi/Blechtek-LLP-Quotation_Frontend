@@ -4,8 +4,6 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  MenuItem,
-  TextField,
   Typography,
 } from "@mui/material";
 import {
@@ -48,6 +46,19 @@ const readStoredQuotation = () => {
     console.error("Failed to read selected quotation info", error);
     return null;
   }
+};
+
+const getCurrentTime = () =>
+  new Date().toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+
+const normalizeDateInput = (value) => {
+  if (!value) return "";
+  const text = String(value);
+  return text.length >= 10 ? text.slice(0, 10) : text;
 };
 
 const normalizeId = (value) => {
@@ -396,7 +407,7 @@ const defaultForm = () => {
     companyName: poDetails.companyName || "",
     invoiceNo: "",
     dateOfIssue: new Date().toISOString().slice(0, 10),
-    timeOfIssue: "",
+    timeOfIssue: getCurrentTime(),
     placeOfService: "",
     supplierName: poDetails.supplierName || "",
     supplierAddress: poDetails.supplierAddress || "",
@@ -485,13 +496,23 @@ export default function InvoiceEntryForm({
       ...baseForm,
       ...(sourceData?.invoice || {}),
       companyName:
+        sourceData?.invoice?.organizationName ||
+        sourceData?.organizationName ||
         sourceData?.invoice?.companyName ||
         renewalInvoiceContext?.customerName ||
         baseForm.companyName,
+      quotationNo:
+        sourceData?.invoice?.quotationNo ||
+        sourceData?.quotationNo ||
+        baseForm.quotationNo,
       dateOfIssue:
-        sourceData?.invoice?.dateOfIssue ||
+        normalizeDateInput(sourceData?.invoice?.dateOfIssue) ||
         renewalInvoiceContext?.periodStart ||
         baseForm.dateOfIssue,
+      timeOfIssue:
+        sourceData?.invoice?.timeOfIssue ||
+        renewalInvoiceContext?.timeOfIssue ||
+        baseForm.timeOfIssue,
       receiverName:
         sourceData?.invoice?.receiverName ||
         renewalInvoiceContext?.customerName ||
@@ -513,6 +534,7 @@ export default function InvoiceEntryForm({
       sourceInvoiceId: normalizeId(sourceData?.id || sourceData?.invoice?.id),
       sourceQuotationId: normalizeQuotationId(
         sourceData?.invoice?.quotationId ||
+          sourceData?.quotationId ||
           renewalInvoiceContext?.quotationId ||
           null,
       ),
@@ -579,6 +601,9 @@ export default function InvoiceEntryForm({
   // Check if a field should be disabled: either viewOnly, or it's a source field and we're editing an existing invoice
   const isFieldDisabled = (fieldName) => {
     if (viewOnly) return true;
+    if (fieldName === "companyName") {
+      return Boolean(form.sourceInvoiceId);
+    }
     // If editing an existing invoice and field is a source field, disable it
     if (form.sourceInvoiceId && sourceFields.has(fieldName)) return true;
     // If creating new from PO/Quotation, disable source fields
@@ -825,6 +850,21 @@ export default function InvoiceEntryForm({
     renewalInvoiceContext,
     renewalQuotation,
   ]);
+
+  const organizationOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          [
+            ...quotationRecords.map((quotation) => quotation.organizationName),
+            form.companyName,
+          ]
+            .map((organization) => String(organization || "").trim())
+            .filter(Boolean),
+        ),
+      ).sort((first, second) => first.localeCompare(second)),
+    [quotationRecords, form.companyName],
+  );
 
   const selectQuotation = async () => {
     const quotation = quotationOptions.find(
@@ -1386,6 +1426,31 @@ export default function InvoiceEntryForm({
 
         const activeQuotation = remoteQuotation || matchedQuotation;
         const nextItems = buildQuotationItems(activeQuotation, moduleCatalog);
+        const moduleTaxDetails = aggregateModuleTaxDetails(nextItems);
+        const profile =
+          companyProfiles.find(
+            (record) =>
+              String(record.name || "").trim().toLowerCase() ===
+              String(activeQuotation.organizationName || "")
+                .trim()
+                .toLowerCase(),
+          ) || companyProfiles.find((record) => record.isActive);
+        const bank =
+          bankAccounts.find((record) => record.isDefault) ||
+          bankAccounts.find((record) => record.isActive) ||
+          bankAccounts[0];
+        const rate =
+          gstRates.find((record) => record.isActive) || gstRates[0];
+        const saleTerms =
+          termsTemplates.find(
+            (record) =>
+              record.type === "terms_of_sale" &&
+              record.isDefault &&
+              record.isActive,
+          ) ||
+          termsTemplates.find(
+            (record) => record.type === "terms_of_sale" && record.isActive,
+          );
 
         setForm((prev) => ({
           ...prev,
@@ -1396,7 +1461,16 @@ export default function InvoiceEntryForm({
           ),
           companyName: activeQuotation.organizationName || prev.companyName,
           supplierName:
-            activeQuotation.organizationName || prev.supplierName || "",
+            profile?.name || activeQuotation.organizationName || prev.supplierName,
+          supplierAddress: profile?.address || prev.supplierAddress,
+          supplierState: profile?.state || prev.supplierState,
+          supplierStateCode: profile?.stateCode || prev.supplierStateCode,
+          supplierGSTN: profile?.gstn || prev.supplierGSTN,
+          bankName: bank?.bankName || prev.bankName,
+          accountNo: bank?.accountNo || prev.accountNo,
+          accountType: bank?.accountType || prev.accountType || "Current",
+          ifsc: bank?.ifsc || prev.ifsc,
+          msmeNo: bank?.msmeNo || prev.msmeNo,
           receiverName:
             activeQuotation.quotationToName || prev.receiverName || "",
           receiverAddress:
@@ -1409,6 +1483,13 @@ export default function InvoiceEntryForm({
           poNoDate: activeQuotation.quotationNo
             ? `Quotation No. ${activeQuotation.quotationNo}`
             : prev.poNoDate || "",
+          hsnCode: moduleTaxDetails.hsnCode,
+          sacCode: moduleTaxDetails.sacCode,
+          reverseCharge: moduleTaxDetails.reverseCharge,
+          sgstPct: rate?.sgstPct ?? prev.sgstPct,
+          cgstPct: rate?.cgstPct ?? prev.cgstPct,
+          igstPct: rate?.igstPct ?? prev.igstPct,
+          termsOfSale: saleTerms?.content || prev.termsOfSale,
           items: nextItems,
         }));
       } catch (error) {
@@ -1448,6 +1529,10 @@ export default function InvoiceEntryForm({
     form.companyName,
     quotationRecords,
     moduleCatalog,
+    companyProfiles,
+    bankAccounts,
+    gstRates,
+    termsTemplates,
     viewOnly,
     isRenewalInvoice,
   ]);
@@ -1488,6 +1573,17 @@ export default function InvoiceEntryForm({
 
   const updateField = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleOrganizationChange = (organizationName) => {
+    setForm((prev) => ({
+      ...prev,
+      companyName: organizationName,
+      sourcePoId: null,
+      sourceQuotationId: null,
+      quotationNo: "",
+      poNoDate: "",
+    }));
   };
 
   const updateItem = (id, field, value) => {
@@ -1813,18 +1909,6 @@ export default function InvoiceEntryForm({
               </p>
             </div>
             <div className="po-detail-actions">
-              {!viewOnly && !form.sourceInvoiceId && (
-                <button
-                  type="button"
-                  className="app-action-btn app-action-btn--secondary"
-                  onClick={() => {
-                    setSelectedQuotationId("");
-                    setShowQuotationModal(true);
-                  }}
-                >
-                  New Invoice
-                </button>
-              )}
               {!viewOnly ? (
                 <button
                   type="submit"
@@ -1935,12 +2019,18 @@ export default function InvoiceEntryForm({
               <div className="po-fields po-fields-3">
                 <label>
                   Company name
-                  <input
+                  <select
                     value={form.companyName}
-                    onChange={(e) => updateField("companyName", e.target.value)}
+                    onChange={(e) => handleOrganizationChange(e.target.value)}
                     disabled={isFieldDisabled("companyName")}
-                    placeholder="Company name from selected quotation"
-                  />
+                  >
+                    <option value="">Select organization...</option>
+                    {organizationOptions.map((organization) => (
+                      <option key={organization} value={organization}>
+                        {organization}
+                      </option>
+                    ))}
+                  </select>
                 </label>
                 <label>
                   Invoice No.
@@ -2430,71 +2520,6 @@ export default function InvoiceEntryForm({
           </form>
         </section>
       </main>
-      <Dialog
-        open={showQuotationModal}
-        onClose={() => setShowQuotationModal(false)}
-        fullWidth
-        maxWidth="sm"
-      >
-        <DialogTitle className="invoice-quotation-modal-title">
-          Select quotation for invoice
-        </DialogTitle>
-        <DialogContent dividers>
-          <p className="invoice-quotation-modal-help">
-            {renewalInvoiceContext?.quotationId
-              ? "Select the renewal quotation for this invoice. The quotation, customer, and renewal amount will be filled automatically."
-              : "Only quotations that already have a purchase order are available. Selecting one fills the quotation, company, party, bank, GST, and terms data."}
-          </p>
-          <TextField
-            select
-            fullWidth
-            size="small"
-            label={
-              renewalInvoiceContext?.quotationId
-                ? "Renewal quotation"
-                : "PO-generated quotation"
-            }
-            value={selectedQuotationId}
-            onChange={(event) => setSelectedQuotationId(event.target.value)}
-          >
-            <MenuItem value="">Select quotation...</MenuItem>
-            {quotationOptions.map((quotation, index) => (
-              <MenuItem
-                key={quotation.quotationId ?? quotation.id ?? index}
-                value={quotation.quotationId ?? quotation.id}
-              >
-                {quotation.quotationNo || `Quotation ${index + 1}`} —{" "}
-                {quotation.organizationName || "Unassigned company"}
-                {renewalInvoiceContext?.quotationId ? " (Renewal)" : ""}
-              </MenuItem>
-            ))}
-          </TextField>
-          {!quotationOptions.length && (
-            <p className="invoice-quotation-modal-empty">
-              {renewalInvoiceContext?.quotationId
-                ? "The linked renewal quotation is not available."
-                : "No purchase-order-generated quotations are available."}
-            </p>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <button
-            type="button"
-            className="app-action-btn app-action-btn--secondary"
-            onClick={() => setShowQuotationModal(false)}
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            className="app-action-btn app-action-btn--primary"
-            onClick={selectQuotation}
-            disabled={!selectedQuotationId}
-          >
-            Use quotation
-          </button>
-        </DialogActions>
-      </Dialog>
       <Dialog
         open={statusActionDialogOpen}
         onClose={handleCloseStatusActionDialog}
