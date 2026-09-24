@@ -84,7 +84,6 @@ export default function AppSidebar({
         "edit-quotation",
         "quotation",
         "quotation-history",
-        "all-revisions",
       ].includes(view);
     }
     if (itemView === "all-revisions") return view === "all-revisions";
@@ -105,27 +104,10 @@ export default function AppSidebar({
       ].includes(view);
     }
     if (itemView === "subscriptions") {
-      return [
-        "subscriptions",
-        "customer-subscriptions",
-        "renewals",
-        "renewal-quotations",
-        "pricing-history",
-        "subscription-details",
-      ].includes(view);
+      return view === "subscriptions";
     }
     if (itemView === "settings") {
-      return [
-        "settings",
-        "users",
-        "modules",
-        "customers",
-        "suppliers",
-        "company-profile",
-        "bank-accounts",
-        "gst-rates",
-        "terms-templates",
-      ].includes(view);
+      return view === "settings" && !settingsExpanded;
     }
     return view === itemView;
   };
@@ -153,9 +135,11 @@ export default function AppSidebar({
                   onClick={() => {
                     if (item.view === "settings") {
                       setSettingsExpanded((expanded) => !expanded);
+                      setSubscriptionsExpanded(false);
                       navigate("settings", settingsInitialTab);
                     } else if (item.view === "subscriptions") {
                       setSubscriptionsExpanded((expanded) => !expanded);
+                      setSettingsExpanded(false);
                       navigate("customer-subscriptions");
                     } else {
                       navigate(item.view);
