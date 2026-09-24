@@ -1115,7 +1115,7 @@ export default function CreateQuotation({
                                 </option>
                               ))}
 
-                              <option value="Other">Other</option>
+                              <option value="Others">Others</option>
                             </select>
                       </td>
                       <td>
