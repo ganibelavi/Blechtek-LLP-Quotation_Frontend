@@ -1038,7 +1038,7 @@ export default function CreateQuotation({
                   requirements={values.moduleRequirements || {}}
                   onChange={handleModuleRequirementChange}
                   disabled={readOnly}
-                  showDiscount={editMode}
+                  showDiscount={editMode || readOnly}
                 />
               )}
             </section>
