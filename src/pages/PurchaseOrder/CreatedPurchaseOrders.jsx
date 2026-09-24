@@ -15,6 +15,7 @@ import {
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import AddIcon from "@mui/icons-material/Add";
 import EntityTable from "../../components/EntityTable";
 import {
   fetchPurchaseOrders,
@@ -193,21 +194,29 @@ export default function CreatedPurchaseOrders({ onNavigate }) {
         }}
       >
         <h1 className="page-heading page-heading__text">Purchase Orders</h1>
-        <Button
-          variant="contained"
-          onClick={() => {
-            sessionStorage.removeItem("purchaseOrderId");
-            sessionStorage.removeItem("purchaseOrderViewOnly");
-            sessionStorage.setItem(
-              "purchaseOrderBackView",
-              "created-purchase-orders",
-            );
-            onNavigate("purchase-order-entry");
-          }}
-          sx={{ px: 3, py: 1 }}
-        >
-          New Purchase Order
-        </Button>
+        <Tooltip title="Create purchase order">
+          <IconButton
+            color="primary"
+            aria-label="Create purchase order"
+            onClick={() => {
+              sessionStorage.removeItem("purchaseOrderId");
+              sessionStorage.removeItem("purchaseOrderViewOnly");
+              sessionStorage.setItem(
+                "purchaseOrderBackView",
+                "created-purchase-orders",
+              );
+              onNavigate("purchase-order-entry");
+            }}
+            sx={{
+              bgcolor: "primary.main",
+              color: "common.white",
+              borderRadius: 1,
+              "&:hover": { bgcolor: "primary.dark" },
+            }}
+          >
+            <AddIcon />
+          </IconButton>
+        </Tooltip>
       </Box>
 
       {error && (

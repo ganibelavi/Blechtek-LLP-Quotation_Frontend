@@ -779,7 +779,7 @@ export default function CreateQuotation({
           )}
           <button
             className="create-quotation__back-btn"
-            onClick={() => onNavigate("settings", "created-quotations")}
+            onClick={() => onNavigate("created-quotations")}
             aria-label="Back to quotations list"
           >
             <svg

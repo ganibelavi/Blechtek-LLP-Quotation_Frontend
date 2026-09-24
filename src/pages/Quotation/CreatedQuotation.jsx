@@ -7,12 +7,12 @@ import {
   Alert,
   IconButton,
   Tooltip,
-  Button,
 } from "@mui/material";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import EditIcon from "@mui/icons-material/Edit";
 import HistoryIcon from "@mui/icons-material/History";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
+import AddIcon from "@mui/icons-material/Add";
 
 const resolveApiBaseUrl = () => {
   const envUrl = process.env.REACT_APP_API_BASE_URL?.trim();
@@ -321,20 +321,21 @@ export default function CreatedQuotation({ onNavigate }) {
         }}
       >
         <h1 className="page-heading page-heading__text">Quotations</h1>
-        <Button
-          variant="contained"
-          // startIcon={
-          //   <img
-          //     src="/logo/add.png"
-          //     alt="Add"
-          //     style={{ width: 20, height: 20 }}
-          //   />
-          // }
-          onClick={handleNewQuotation}
-          // sx={{ px: 3, py: 1 }}
-        >
-          New Quotation
-        </Button>
+        <Tooltip title="Create quotation">
+          <IconButton
+            color="primary"
+            aria-label="Create quotation"
+            onClick={handleNewQuotation}
+            sx={{
+              bgcolor: "primary.main",
+              color: "common.white",
+              borderRadius: 1,
+              "&:hover": { bgcolor: "primary.dark" },
+            }}
+          >
+            <AddIcon />
+          </IconButton>
+        </Tooltip>
       </Box>
 
       {error && (

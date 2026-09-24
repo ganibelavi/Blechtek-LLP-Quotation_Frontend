@@ -1782,7 +1782,7 @@ export default function InvoiceEntryForm({
         </div>
         <div className="po-topbar-context">
           <span className="po-eyebrow">INVOICE ENTRY</span>
-          <strong>GST Invoice Entry</strong>
+          <strong>Invoice Entry</strong>
         </div>
         <div className="po-topbar-actions">
           <button

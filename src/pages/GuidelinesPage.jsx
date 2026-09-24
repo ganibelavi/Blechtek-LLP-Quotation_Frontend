@@ -54,13 +54,13 @@ const lifecycle = [
     number: "05",
     title: "Create and issue the invoice",
     description:
-      "Generate the GST invoice from the quotation or purchase order and record its payment status. The invoice is the source document used for new subscriptions.",
+      "Generate the invoice from the quotation or purchase order and record its payment status. The invoice is the source document used for new subscriptions.",
     items: [
       "Enter or load the customer, billing, tax, and line-item information.",
       "Save the invoice before changing its status.",
       "Use the invoice status actions in order: advance received, partially paid, overdue, and paid.",
     ],
-    action: "GST Invoice",
+    action: "Invoices",
   },
   {
     number: "06",
@@ -139,7 +139,7 @@ export default function GuidelinesPage() {
     <div className="guidelines-page">
       <section className="guidelines-hero">
         <div>
-          <p className="guidelines-eyebrow">Quotation Management Guide</p>
+          <p className="guidelines-eyebrow">InvoiceOne Guide</p>
           <h1>How the application works</h1>
           <p>
             Follow this guide from initial setup through quotation, invoicing,

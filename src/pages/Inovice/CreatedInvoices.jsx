@@ -15,6 +15,7 @@ import {
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
+import AddIcon from "@mui/icons-material/Add";
 import EntityTable from "../../components/EntityTable";
 import {
   fetchInvoices,
@@ -256,19 +257,27 @@ export default function CreatedInvoices({ onNavigate }) {
           mb: 2,
         }}
       >
-        <h1 className="page-heading page-heading__text">GST Invoices</h1>
-        <Button
-          variant="contained"
-          onClick={() => {
-            sessionStorage.setItem("invoiceBackView", "created-invoices");
-            sessionStorage.removeItem("invoiceViewOnly");
-            sessionStorage.removeItem("invoiceData");
-            onNavigate("invoice-entry");
-          }}
-          sx={{ px: 3, py: 1 }}
-        >
-          New Invoice
-        </Button>
+        <h1 className="page-heading page-heading__text">Invoices</h1>
+        <Tooltip title="Create invoice">
+          <IconButton
+            color="primary"
+            aria-label="Create invoice"
+            onClick={() => {
+              sessionStorage.setItem("invoiceBackView", "created-invoices");
+              sessionStorage.removeItem("invoiceViewOnly");
+              sessionStorage.removeItem("invoiceData");
+              onNavigate("invoice-entry");
+            }}
+            sx={{
+              bgcolor: "primary.main",
+              color: "common.white",
+              borderRadius: 1,
+              "&:hover": { bgcolor: "primary.dark" },
+            }}
+          >
+            <AddIcon />
+          </IconButton>
+        </Tooltip>
       </Box>
 
       {error && (
