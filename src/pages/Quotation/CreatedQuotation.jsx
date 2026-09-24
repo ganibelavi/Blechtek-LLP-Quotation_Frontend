@@ -57,6 +57,7 @@ const toTableQuotation = (q) => ({
   QuotationToContactNo: q.quotationToContactNo,
   QuotationToEmail: q.quotationToEmail,
   Modules: (q.modules || []).join(", "),
+  additionalScopes: q.additionalScopes || q.AdditionalScopes || [],
   GeneratedAt: q.generatedAt
     ? new Date(q.generatedAt).toLocaleDateString("en-IN", {
         day: "2-digit",
@@ -119,6 +120,7 @@ export default function CreatedQuotation({ onNavigate }) {
           email: quotation.quotationToEmail,
         },
         discountPercentage: quotation.discountPercentage || 0,
+        additionalScopes: quotation.additionalScopes || [],
       }),
     );
     onNavigate("quotation-detail");
@@ -149,6 +151,7 @@ export default function CreatedQuotation({ onNavigate }) {
           email: quotation.quotationToEmail,
         },
         discountPercentage: quotation.discountPercentage || 0,
+        additionalScopes: quotation.additionalScopes || [],
       }),
     );
     onNavigate("edit-quotation", quotation.quotationId);

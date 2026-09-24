@@ -51,6 +51,18 @@ const normalizeQuotationValues = (candidate = {}) => ({
     ? candidate.selectedModules
     : initialValues.selectedModules,
   moduleRequirements: candidate.moduleRequirements || {},
+  additionalScopes: Array.isArray(candidate.additionalScopes)
+    ? candidate.additionalScopes.map((scope) => ({
+        requirement: scope.requirement ?? scope.Requirement ?? "",
+        module:
+          scope.module ?? scope.modules ?? scope.Modules ?? "",
+        manPower:
+          scope.manPower ?? scope.noOfManpower ?? scope.NoOfManpower ?? "",
+        days: scope.days ?? scope.noOfDays ?? scope.NoOfDays ?? "",
+        rate: scope.rate ?? scope.Rate ?? "",
+        amount: scope.amount ?? scope.Amount ?? "",
+      }))
+    : [],
   quotationTo: {
     ...initialValues.quotationTo,
     ...(candidate.quotationTo || {}),
@@ -195,6 +207,10 @@ export default function CreateQuotation({
                 : current.validationDate,
               selectedModules,
               moduleRequirements,
+              additionalScopes:
+                quotation.additionalScopes ||
+                quotation.AdditionalScopes ||
+                current.additionalScopes,
               quotationTo: {
                 name: quotation.quotationToName || current.quotationTo.name,
                 address:
@@ -585,6 +601,17 @@ export default function CreateQuotation({
             values.moduleRequirements?.[moduleName]?.modulePriceOverride ??
             null,
         })),
+        additionalScopes: values.additionalScopes
+          .filter((scope) => scope.module)
+          .map((scope) => ({
+            requirement: scope.requirement,
+            modules: scope.module,
+            noOfManpower: Number(scope.manPower) || 0,
+            noOfDays: Number(scope.days) || 0,
+            rate: Number(scope.rate) || 0,
+            amount: Number(scope.amount) || 0,
+            price: Number(scope.amount) || 0,
+          })),
         quotationTo: {
           name: values.quotationTo.name,
           address: values.quotationTo.address,
@@ -1033,8 +1060,8 @@ export default function CreateQuotation({
                 <tr>
                   <th>Requirement</th>
                   <th>Module</th>
-                  <th>Number of Man Power</th>
-                  <th>Number of Days</th>
+                  <th>No. of Man Power</th>
+                  <th>No. of Days</th>
                   <th>Rate</th>
                   <th>Amount</th>
                   {!readOnly && <th aria-label="Actions" />}
@@ -1054,8 +1081,8 @@ export default function CreateQuotation({
                   values.additionalScopes.map((scope, index) => (
                     <tr key={`additional-scope-${index}`}>
                       <td>
-                        <input
-                          type="text"
+                        <textarea
+                          rows="2"
                           value={scope.requirement}
                           onChange={(event) =>
                             handleAdditionalScopeChange(
@@ -1065,7 +1092,7 @@ export default function CreateQuotation({
                             )
                           }
                           disabled={readOnly}
-                          placeholder="Requirement"
+                          placeholder="Description"
                         />
                       </td>
                       <td>
@@ -1088,7 +1115,7 @@ export default function CreateQuotation({
                                 </option>
                               ))}
 
-                              <option value="Other">Other</option>
+                              <option value="Others">Others</option>
                             </select>
                       </td>
                       <td>
