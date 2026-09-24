@@ -145,6 +145,13 @@
   gap: 16px;
 }
 
+.module-requirements__content {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 16px;
+}
+
 .module-requirements__card {
   padding: 16px;
   border: 1px solid var(--border);
@@ -420,5 +427,9 @@
   .q-preview {
     position: static;
     width: 100%;
+  }
+
+  .module-requirements__content {
+    grid-template-columns: 1fr;
   }
 }

@@ -173,7 +173,7 @@ export default function CreatedPurchaseOrders({ onNavigate }) {
   const rows = purchaseOrders.map((po) => ({
     id: po.id,
     poNo: po.poNo || "-",
-    buyerName: po.buyerName || "-",
+    buyerName: po.organizationName || po.companyName || po.buyerName || "-",
     quotationRefNo: po.quotationRefNo || "-",
     poDate: po.poDate || "-",
     status: po.status || "open",

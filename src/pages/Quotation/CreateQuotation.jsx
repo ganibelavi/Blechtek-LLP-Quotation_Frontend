@@ -187,6 +187,10 @@ export default function CreateQuotation({
                       detail.implementationEffortUnit ??
                       detail.ImplementationEffortUnit ??
                       "",
+                    discountPercentage:
+                      detail.discountPercentage ??
+                      detail.DiscountPercentage ??
+                      "",
                   },
                 };
               },
@@ -478,6 +482,7 @@ export default function CreateQuotation({
           noOfInstallations: "",
           noOfSites: "",
           implementationEffortUnit: "",
+          discountPercentage: "",
         };
       }
 
@@ -597,6 +602,12 @@ export default function CreateQuotation({
           implementationEffortUnit:
             values.moduleRequirements?.[moduleName]
               ?.implementationEffortUnit || null,
+          discountPercentage:
+            values.moduleRequirements?.[moduleName]?.discountPercentage === ""
+              ? null
+              : Number(
+                  values.moduleRequirements?.[moduleName]?.discountPercentage,
+                ),
           modulePriceOverride:
             values.moduleRequirements?.[moduleName]?.modulePriceOverride ??
             null,
@@ -1027,6 +1038,7 @@ export default function CreateQuotation({
                   requirements={values.moduleRequirements || {}}
                   onChange={handleModuleRequirementChange}
                   disabled={readOnly}
+                  showDiscount={editMode}
                 />
               )}
             </section>
@@ -1612,6 +1624,7 @@ function ModuleRequirements({
   requirements,
   onChange,
   disabled,
+  showDiscount,
 }) {
   return (
     <div className="module-requirements">
@@ -1621,8 +1634,9 @@ function ModuleRequirements({
       <p className="q-form__hint">
         Enter the quotation-specific requirements for each selected module.
       </p>
-      <div className="module-requirements__list">
-        {selectedModules.map((moduleName) => {
+      <div className="module-requirements__content">
+        <div className="module-requirements__list">
+          {selectedModules.map((moduleName) => {
           const values = requirements[moduleName] || {};
           const unit = values.implementationEffortUnit || "";
 
@@ -1703,10 +1717,33 @@ function ModuleRequirements({
                     <option value="1 Week">1 Week</option>
                   </select>
                 </div>
+                {showDiscount && (
+                  <div className="q-field">
+                    <label htmlFor={`${moduleName}-discount`}>Discount (%)</label>
+                    <input
+                      id={`${moduleName}-discount`}
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      value={values.discountPercentage ?? ""}
+                      onChange={(event) =>
+                        onChange(
+                          moduleName,
+                          "discountPercentage",
+                          event.target.value,
+                        )
+                      }
+                      disabled={disabled}
+                      placeholder="0"
+                    />
+                  </div>
+                )}
               </div>
             </div>
           );
-        })}
+          })}
+        </div>
       </div>
     </div>
   );
