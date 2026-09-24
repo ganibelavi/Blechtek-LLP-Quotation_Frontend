@@ -10,6 +10,7 @@ import {
   createReference,
   fetchQuotationById,
   linkRenewalQuotation,
+  updateQuotation,
 } from "../../services/quotationApi";
 import "./CreateQuotation.css";
 import "../../components/QuotationForm.css";
@@ -631,7 +632,14 @@ export default function CreateQuotation({
         },
         discountPercentage: values.discountPercentage,
       };
-      const data = await generateQuotation(payload);
+      const quotationId = result?.quotationId || result?.QuotationId;
+      const data = editMode && quotationId
+        ? await updateQuotation(quotationId, {
+            validationDate: values.validationDate,
+            selectedModules: values.selectedModules,
+            moduleDetails: payload.moduleDetails,
+          })
+        : await generateQuotation(payload);
       const renewalContextRaw = sessionStorage.getItem(
         "renewalQuotationContext",
       );

@@ -195,7 +195,7 @@ export default function AllQuotationRevisions({ onNavigate }) {
       label: "Discount %",
       sortable: true,
       minWidth: 110,
-      render: ({ row }) => row.discountPercentage ?? 0,
+      render: ({ row }) => row.discountPercentage ?? "Per module",
     },
     {
       key: "referenceBy",
