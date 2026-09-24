@@ -30,10 +30,9 @@ import RenewalQuotationPage from "./pages/Renewal_and_Subscriptions/RenewalQuota
 import SubscriptionPricingHistoryPage from "./pages/Renewal_and_Subscriptions/SubscriptionPricingHistoryPage";
 import SubscriptionDetailsPage from "./pages/Renewal_and_Subscriptions/SubscriptionDetailsPage";
 import GuidelinesPage from "./pages/GuidelinesPage";
+import AppHeader from "./components/AppHeader";
+import AppSidebar from "./components/AppSidebar";
 import { useAuth } from "./context/AuthContext";
-import IconButton from "@mui/material/IconButton";
-import Tooltip from "@mui/material/Tooltip";
-import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import { useLocation, useNavigate } from "react-router-dom";
 // Use local icons from public/logo instead of @mui/icons-material in topbar buttons
 import "./App.css";
@@ -52,8 +51,6 @@ export default function App() {
     return "dashboard";
   });
   const [settingsInitialTab, setSettingsInitialTab] = useState("users");
-  const [settingsExpanded, setSettingsExpanded] = useState(false);
-  const [subscriptionsExpanded, setSubscriptionsExpanded] = useState(false);
   const [editQuotationId, setEditQuotationId] = useState(null);
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -141,15 +138,14 @@ export default function App() {
       "purchase-order-print": "Purchase Order Print Preview",
       "purchase-order-entry": "Purchase Order Entry",
       "created-purchase-orders": "Purchase Orders",
-      "created-invoices": "GST Invoices",
+      "created-invoices": "Invoices",
       users: "Users",
       modules: "Modules",
       settings: "Settings",
       "quotation-detail": "Quotation details",
       quotation: "Quotation preview",
-      // "invoice-entry": "GST Invoice Entry",
-      invoice: "GST Invoice",
-      "invoice-print": "GST Invoice Print Preview",
+      invoice: "Invoice",
+      "invoice-print": "Invoice Print Preview",
       "customer-subscriptions": "Customer Subscriptions",
       renewals: "Renewals",
       "renewal-quotations": "Renewal Subscriptions",
@@ -158,136 +154,9 @@ export default function App() {
       guidelines: "Guidelines",
     }[view] || "";
 
-  const menuItems = [
-    { label: "Dashboard", icon: "dashboard.png", view: "dashboard" },
-    { label: "Create quotation", icon: "add-button.png", view: "create" },
-    { label: "Quotations", icon: "clipboard.png", view: "created-quotations" },
-    {
-      label: "Purchase Orders",
-      icon: "clipboard.png",
-      view: "created-purchase-orders",
-    },
-    { label: "Revision History", icon: "audit.png", view: "all-revisions" },
-    { label: "GST Invoice", icon: "calculator.png", view: "created-invoices" },
-    { label: "Subscriptions", icon: "audit.png", view: "subscriptions" },
-    { label: "Settings", icon: "settings.png", view: "settings" },
-  ];
-  const masterItems = [
-    ["users", "Users"],
-    ["modules", "Modules"],
-    ["customers", "Customers"],
-    ["suppliers", "Suppliers"],
-    ["company-profile", "Company Profile"],
-    ["bank-accounts", "Bank Accounts"],
-    ["gst-rates", "GST Rates"],
-    ["terms-templates", "Terms Templates"],
-  ];
-
   return (
     <div className="app-shell">
-      <header className="app-topbar">
-        <div className="app-topbar__brand">
-          <img
-            src="/logo/logo.png"
-            alt="BlechTek Software Solutions LLP"
-            className="app-topbar__logo"
-          />
-          {user && (
-            <span className="app-topbar__page-title">Quotation Management</span>
-          )}
-        </div>
-        <div className="app-topbar__actions">
-          {user && (
-            <>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 12,
-                  marginRight: 8,
-                }}
-              >
-                <div style={{ textAlign: "right", lineHeight: 1 }}>
-                  <div style={{ color: "#1e293b" }}>
-                    {user?.name ||
-                      user?.firstName ||
-                      (user?.email ? user.email.split("@")[0] : "")}
-                  </div>
-                  <div style={{ fontSize: 12, color: "#6b7280" }}>
-                    {user?.role || ""}
-                  </div>
-                </div>
-                <div
-                  style={{
-                    width: 30,
-                    height: 30,
-                    borderRadius: 20,
-                    border: "2px solid #0f172a",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <span style={{ fontWeight: 700, color: "#0f172a" }}>
-                    {(user?.name || user?.firstName || user?.email || "")
-                      .charAt(0)
-                      .toUpperCase()}
-                  </span>
-                </div>
-              </div>
-
-              {/* <Tooltip title="Dashboard">
-                <IconButton
-                  className="app-topbar__icon-btn"
-                  onClick={() => navigate("dashboard")}
-                >
-                  <img
-                    src="/logo/dashboard.png"
-                    alt="Dashboard"
-                    style={{ width: 24, height: 24 }}
-                  />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Settings">
-                <IconButton
-                  className="app-topbar__icon-btn"
-                  onClick={() => navigate("settings")}
-                >
-                  <img
-                    src="/logo/settings.png"
-                    alt="Settings"
-                    style={{ width: 24, height: 24 }}
-                  />
-                </IconButton>
-              </Tooltip> */}
-              <Tooltip title="Guidelines">
-                <button
-                  type="button"
-                  className="app-topbar__guidelines-btn"
-                  onClick={() => navigate("guidelines")}
-                >
-                  Guidelines
-                </button>
-              </Tooltip>
-              <Tooltip title="Logout">
-                <IconButton
-                  className="app-topbar__icon-btn"
-                  onClick={() => {
-                    logout();
-                    navigate("login");
-                  }}
-                >
-                  <img
-                    src="/logo/logout.png"
-                    alt="Logout"
-                    style={{ width: 24, height: 24 }}
-                  />
-                </IconButton>
-              </Tooltip>
-            </>
-          )}
-        </div>
-      </header>
+      <AppHeader user={user} logout={logout} onNavigate={navigate} />
 
       {!user ? (
         <main
@@ -303,165 +172,14 @@ export default function App() {
         <div
           className={`app-body ${sidebarCollapsed ? "app-body--collapsed" : ""}`}
         >
-          <aside className="app-sidebar" aria-label="Primary navigation">
-            <div className="app-sidebar__header">
-              <IconButton
-                className="app-sidebar__toggle"
-                onClick={() => setSidebarCollapsed((collapsed) => !collapsed)}
-                aria-label={
-                  sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"
-                }
-              >
-                <img src="/logo/sidebar.png" alt="" aria-hidden="true" />
-              </IconButton>
-            </div>
-            {/* <div className="app-sidebar__heading">Workspace</div> */}
-            <nav className="app-sidebar__nav">
-              {menuItems.map((item) => {
-                const activeView =
-                  item.view === "dashboard"
-                    ? [
-                        "dashboard",
-                        "dashboard-users",
-                        "dashboard-renewals",
-                        "dashboard-quotations",
-                        "dashboard-purchase-orders",
-                        "dashboard-invoices",
-                      ].includes(view)
-                    : item.view === "create"
-                      ? ["create"].includes(view)
-                      : item.view === "created-quotations"
-                        ? [
-                            "created-quotations",
-                            "quotation-detail",
-                            "edit-quotation",
-                            "quotation",
-                            "quotation-history",
-                            "all-revisions",
-                          ].includes(view)
-                        : item.view === "all-revisions"
-                          ? ["all-revisions"].includes(view)
-                          : item.view === "created-purchase-orders"
-                            ? [
-                                "created-purchase-orders",
-                                "purchase-order",
-                                "purchase-order-entry",
-                                "purchase-order-print",
-                              ].includes(view)
-                            : item.view === "created-invoices"
-                              ? [
-                                  "created-invoices",
-                                  "invoice-entry",
-                                  "invoice",
-                                  "invoice-print",
-                                ].includes(view)
-                              : item.view === "subscriptions"
-                                ? [
-                                    "subscriptions",
-                                    "customer-subscriptions",
-                                    "renewals",
-                                    "renewal-quotations",
-                                    "pricing-history",
-                                    "subscription-details",
-                                  ].includes(view)
-                                : item.view === "settings"
-                                  ? [
-                                      "settings",
-                                      "users",
-                                      "modules",
-                                      "customers",
-                                      "suppliers",
-                                      "company-profile",
-                                      "bank-accounts",
-                                      "gst-rates",
-                                      "terms-templates",
-                                    ].includes(view)
-                                  : view === item.view;
-                return (
-                  <React.Fragment key={item.view}>
-                    <button
-                      type="button"
-                      className={`app-sidebar__item ${activeView ? "app-sidebar__item--active" : ""}`}
-                      onClick={() => {
-                        if (item.view === "dashboard") {
-                          navigate("dashboard");
-                        } else if (item.view === "settings") {
-                          setSettingsExpanded((expanded) => !expanded);
-                          navigate("settings", settingsInitialTab);
-                        } else if (item.view === "subscriptions") {
-                          setSubscriptionsExpanded((expanded) => !expanded);
-                          navigate("customer-subscriptions");
-                        } else {
-                          navigate(item.view);
-                        }
-                      }}
-                    >
-                      <span className="app-sidebar__icon">
-                        <img
-                          src={`/logo/${item.icon}`}
-                          alt=""
-                          aria-hidden="true"
-                        />
-                      </span>
-                      <span className="app-sidebar__label">{item.label}</span>
-                      {item.view === "settings" && (
-                        <KeyboardArrowDownIcon
-                          className={`app-sidebar__settings-arrow ${settingsExpanded ? "app-sidebar__settings-arrow--open" : ""}`}
-                          aria-hidden="true"
-                        />
-                      )}
-                      {item.view === "subscriptions" && (
-                        <KeyboardArrowDownIcon
-                          className={`app-sidebar__settings-arrow ${subscriptionsExpanded ? "app-sidebar__settings-arrow--open" : ""}`}
-                          aria-hidden="true"
-                        />
-                      )}
-                    </button>
-                    {item.view === "settings" &&
-                      settingsExpanded &&
-                      !sidebarCollapsed && (
-                        <div className="app-sidebar__submenu">
-                          {masterItems.map(([tab, label]) => (
-                            <button
-                              type="button"
-                              key={tab}
-                              className={`app-sidebar__submenu-item ${settingsInitialTab === tab ? "app-sidebar__submenu-item--active" : ""}`}
-                              onClick={() => navigate("settings", tab)}
-                            >
-                              {label}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    {item.view === "subscriptions" &&
-                      subscriptionsExpanded &&
-                      !sidebarCollapsed && (
-                        <div className="app-sidebar__submenu">
-                          {[
-                            [
-                              "customer-subscriptions",
-                              "Customer subscriptions",
-                            ],
-                            ["renewals", "Renewals"],
-                            ["renewal-quotations", "Renewal quotations"],
-                            // ["pricing-history", "Pricing history"],
-                          ].map(([subscriptionView, label]) => (
-                            <button
-                              type="button"
-                              key={subscriptionView}
-                              className={`app-sidebar__submenu-item ${view === subscriptionView ? "app-sidebar__submenu-item--active" : ""}`}
-                              onClick={() => navigate(subscriptionView)}
-                            >
-                              {label}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                  </React.Fragment>
-                );
-              })}
-            </nav>
-          </aside>
+          <AppSidebar
+            collapsed={sidebarCollapsed}
+            onCollapsedChange={setSidebarCollapsed}
+            view={view}
+            navigate={navigate}
+            settingsInitialTab={settingsInitialTab}
+            onSettingsTabChange={setSettingsInitialTab}
+          />
           <main
             className={`app-main ${view === "purchase-order-entry" ? "app-main--po" : view === "invoice-entry" ? "app-main--invoice" : ""}`}
           >
