@@ -1060,8 +1060,8 @@ export default function CreateQuotation({
                 <tr>
                   <th>Requirement</th>
                   <th>Module</th>
-                  <th>Number of Man Power</th>
-                  <th>Number of Days</th>
+                  <th>No. of Man Power</th>
+                  <th>No. of Days</th>
                   <th>Rate</th>
                   <th>Amount</th>
                   {!readOnly && <th aria-label="Actions" />}
@@ -1081,8 +1081,8 @@ export default function CreateQuotation({
                   values.additionalScopes.map((scope, index) => (
                     <tr key={`additional-scope-${index}`}>
                       <td>
-                        <input
-                          type="text"
+                        <textarea
+                          rows="2"
                           value={scope.requirement}
                           onChange={(event) =>
                             handleAdditionalScopeChange(
@@ -1092,7 +1092,7 @@ export default function CreateQuotation({
                             )
                           }
                           disabled={readOnly}
-                          placeholder="Requirement"
+                          placeholder="Description"
                         />
                       </td>
                       <td>
