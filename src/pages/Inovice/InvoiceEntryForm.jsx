@@ -100,6 +100,8 @@ const emptyItem = (
   rate = 0,
   implementationPrice = 0,
   modulePrice = 0,
+  discountPercentage = 0,
+  discountAmount = 0,
 ) => ({
   id: Date.now() + Math.random(),
   description,
@@ -108,6 +110,8 @@ const emptyItem = (
   rate,
   modulePrice,
   implementationPrice,
+  discountPercentage,
+  discountAmount,
   isSourceData,
 });
 
@@ -324,6 +328,12 @@ const buildQuotationItems = (quotation, moduleCatalog = []) => {
           module?.FinalPrice ??
           modulePrice + implementationPrice,
       );
+      const discountPercentage = Number(
+        module?.discountPercentage ?? module?.DiscountPercentage ?? 0,
+      );
+      const discountAmount = Number(
+        module?.discountAmount ?? module?.DiscountAmount ?? 0,
+      );
       return {
         ...emptyItem(
           name,
@@ -331,6 +341,8 @@ const buildQuotationItems = (quotation, moduleCatalog = []) => {
           Number.isFinite(finalPrice) ? finalPrice : 0,
           Number.isFinite(implementationPrice) ? implementationPrice : 0,
           Number.isFinite(modulePrice) ? modulePrice : 0,
+          Number.isFinite(discountPercentage) ? discountPercentage : 0,
+          Number.isFinite(discountAmount) ? discountAmount : 0,
         ),
         ...getModuleTaxDetails(module, moduleCatalog),
       };
@@ -362,6 +374,12 @@ const applyQuotationPricing = (items, quotation) => {
         detail.FinalPrice ??
         modulePrice + implementationPrice,
     );
+    const discountPercentage = Number(
+      detail.discountPercentage ?? detail.DiscountPercentage ?? 0,
+    );
+    const discountAmount = Number(
+      detail.discountAmount ?? detail.DiscountAmount ?? 0,
+    );
 
     return {
       ...item,
@@ -375,6 +393,10 @@ const applyQuotationPricing = (items, quotation) => {
           : Number.isFinite(finalPrice)
             ? finalPrice
             : 0,
+      discountPercentage: Number.isFinite(discountPercentage)
+        ? discountPercentage
+        : 0,
+      discountAmount: Number.isFinite(discountAmount) ? discountAmount : 0,
     };
   });
 };
@@ -393,6 +415,8 @@ const defaultForm = () => {
           rate: Number(item.rate) || 0,
           modulePrice: Number(item.modulePrice) || 0,
           implementationPrice: Number(item.implementationPrice) || 0,
+          discountPercentage: Number(item.discountPercentage) || 0,
+          discountAmount: Number(item.discountAmount) || 0,
           isSourceData: true,
         }))
       : [emptyItem("", true)];
@@ -438,8 +462,8 @@ const defaultForm = () => {
     reverseCharge: "No",
     amountInWords: "",
     termsOfSale: "",
-    sgstPct: 9,
-    cgstPct: 9,
+    sgstPct: 0,
+    cgstPct: 0,
     igstPct: 0,
     tdsPct: 0,
     insurance: 0,
@@ -1011,6 +1035,8 @@ export default function InvoiceEntryForm({
           rate: Number(item.rate) || 0,
           modulePrice: Number(item.modulePrice) || 0,
           implementationPrice: Number(item.implementationPrice) || 0,
+          discountPercentage: Number(item.discountPercentage) || 0,
+          discountAmount: Number(item.discountAmount) || 0,
           isSourceData: true,
           ...getModuleTaxDetails(item, moduleCatalog),
         }))
@@ -1569,7 +1595,12 @@ export default function InvoiceEntryForm({
       0,
     );
     const totalPrice = form.items.reduce(
-      (sum, item) => sum + (Number(item.qty) || 0) * (Number(item.rate) || 0),
+      (sum, item) => {
+        const itemTotal = (Number(item.qty) || 0) * (Number(item.rate) || 0);
+        const discountPct = Number(item.discountPercentage) || 0;
+        const discount = itemTotal * (discountPct / 100);
+        return sum + (itemTotal - discount);
+      },
       0,
     );
     const sgst = (totalPrice * (Number(form.sgstPct) || 0)) / 100;
@@ -1811,6 +1842,7 @@ export default function InvoiceEntryForm({
           : Number(item.rate) || 0,
         modulePrice: Number(item.modulePrice) || 0,
         implementationPrice: Number(item.implementationPrice) || 0,
+        discountPercentage: Number(item.discountPercentage) || 0,
         hsnCode: item.hsnCode || "",
         sacCode: item.sacCode || "",
         reverseChargeDefault: Boolean(item.reverseChargeDefault),
@@ -2367,18 +2399,20 @@ export default function InvoiceEntryForm({
                 </h3>
               </div>
               <div className="po-table-wrap">
-                <table className="invoice-entry-table">
-                  <thead>
-                    <tr>
-                      <th>Description</th>
-                      <th>Qty</th>
-                      <th>UOM</th>
-                      <th>Module price</th>
-                      <th>Implementation</th>
-                      <th>Total price</th>
-                      <th>Amount</th>
-                    </tr>
-                  </thead>
+                    <table className="invoice-entry-table">
+                      <thead>
+                        <tr>
+                          <th>Description</th>
+                          <th>Qty</th>
+                          <th>UOM</th>
+                          <th>Module price</th>
+                          <th>Implementation</th>
+                          <th>Discount %</th>
+                          <th>Discount amount</th>
+                          <th>Total price</th>
+                          <th>Amount</th>
+                        </tr>
+                      </thead>
                   <tbody>
                     {form.items.map((item) => (
                       <tr key={item.id}>
@@ -2433,47 +2467,76 @@ export default function InvoiceEntryForm({
                             readOnly={isItemLocked(item)}
                           />
                         </td>
-                        <td>
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={item.implementationPrice ?? 0}
-                            onChange={(e) =>
-                              updateItem(
-                                item.id,
-                                "implementationPrice",
-                                Number(e.target.value) || 0,
-                              )
-                            }
-                            readOnly={isItemLocked(item)}
-                          />
-                        </td>
-                        <td>
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={item.rate}
-                            onChange={(e) =>
-                              updateItem(
-                                item.id,
-                                "rate",
-                                Number(e.target.value) || 0,
-                              )
-                            }
-                            readOnly={isItemLocked(item)}
-                          />
-                        </td>
-                        <td className="invoice-entry-amount">
-                          ₹
-                          {(
-                            (Number(item.qty) || 0) * (Number(item.rate) || 0)
-                          ).toLocaleString("en-IN", {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
-                        </td>
+                         <td>
+                           <input
+                             type="number"
+                             min="0"
+                             step="0.01"
+                             value={item.implementationPrice ?? 0}
+                             onChange={(e) =>
+                               updateItem(
+                                 item.id,
+                                 "implementationPrice",
+                                 Number(e.target.value) || 0,
+                               )
+                             }
+                             readOnly={isItemLocked(item)}
+                           />
+                         </td>
+                         <td>
+                           <input
+                             type="number"
+                             min="0"
+                             step="0.01"
+                             value={item.discountPercentage ?? 0}
+                             onChange={(e) =>
+                               updateItem(
+                                 item.id,
+                                 "discountPercentage",
+                                 Number(e.target.value) || 0,
+                               )
+                             }
+                             readOnly={isItemLocked(item)}
+                           />
+                         </td>
+                         <td className="invoice-entry-amount">
+                           ₹
+                           {(
+                             Number(item.discountAmount) ||
+                             ((Number(item.modulePrice) || 0) +
+                               (Number(item.implementationPrice) || 0)) *
+                               (Number(item.discountPercentage) || 0) /
+                               100
+                           ).toLocaleString("en-IN", {
+                             minimumFractionDigits: 2,
+                             maximumFractionDigits: 2,
+                           })}
+                         </td>
+                         <td>
+                           <input
+                             type="number"
+                             min="0"
+                             step="0.01"
+                             value={item.rate}
+                             onChange={(e) =>
+                               updateItem(
+                                 item.id,
+                                 "rate",
+                                 Number(e.target.value) || 0,
+                               )
+                             }
+                             readOnly={isItemLocked(item)}
+                           />
+                         </td>
+                         <td className="invoice-entry-amount">
+                           ₹
+                           {(
+                             (Number(item.qty) || 0) * (Number(item.rate) || 0)
+                           ).toLocaleString("en-IN", {
+                             minimumFractionDigits: 2,
+                             maximumFractionDigits: 2,
+                           })}
+                         </td>
                       </tr>
                     ))}
                   </tbody>

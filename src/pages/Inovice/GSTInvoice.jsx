@@ -61,8 +61,8 @@ const emptyInvoice = {
   amountInWords: "",
   termsOfSale: "",
 
-  sgstPct: 9,
-  cgstPct: 9,
+  sgstPct: 0,
+  cgstPct: 0,
   igstPct: 0,
   tdsPct: 0,
   insurance: 0,

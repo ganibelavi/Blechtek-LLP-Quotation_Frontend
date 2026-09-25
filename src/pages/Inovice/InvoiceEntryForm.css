@@ -273,12 +273,22 @@
 
 .invoice-entry-table th:nth-child(6),
 .invoice-entry-table td:nth-child(6) {
+  width: 8%;
+}
+
+.invoice-entry-table th:nth-child(7),
+.invoice-entry-table td:nth-child(7) {
+  width: 8%;
+}
+
+.invoice-entry-table th:nth-child(8),
+.invoice-entry-table td:nth-child(8) {
   width: 10%;
 }
 
 .invoice-entry-table th:last-child,
 .invoice-entry-table td:last-child {
-  width: 12%;
+  width: 10%;
 }
 
 .invoice-entry-table th:nth-child(n + 4),

@@ -36,8 +36,8 @@ const emptyInvoice = {
   reverseCharge: "No",
   amountInWords: "",
   termsOfSale: "",
-  sgstPct: 9,
-  cgstPct: 9,
+  sgstPct: 0,
+  cgstPct: 0,
   igstPct: 0,
   tdsPct: 0,
   insurance: 0,
@@ -276,6 +276,8 @@ export default function GSTInvoicePrint({ initialData, onBack }) {
               <th className="gi-col-qty">Qty</th>
               <th className="gi-col-uom">UOM</th>
               <th className="gi-col-rate">Rate</th>
+              <th>Discount %</th>
+              <th>Discount amount</th>
               <th className="gi-col-total">Amount</th>
             </tr>
           </thead>
@@ -288,12 +290,14 @@ export default function GSTInvoicePrint({ initialData, onBack }) {
                   <td className="gi-col-qty">{Number(row.qty) || 0}</td>
                   <td className="gi-col-uom">{row.uom || "Nos."}</td>
                   <td className="gi-col-rate">₹ {currency(Number(row.rate) || 0)}</td>
+                  <td>{Number(row.discountPercentage || 0).toFixed(2)}%</td>
+                  <td>₹ {currency(Number(row.discountAmount) || 0)}</td>
                   <td className="gi-col-total">₹ {currency((Number(row.qty) || 0) * (Number(row.rate) || 0))}</td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan="6" className="gi-empty-row">No items found</td>
+                <td colSpan="8" className="gi-empty-row">No items found</td>
               </tr>
             )}
           </tbody>
