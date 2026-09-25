@@ -32,6 +32,24 @@ const thirtyDaysLater = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
   .toISOString()
   .split("T")[0];
 
+const getImplementationDays = (value) => {
+  if (value === null || value === undefined || value === "") return "";
+  if (typeof value === "number") return value;
+
+  const normalized = String(value).trim();
+  const daysMatch = normalized.match(/^(\d+(?:\.\d+)?)\s*Days?$/i);
+  if (daysMatch) return daysMatch[1];
+
+  return {
+    "1 Man Month": 30,
+    "0.5 Man Month": 15,
+    "2 Man Month": 60,
+    "1 Day": 1,
+    "2 Days": 2,
+    "1 Week": 7,
+  }[normalized] ?? "";
+};
+
 const initialValues = {
   referenceBy: "",
   organizationName: "",
@@ -184,6 +202,12 @@ export default function CreateQuotation({
                       detail.NoOfInstallations ??
                       "",
                     noOfSites: detail.noOfSites ?? detail.NoOfSites ?? "",
+                    implementationEffortDays: getImplementationDays(
+                      detail.implementationEffortDays ??
+                        detail.ImplementationEffortDays ??
+                        detail.implementationEffortUnit ??
+                        detail.ImplementationEffortUnit,
+                    ),
                     implementationEffortUnit:
                       detail.implementationEffortUnit ??
                       detail.ImplementationEffortUnit ??
@@ -478,11 +502,16 @@ export default function CreateQuotation({
       if (exists) {
         delete moduleRequirements[moduleName];
       } else {
+        const selectedModule = modules.find(
+          (module) => module.module === moduleName,
+        );
         moduleRequirements[moduleName] = {
-          noOfUsers: "",
-          noOfInstallations: "",
-          noOfSites: "",
-          implementationEffortUnit: "",
+          noOfUsers: selectedModule?.noOfUsersForSingleInstallation || 1,
+          noOfInstallations: 1,
+          noOfSites: 1,
+          implementationEffortDays:
+            selectedModule?.implementationEffortManDays || 1,
+          implementationEffortUnit: "1 Day",
           discountPercentage: "",
         };
       }
@@ -601,8 +630,10 @@ export default function CreateQuotation({
               ? null
               : Number(values.moduleRequirements?.[moduleName]?.noOfSites),
           implementationEffortUnit:
-            values.moduleRequirements?.[moduleName]
-              ?.implementationEffortUnit || null,
+            values.moduleRequirements?.[moduleName]?.implementationEffortDays ===
+              ""
+              ? null
+              : `${Number(values.moduleRequirements?.[moduleName]?.implementationEffortDays) || 0} Days`,
           discountPercentage:
             values.moduleRequirements?.[moduleName]?.discountPercentage === ""
               ? null
@@ -1646,7 +1677,6 @@ function ModuleRequirements({
         <div className="module-requirements__list">
           {selectedModules.map((moduleName) => {
           const values = requirements[moduleName] || {};
-          const unit = values.implementationEffortUnit || "";
 
           return (
             <div className="module-requirements__card" key={moduleName}>
@@ -1701,29 +1731,24 @@ function ModuleRequirements({
                   />
                 </div>
                 <div className="q-field">
-                  <label htmlFor={`${moduleName}-unit`}>
-                    Implementation Effort
+                  <label htmlFor={`${moduleName}-days`}>
+                    Implementation days
                   </label>
-                  <select
-                    id={`${moduleName}-unit`}
-                    value={unit}
+                  <input
+                    id={`${moduleName}-days`}
+                    type="number"
+                    min="0"
+                    step="0.5"
+                    value={values.implementationEffortDays ?? ""}
                     onChange={(event) =>
                       onChange(
                         moduleName,
-                        "implementationEffortUnit",
+                        "implementationEffortDays",
                         event.target.value,
                       )
                     }
                     disabled={disabled}
-                  >
-                    <option value="">Select effort</option>
-                    <option value="1 Man Month">1 Man Month</option>
-                    <option value="0.5 Man Month">0.5 Man Month</option>
-                    <option value="2 Man Month">2 Man Month</option>
-                    <option value="1 Day">1 Day</option>
-                    <option value="2 Days">2 Days</option>
-                    <option value="1 Week">1 Week</option>
-                  </select>
+                  />
                 </div>
                 {showDiscount && (
                   <div className="q-field">

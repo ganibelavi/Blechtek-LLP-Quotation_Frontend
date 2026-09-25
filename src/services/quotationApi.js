@@ -34,6 +34,14 @@ export async function fetchModules() {
       module.implementationEffortCost ??
       module.ImplementationEffortCost ??
       null,
+    implementationEffortManDays:
+      module.implementationEffortManDays ??
+      module.ImplementationEffortManDays ??
+      null,
+    noOfUsersForSingleInstallation:
+      module.noOfUsersForSingleInstallation ??
+      module.NoOfUsersForSingleInstallation ??
+      null,
   }));
 }
 
