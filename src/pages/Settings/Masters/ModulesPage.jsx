@@ -28,6 +28,8 @@ const emptyModule = {
   sacCode: "",
   reverseChargeDefault: false,
   implementationEffortCost: "",
+  implementationEffortManDays: "",
+  noOfUsersForSingleInstallation: "",
 };
 
 const toTableModule = (module) => ({
@@ -47,6 +49,14 @@ const toTableModule = (module) => ({
   ImplementationEffortCost:
     module.implementationEffortCost ??
     module.ImplementationEffortCost ??
+    null,
+  ImplementationEffortManDays:
+    module.implementationEffortManDays ??
+    module.ImplementationEffortManDays ??
+    null,
+  NoOfUsersForSingleInstallation:
+    module.noOfUsersForSingleInstallation ??
+    module.NoOfUsersForSingleInstallation ??
     null,
 });
 
@@ -93,6 +103,10 @@ export default function ModulesPage() {
       sacCode: module.SacCode ?? module.sacCode ?? "",
       reverseChargeDefault: module.ReverseChargeDefault ?? false,
       implementationEffortCost: module.ImplementationEffortCost ?? "",
+      implementationEffortManDays:
+        module.ImplementationEffortManDays ?? "",
+      noOfUsersForSingleInstallation:
+        module.NoOfUsersForSingleInstallation ?? "",
     });
     setIsDialogOpen(true);
   };
@@ -124,6 +138,14 @@ export default function ModulesPage() {
         form.implementationEffortCost === ""
           ? null
           : Number(form.implementationEffortCost),
+      implementationEffortManDays:
+        form.implementationEffortManDays === ""
+          ? null
+          : Number(form.implementationEffortManDays),
+      noOfUsersForSingleInstallation:
+        form.noOfUsersForSingleInstallation === ""
+          ? null
+          : Number(form.noOfUsersForSingleInstallation),
     };
 
     if (editingModuleId === null) {
@@ -240,6 +262,18 @@ export default function ModulesPage() {
       minWidth: 180,
     },
     {
+      key: "ImplementationEffortManDays",
+      label: "Implementation Efforts in Man days",
+      sortable: true,
+      minWidth: 180,
+    },
+    {
+      key: "NoOfUsersForSingleInstallation",
+      label: "No. of users for single Installation",
+      sortable: true,
+      minWidth: 180,
+    },
+    {
       key: "actions",
       label: "Actions",
       minWidth: 100,
@@ -266,6 +300,18 @@ export default function ModulesPage() {
 
   return (
     <Box>
+      <style>
+        {`
+          input[type=number]::-webkit-inner-spin-button,
+          input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none !important;
+            margin: 0 !important;
+          }
+          input[type=number] {
+            -moz-appearance: textfield !important;
+          }
+        `}
+      </style>
       <Box
         sx={{
           display: "flex",
@@ -356,7 +402,32 @@ export default function ModulesPage() {
               value={form.sacCode}
               onChange={updateField}
             />
-            <label>
+           
+            <TextField
+              label=" Implementation Rate Per ManDay "
+              name="implementationEffortCost"
+              type="number"
+              value={form.implementationEffortCost}
+              onChange={updateField}
+              inputProps={{ min: 0, step: "0.01" }}
+            />
+            <TextField
+              label="Implementation Efforts in Man days"
+              name="implementationEffortManDays"
+              type="number"
+              value={form.implementationEffortManDays}
+              onChange={updateField}
+              inputProps={{ min: 0, step: "1" }}
+            />
+            <TextField
+              label="No. of users for single Installation"
+              name="noOfUsersForSingleInstallation"
+              type="number"
+              value={form.noOfUsersForSingleInstallation}
+              onChange={updateField}
+              inputProps={{ min: 0, step: "1" }}
+            />
+             <label style={{ display: "flex", alignItems: "center", gap: "4px" }}>
               <input
                 type="checkbox"
                 name="reverseChargeDefault"
@@ -367,17 +438,10 @@ export default function ModulesPage() {
                     reverseChargeDefault: event.target.checked,
                   }))
                 }
+                style={{ width: "auto" }}
               />
               Reverse charge default
             </label>
-            <TextField
-              label=" Implementation Rate Per ManDay "
-              name="implementationEffortCost"
-              type="number"
-              value={form.implementationEffortCost}
-              onChange={updateField}
-              inputProps={{ min: 0, step: "0.01" }}
-            />
           </Box>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
