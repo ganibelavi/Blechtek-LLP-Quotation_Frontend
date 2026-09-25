@@ -6,7 +6,6 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  MenuItem,
   TextField,
 } from "@mui/material";
 import "./PurchaseOrder.css";
@@ -28,6 +27,7 @@ import {
   dialogSecondaryActionSx,
 } from "../../styles/modalActionButtonStyles";
 import CustomSnackbar from "../../components/CustomSnackbar";
+import SearchDropdown from "../../components/SearchDropdown";
 
 const readStoredQuotation = () => {
   try {
@@ -61,6 +61,8 @@ const emptyItem = (
   rate = 0,
   implementationPrice = 0,
   modulePrice = 0,
+  discountPercentage = 0,
+  discountAmount = 0,
 ) => ({
   id: Date.now() + Math.random(),
   description,
@@ -69,6 +71,8 @@ const emptyItem = (
   rate,
   modulePrice,
   implementationPrice,
+  discountPercentage,
+  discountAmount,
   isSourceData,
 });
 
@@ -147,6 +151,18 @@ const buildQuotationItems = (quotation, moduleCatalog = []) => {
             ? modulePrice + implementationPrice
             : 0),
       );
+      const discountPercentage = Number(
+        module?.discountPercentage ?? module?.DiscountPercentage ?? 0,
+      );
+      const discountAmount = Number(
+        module?.discountAmount ??
+          module?.DiscountAmount ??
+          ((Number.isFinite(modulePrice) && Number.isFinite(implementationPrice)
+            ? modulePrice + implementationPrice
+            : 0) *
+            (Number.isFinite(discountPercentage) ? discountPercentage : 0)) /
+            100,
+      );
 
       return emptyItem(
         name,
@@ -154,9 +170,25 @@ const buildQuotationItems = (quotation, moduleCatalog = []) => {
         Number.isFinite(finalPrice) ? finalPrice : 0,
         Number.isFinite(implementationPrice) ? implementationPrice : 0,
         Number.isFinite(modulePrice) ? modulePrice : 0,
+        Number.isFinite(discountPercentage) ? discountPercentage : 0,
+        Number.isFinite(discountAmount) ? discountAmount : 0,
       );
     })
     .filter(Boolean);
+};
+
+const normalizeAdditionalScopes = (quotation) => {
+  const scopes = quotation?.additionalScopes || quotation?.AdditionalScopes;
+  if (!Array.isArray(scopes)) return [];
+
+  return scopes.map((scope) => ({
+    requirement: scope.requirement ?? scope.Requirement ?? "",
+    modules: scope.modules ?? scope.Modules ?? "",
+    noOfManpower: scope.noOfManpower ?? scope.NoOfManpower ?? 0,
+    noOfDays: scope.noOfDays ?? scope.NoOfDays ?? 0,
+    rate: scope.rate ?? scope.Rate ?? 0,
+    amount: scope.amount ?? scope.Amount ?? scope.price ?? scope.Price ?? 0,
+  }));
 };
 
 const defaultForm = () => {
@@ -179,6 +211,7 @@ const defaultForm = () => {
     receivedAt: "",
     quotationRefNo: quotation?.quotationNo || "",
     quotationRefDate: quotation?.date || "",
+    additionalScopes: normalizeAdditionalScopes(quotation),
     buyerName: quotation?.quotationToName || "",
     buyerAddress: quotation?.quotationToAddress || "",
     buyerState: "",
@@ -218,6 +251,7 @@ export default function PurchaseOrderEntryForm({
     message: "",
     severity: "success",
   });
+  const [validationErrors, setValidationErrors] = useState({});
   const isQuotationLocked = viewOnly || Boolean(form.sourceQuotationId);
   const isItemLocked = (item) => viewOnly || Boolean(item?.isSourceData);
 
@@ -264,6 +298,8 @@ export default function PurchaseOrderEntryForm({
             Array.isArray(purchaseOrder.items) && purchaseOrder.items.length > 0
               ? purchaseOrder.items.map((item) => ({
                   ...item,
+                  discountPercentage: Number(item.discountPercentage) || 0,
+                  discountAmount: Number(item.discountAmount) || 0,
                   isSourceData: true,
                 }))
               : prev.items,
@@ -397,6 +433,7 @@ export default function PurchaseOrderEntryForm({
         supplierStateCode: supplier?.stateCode || prev.supplierStateCode || "",
         supplierGSTN: supplier?.gstn || prev.supplierGSTN || "",
         items: buildQuotationItems(quotation, moduleCatalog),
+        additionalScopes: normalizeAdditionalScopes(quotation),
       }));
     };
 
@@ -421,6 +458,27 @@ export default function PurchaseOrderEntryForm({
     hydrateFromStored();
     sessionStorage.removeItem("selectedQuotationForPo");
   }, [moduleCatalog, customerRecords, supplierRecords, selectedQuotationForPo]);
+
+  useEffect(() => {
+    if (!form.sourceQuotationId) return;
+
+    let cancelled = false;
+    fetchQuotationById(form.sourceQuotationId)
+      .then((quotation) => {
+        if (cancelled || !quotation) return;
+        setForm((prev) => ({
+          ...prev,
+          additionalScopes: normalizeAdditionalScopes(quotation),
+        }));
+      })
+      .catch((error) =>
+        console.error("Failed to load quotation additional scopes", error),
+      );
+
+    return () => {
+      cancelled = true;
+    };
+  }, [form.sourceQuotationId]);
 
   useEffect(() => {
     if (!form.sourceQuotationId) return;
@@ -474,8 +532,17 @@ export default function PurchaseOrderEntryForm({
       (sum, item) => sum + (Number(item.qty) || 0) * (Number(item.rate) || 0),
       0,
     );
-    return { totalQty, totalPrice };
-  }, [form.items]);
+    const additionalScopeTotal = (form.additionalScopes || []).reduce(
+      (sum, scope) => sum + (Number(scope.amount) || 0),
+      0,
+    );
+    return {
+      totalQty,
+      totalPrice,
+      additionalScopeTotal,
+      grandTotal: totalPrice + additionalScopeTotal,
+    };
+  }, [form.items, form.additionalScopes]);
 
   const updateField = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -498,6 +565,10 @@ export default function PurchaseOrderEntryForm({
       ["PO date", form.poDate],
       ["Buyer name", form.buyerName],
       ["Supplier name", form.supplierName],
+      ["Expected delivery", form.expectedDeliveryDate],
+      ["Delivery terms", form.deliveryTerms],
+      ["Payment terms", form.paymentTerms],
+      ["Notes", form.notes],
     ];
     const missingField = requiredFields.find(
       ([, value]) => !String(value || "").trim(),
@@ -506,6 +577,11 @@ export default function PurchaseOrderEntryForm({
       missingField ||
       form.items.some((item) => !String(item.description || "").trim())
     ) {
+      const errors = {};
+      if (missingField) {
+        errors[missingField[0].toLowerCase().replace(/\s+/g, "")] = true;
+      }
+      setValidationErrors(errors);
       setSnackbar({
         open: true,
         message: missingField
@@ -515,6 +591,7 @@ export default function PurchaseOrderEntryForm({
       });
       return;
     }
+    setValidationErrors({});
 
     const payload = {
       quotationId: form.sourceQuotationId,
@@ -547,7 +624,7 @@ export default function PurchaseOrderEntryForm({
       paymentTerms: form.paymentTerms,
       expectedDeliveryDate: form.expectedDeliveryDate,
       notes: form.notes,
-      totalAmount: totals.totalPrice,
+      totalAmount: totals.grandTotal,
       items: form.items.map((item) => ({
         description: item.description,
         qty: Number(item.qty) || 1,
@@ -555,6 +632,8 @@ export default function PurchaseOrderEntryForm({
         rate: Number(item.rate) || 0,
         modulePrice: Number(item.modulePrice) || 0,
         implementationPrice: Number(item.implementationPrice) || 0,
+        discountPercentage: Number(item.discountPercentage) || 0,
+        discountAmount: Number(item.discountAmount) || 0,
       })),
     };
 
@@ -669,6 +748,24 @@ export default function PurchaseOrderEntryForm({
     receivedFromEmail: "",
     attachmentUrl: "",
   });
+  const quotationSearchOptions = useMemo(
+    () =>
+      quotationRecords.map((quotation, index) => ({
+        id: String(quotation.quotationId ?? quotation.id ?? ""),
+        label: `${quotation.quotationNo || `Quotation ${index + 1}`} - ${quotation.organizationName || "Unassigned company"}`,
+      })),
+    [quotationRecords],
+  );
+  const selectedQuotationLabel =
+    quotationSearchOptions.find((option) => option.id === String(intakeForm.quotationId))
+      ?.label || "";
+  const statusOptions = ["Open", "Partially fulfilled", "Fulfilled", "Cancelled"];
+  const statusValueMap = {
+    Open: "open",
+    "Partially fulfilled": "partially_fulfilled",
+    Fulfilled: "fulfilled",
+    Cancelled: "cancelled",
+  };
   const filteredQueue = queue.filter((entry) => {
     const haystack = `${entry.ref} ${entry.company}`.toLowerCase();
     return (
@@ -765,7 +862,12 @@ export default function PurchaseOrderEntryForm({
       attachmentUrl: purchaseOrder.attachmentUrl || prev.attachmentUrl,
       items:
         Array.isArray(purchaseOrder.items) && purchaseOrder.items.length > 0
-          ? purchaseOrder.items.map((item) => ({ ...item, isSourceData: true }))
+          ? purchaseOrder.items.map((item) => ({
+              ...item,
+              discountPercentage: Number(item.discountPercentage) || 0,
+              discountAmount: Number(item.discountAmount) || 0,
+              isSourceData: true,
+            }))
           : buildQuotationItems(purchaseOrder, moduleCatalog),
     }));
   };
@@ -1144,22 +1246,13 @@ export default function PurchaseOrderEntryForm({
                         disabled={viewOnly}
                       />
                     </label>
-                    <label>
-                      Status
-                      <select
-                        className={`po-status-select po-status-${form.status}`}
-                        value={form.status}
-                        onChange={(e) => updateField("status", e.target.value)}
-                        disabled={viewOnly}
-                      >
-                        <option value="open">Open</option>
-                        <option value="partially_fulfilled">
-                          Partially fulfilled
-                        </option>
-                        <option value="fulfilled">Fulfilled</option>
-                        <option value="cancelled">Cancelled</option>
-                      </select>
-                    </label>
+                    <SearchDropdown
+                      label="Status"
+                      options={statusOptions}
+                      value={statusValueMap[form.status] || form.status}
+                      onChange={(value) => updateField("status", statusValueMap[value] || value)}
+                      disabled={viewOnly}
+                    />
                     <label>
                       Quotation reference
                       <input
@@ -1190,6 +1283,11 @@ export default function PurchaseOrderEntryForm({
                           updateField("expectedDeliveryDate", e.target.value)
                         }
                         disabled={viewOnly}
+                        className={
+                          validationErrors.expecteddelivery
+                            ? "validation-error"
+                            : ""
+                        }
                       />
                     </label>
                   </div>
@@ -1235,14 +1333,16 @@ export default function PurchaseOrderEntryForm({
                     <em>{form.items.length} items</em>
                   </div>
                   <div className="po-table-wrap">
-                    <table className="po-table">
+                    <table className="po-table po-line-items-table">
                       <thead>
                         <tr>
-                          <th>Description</th>
+                          <th>Module</th>
                           <th>Qty</th>
                           <th>UOM</th>
                           <th>Module price</th>
                           <th>Implementation</th>
+                          <th>Discount %</th>
+                          <th>Discount amount</th>
                           <th>Total price</th>
                           <th>Amount</th>
                         </tr>
@@ -1297,6 +1397,12 @@ export default function PurchaseOrderEntryForm({
                                 Number(item.implementationPrice) || 0,
                               )}
                             </td>
+                            <td className="po-amount">
+                              {Number(item.discountPercentage || 0).toFixed(2)}%
+                            </td>
+                            <td className="po-amount">
+                              {formatMoney(Number(item.discountAmount) || 0)}
+                            </td>
                             <td>
                               <input
                                 type="number"
@@ -1324,12 +1430,53 @@ export default function PurchaseOrderEntryForm({
                       </tbody>
                     </table>
                   </div>
+                  <div className="po-additional-scope-section">
+                    <div className="po-card-title">
+                      <span>04</span>
+                      <h3>Additional scope</h3>
+                      <em>{form.additionalScopes.length} items</em>
+                    </div>
+                  <div className="po-table-wrap">
+                    <table className="po-table po-additional-scope-table">
+                      <thead>
+                        <tr>
+                          <th>Requirement</th>
+                          <th>Module</th>
+                          <th>Manpower</th>
+                          <th>Days</th>
+                          <th>Rate</th>
+                          <th>Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {form.additionalScopes.length > 0 ? (
+                          form.additionalScopes.map((scope, index) => (
+                            <tr key={`additional-scope-${index}`}>
+                              <td>{scope.requirement || "-"}</td>
+                              <td>{scope.modules || "-"}</td>
+                              <td>{scope.noOfManpower}</td>
+                              <td>{scope.noOfDays}</td>
+                              <td>{formatMoney(scope.rate)}</td>
+                              <td>{formatMoney(scope.amount)}</td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan="6" className="po-additional-scope-empty">
+                              No additional scope added.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                  </div>
                   <div className="po-total-row">
                     <span>
                       Total quantity <b>{totals.totalQty}</b>
                     </span>
                     <span>
-                      Total amount <b>{formatMoney(totals.totalPrice)}</b>
+                      Total amount <b>{formatMoney(totals.grandTotal)}</b>
                     </span>
                   </div>
                 </section>
@@ -1347,6 +1494,11 @@ export default function PurchaseOrderEntryForm({
                           updateField("deliveryTerms", e.target.value)
                         }
                         disabled={viewOnly}
+                        className={
+                          validationErrors.deliveryterms
+                            ? "validation-error"
+                            : ""
+                        }
                       />
                     </label>
                     <label>
@@ -1357,6 +1509,11 @@ export default function PurchaseOrderEntryForm({
                           updateField("paymentTerms", e.target.value)
                         }
                         disabled={viewOnly}
+                        className={
+                          validationErrors.paymentterms
+                            ? "validation-error"
+                            : ""
+                        }
                       />
                     </label>
                     <label>
@@ -1365,6 +1522,11 @@ export default function PurchaseOrderEntryForm({
                         value={form.notes}
                         onChange={(e) => updateField("notes", e.target.value)}
                         disabled={viewOnly}
+                        className={
+                          validationErrors.notes
+                            ? "validation-error"
+                            : ""
+                        }
                       />
                     </label>
                   </div>
@@ -1412,28 +1574,24 @@ export default function PurchaseOrderEntryForm({
             </Box>
             <form id="po-intake-form" onSubmit={handleEmailPoIntake}>
               <Box sx={{ display: "grid", gap: 1.75 }}>
-                <TextField
-                  select
-                  fullWidth
-                  size="small"
-                  label="Link to quotation *"
-                  value={intakeForm.quotationId}
-                  onChange={(e) =>
-                    updateIntakeField("quotationId", e.target.value)
-                  }
+                <SearchDropdown
+                  label="Link to quotation"
+                  name="link-to-quotation"
+                  value={selectedQuotationLabel}
+                  options={quotationSearchOptions.map((option) => option.label)}
+                  placeholder="Search quotation..."
+                  onChange={(label) => {
+                    const selectedOption = quotationSearchOptions.find(
+                      (option) => option.label === label,
+                    );
+                    updateIntakeField(
+                      "quotationId",
+                      selectedOption?.id || "",
+                    );
+                  }}
                   required
-                >
-                  <MenuItem value="">Select quotation...</MenuItem>
-                  {quotationRecords.map((quotation, index) => (
-                    <MenuItem
-                      key={quotation.quotationId ?? quotation.id ?? index}
-                      value={quotation.quotationId ?? quotation.id}
-                    >
-                      {quotation.quotationNo || `Quotation ${index + 1}`} —{" "}
-                      {quotation.organizationName || "Unassigned company"}
-                    </MenuItem>
-                  ))}
-                </TextField>
+                  allowFreeText={false}
+                />
                 <Box
                   sx={{
                     display: "grid",

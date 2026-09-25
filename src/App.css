@@ -165,6 +165,7 @@
 
 .app-main--po {
   padding: 0 !important;
+  overflow-x: auto;
 }
 
 .app-main--invoice {

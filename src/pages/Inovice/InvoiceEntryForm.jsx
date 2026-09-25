@@ -852,19 +852,40 @@ export default function InvoiceEntryForm({
     renewalQuotation,
   ]);
 
+  const purchaseOrderOptions = useMemo(
+    () =>
+      purchaseOrders
+        .filter(
+          (purchaseOrder) =>
+            String(
+              purchaseOrder.verificationStatus ??
+                purchaseOrder.VerificationStatus ??
+                purchaseOrder.po?.verificationStatus ??
+                "",
+            ).toLowerCase() === "verified",
+        )
+        .map((purchaseOrder) => {
+          const organizationName = String(
+            purchaseOrder.organizationName ||
+              purchaseOrder.companyName ||
+              purchaseOrder.buyerName ||
+              "",
+          ).trim();
+          const poNo = String(purchaseOrder.poNo || "").trim();
+          return organizationName && poNo
+            ? `${organizationName} - ${poNo}`
+            : organizationName;
+        })
+        .filter(Boolean),
+    [purchaseOrders],
+  );
+
   const organizationOptions = useMemo(
     () =>
-      Array.from(
-        new Set(
-          [
-            ...quotationRecords.map((quotation) => quotation.organizationName),
-            form.companyName,
-          ]
-            .map((organization) => String(organization || "").trim())
-            .filter(Boolean),
-        ),
-      ).sort((first, second) => first.localeCompare(second)),
-    [quotationRecords, form.companyName],
+      Array.from(new Set([...purchaseOrderOptions, form.companyName].filter(Boolean))).sort(
+        (first, second) => first.localeCompare(second),
+      ),
+    [purchaseOrderOptions, form.companyName],
   );
 
   const selectQuotation = async () => {
@@ -1481,9 +1502,11 @@ export default function InvoiceEntryForm({
           consigneeAddress:
             activeQuotation.quotationToAddress || prev.consigneeAddress || "",
           quotationNo: activeQuotation.quotationNo || prev.quotationNo || "",
-          poNoDate: activeQuotation.quotationNo
-            ? `Quotation No. ${activeQuotation.quotationNo}`
-            : prev.poNoDate || "",
+          poNoDate: prev.sourcePoId
+            ? prev.poNoDate || ""
+            : activeQuotation.quotationNo
+              ? `Quotation No. ${activeQuotation.quotationNo}`
+              : prev.poNoDate || "",
           hsnCode: moduleTaxDetails.hsnCode,
           sacCode: moduleTaxDetails.sacCode,
           reverseCharge: moduleTaxDetails.reverseCharge,
@@ -1517,9 +1540,11 @@ export default function InvoiceEntryForm({
           consigneeAddress:
             matchedQuotation.quotationToAddress || prev.consigneeAddress || "",
           quotationNo: matchedQuotation.quotationNo || prev.quotationNo || "",
-          poNoDate: matchedQuotation.quotationNo
-            ? `Quotation No. ${matchedQuotation.quotationNo}`
-            : prev.poNoDate || "",
+          poNoDate: prev.sourcePoId
+            ? prev.poNoDate || ""
+            : matchedQuotation.quotationNo
+              ? `Quotation No. ${matchedQuotation.quotationNo}`
+              : prev.poNoDate || "",
           items: buildQuotationItems(matchedQuotation, moduleCatalog),
         }));
       }
@@ -1577,6 +1602,97 @@ export default function InvoiceEntryForm({
   };
 
   const handleOrganizationChange = (organizationName) => {
+    const selectedPurchaseOrder = purchaseOrders
+      .filter(
+        (purchaseOrder) =>
+          String(
+            purchaseOrder.verificationStatus ??
+              purchaseOrder.VerificationStatus ??
+              purchaseOrder.po?.verificationStatus ??
+              "",
+          ).toLowerCase() === "verified",
+      )
+      .find((purchaseOrder) => {
+      const organization = String(
+        purchaseOrder.organizationName ||
+          purchaseOrder.companyName ||
+          purchaseOrder.buyerName ||
+          "",
+      ).trim();
+      const poNo = String(purchaseOrder.poNo || "").trim();
+      return (
+        `${organization} - ${poNo}` === organizationName ||
+        organization === organizationName
+      );
+      });
+
+    if (selectedPurchaseOrder) {
+      const organizationNameFromPo = String(
+        selectedPurchaseOrder.organizationName ||
+          selectedPurchaseOrder.companyName ||
+          selectedPurchaseOrder.buyerName ||
+          "",
+      ).trim();
+      const items = Array.isArray(selectedPurchaseOrder.items)
+        ? selectedPurchaseOrder.items.map((item) => ({
+            id: Date.now() + Math.random(),
+            description: item.description || "",
+            qty: Number(item.qty) || 1,
+            uom: item.uom || "Nos.",
+            rate: Number(item.rate) || 0,
+            modulePrice: Number(item.modulePrice) || 0,
+            implementationPrice: Number(item.implementationPrice) || 0,
+            isSourceData: true,
+          }))
+        : null;
+
+      setForm((prev) => ({
+        ...prev,
+        companyName: organizationNameFromPo,
+        sourcePoId: normalizeId(selectedPurchaseOrder.id),
+        sourceQuotationId: normalizeQuotationId(
+          selectedPurchaseOrder.quotationId,
+        ),
+        quotationNo:
+          selectedPurchaseOrder.quotationRefNo || prev.quotationNo || "",
+        supplierName:
+          selectedPurchaseOrder.supplierName || prev.supplierName || "",
+        supplierAddress:
+          selectedPurchaseOrder.supplierAddress || prev.supplierAddress || "",
+        supplierState:
+          selectedPurchaseOrder.supplierState || prev.supplierState || "",
+        supplierStateCode:
+          selectedPurchaseOrder.supplierStateCode ||
+          prev.supplierStateCode ||
+          "",
+        supplierGSTN:
+          selectedPurchaseOrder.supplierGSTN || prev.supplierGSTN || "",
+        receiverName:
+          selectedPurchaseOrder.buyerName || prev.receiverName || "",
+        receiverAddress:
+          selectedPurchaseOrder.buyerAddress || prev.receiverAddress || "",
+        receiverState:
+          selectedPurchaseOrder.buyerState || prev.receiverState || "",
+        receiverStateCode:
+          selectedPurchaseOrder.buyerStateCode ||
+          prev.receiverStateCode ||
+          "",
+        receiverGSTN:
+          selectedPurchaseOrder.buyerGSTN || prev.receiverGSTN || "",
+        consigneeName:
+          selectedPurchaseOrder.buyerName || prev.consigneeName || "",
+        consigneeAddress:
+          selectedPurchaseOrder.buyerAddress ||
+          prev.consigneeAddress ||
+          "",
+        poNoDate: selectedPurchaseOrder.poNo
+          ? `PO No. ${selectedPurchaseOrder.poNo} / ${selectedPurchaseOrder.poDate || ""}`
+          : prev.poNoDate || "",
+        items: items?.length ? items : prev.items,
+      }));
+      return;
+    }
+
     setForm((prev) => ({
       ...prev,
       companyName: organizationName,

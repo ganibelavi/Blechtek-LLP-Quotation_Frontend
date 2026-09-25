@@ -142,6 +142,8 @@ export default function AppSidebar({
                       setSettingsExpanded(false);
                       navigate("customer-subscriptions");
                     } else {
+                      setSettingsExpanded(false);
+                      setSubscriptionsExpanded(false);
                       navigate(item.view);
                     }
                   }}
@@ -182,7 +184,7 @@ export default function AppSidebar({
                     <button
                       type="button"
                       key={tab}
-                      className={`app-sidebar__submenu-item ${settingsInitialTab === tab ? "app-sidebar__submenu-item--active" : ""}`}
+                      className={`app-sidebar__submenu-item ${view === "settings" && settingsInitialTab === tab ? "app-sidebar__submenu-item--active" : ""}`}
                       onClick={() => {
                         onSettingsTabChange(tab);
                         navigate("settings", tab);
