@@ -35,6 +35,7 @@ import {
   rejectPo,
   fetchPoAuditLog,
   reopenPo,
+  fetchQuotationById,
 } from "../../services/quotationApi";
 import "./PoVerification.css";
 
@@ -79,7 +80,11 @@ const normalizeText = (text) => {
 };
 
 const compareValues = (quotationVal, clientVal, type) => {
-  if (quotationVal === null || quotationVal === undefined || quotationVal === "")
+  if (
+    quotationVal === null ||
+    quotationVal === undefined ||
+    quotationVal === ""
+  )
     return { match: false, reason: "Quotation value missing" };
   if (clientVal === null || clientVal === undefined || clientVal === "")
     return { match: false, reason: "Client value missing" };
@@ -98,12 +103,33 @@ const compareValues = (quotationVal, clientVal, type) => {
 const money = (v) =>
   `₹${Number(v || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
 
+const formatQuotationItems = (items) => {
+  if (!items) return "—";
+  if (Array.isArray(items)) {
+    return items
+      .map((item) => {
+        if (typeof item === "string") return item;
+        const name =
+          item.name ||
+          item.moduleName ||
+          item.module ||
+          item.itemName ||
+          "Item";
+        const qty = item.qty || item.quantity || item.Qty || 1;
+        return `${name} (Qty: ${qty})`;
+      })
+      .join("; ");
+  }
+  return String(items);
+};
+
 export default function PoVerificationScreen({ onNavigate }) {
   const rawId = sessionStorage.getItem("purchaseOrderId");
   const poId = Number(rawId);
   const isValidPoId = rawId !== null && rawId !== "" && !Number.isNaN(poId);
   const backView =
-    sessionStorage.getItem("purchaseOrderBackView") || "created-purchase-orders";
+    sessionStorage.getItem("purchaseOrderBackView") ||
+    "created-purchase-orders";
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -129,7 +155,48 @@ export default function PoVerificationScreen({ onNavigate }) {
     clientPoTerms: "",
   });
 
+  const [quotationDisplay, setQuotationDisplay] = useState({
+    refNo: "",
+    refDate: "",
+    amount: "",
+    items: "",
+    terms: "",
+  });
+
   const [comparisonResults, setComparisonResults] = useState({});
+
+  const getQuotationField = (key) => {
+    if (!data) return "";
+    const fieldMap = {
+      quotationAmount:
+        quotationDisplay.amount ||
+        data.quotationAmount ||
+        data.amount ||
+        data.totalAmount,
+      quotationItems:
+        quotationDisplay.items ||
+        data.quotationItems ||
+        data.items ||
+        data.moduleDetails ||
+        data.modules,
+      quotationTerms:
+        quotationDisplay.terms ||
+        data.quotationTerms ||
+        data.terms ||
+        data.paymentTerms,
+      quotationRefNo:
+        quotationDisplay.refNo ||
+        data.quotationRefNo ||
+        data.quotationNo ||
+        data.quotationNumber,
+      quotationRefDate:
+        quotationDisplay.refDate ||
+        data.quotationRefDate ||
+        data.quotationDate ||
+        data.date,
+    };
+    return fieldMap[key] || data[key] || "";
+  };
 
   const loadData = useCallback(async () => {
     if (!isValidPoId) {
@@ -155,15 +222,103 @@ export default function PoVerificationScreen({ onNavigate }) {
       setData(verification);
       setAuditLogs(logs);
 
+      // Debug: log all verification fields
+      console.log("Verification API response:", verification);
+
+      // Helper to get value from multiple possible field names
+      const getField = (obj, ...keys) => {
+        for (const key of keys) {
+          if (obj[key] !== undefined && obj[key] !== null && obj[key] !== "") {
+            return obj[key];
+          }
+        }
+        return "";
+      };
+
       setClientDetails({
-        clientPoNumber: verification.clientPoNumber || "",
-        clientPoDate: verification.clientPoDate
-          ? new Date(verification.clientPoDate).toISOString().slice(0, 10)
+        clientPoNumber: getField(
+          verification,
+          "clientPoNumber",
+          "clientPONumber",
+        ),
+        clientPoDate: getField(verification, "clientPoDate", "clientPODate")
+          ? new Date(getField(verification, "clientPoDate", "clientPODate"))
+              .toISOString()
+              .slice(0, 10)
           : "",
-        clientPoAmount: verification.clientPoAmount?.toString() || "",
-        clientPoItems: verification.clientPoItems || "",
-        clientPoTerms: verification.clientPoTerms || "",
+        clientPoAmount:
+          getField(
+            verification,
+            "clientPoAmount",
+            "clientPOAmount",
+          )?.toString() || "",
+        clientPoItems: getField(
+          verification,
+          "clientPoItems",
+          "clientPOItems",
+          "clientPoItemsText",
+        ),
+        clientPoTerms: getField(verification, "clientPoTerms", "clientPOTerms"),
       });
+
+      // Store quotation fields for display
+      setQuotationDisplay({
+        refNo: getField(
+          verification,
+          "quotationRefNo",
+          "quotationNo",
+          "quotationNumber",
+        ),
+        refDate: getField(
+          verification,
+          "quotationRefDate",
+          "quotationDate",
+          "date",
+        ),
+        amount: getField(
+          verification,
+          "quotationAmount",
+          "amount",
+          "totalAmount",
+        ),
+        items: getField(
+          verification,
+          "quotationItems",
+          "items",
+          "moduleDetails",
+          "modules",
+        ),
+        terms: getField(
+          verification,
+          "quotationTerms",
+          "terms",
+          "paymentTerms",
+        ),
+      });
+
+      // If items are missing, fetch full quotation details using quotationRefNo
+      const quotationRef = getField(
+        verification,
+        "quotationRefNo",
+        "quotationNo",
+        "quotationNumber",
+      );
+      if (quotationRef && !getField(verification, "quotationItems", "items", "moduleDetails", "modules")) {
+        try {
+          const quotation = await fetchQuotationById(quotationRef);
+          if (quotation) {
+            console.log("Fetched full quotation:", quotation);
+            setQuotationDisplay((prev) => ({
+              ...prev,
+              items: quotation.moduleDetails || quotation.modules || quotation.items || "",
+              refDate: prev.refDate || quotation.date || quotation.quotationDate,
+              terms: prev.terms || quotation.terms || quotation.paymentTerms,
+            }));
+          }
+        } catch (quotationErr) {
+          console.warn("Failed to fetch quotation details:", quotationErr);
+        }
+      }
 
       setVerificationConfirmed(false);
       setShowApproveDialog(false);
@@ -184,7 +339,11 @@ export default function PoVerificationScreen({ onNavigate }) {
     const results = {};
     COMPARISON_FIELDS.forEach((field) => {
       results[field.key] = {
-        ...compareValues(verification[field.quotationKey], verification[field.clientKey], field.type),
+        ...compareValues(
+          verification[field.quotationKey],
+          verification[field.clientKey],
+          field.type,
+        ),
         field,
       };
     });
@@ -203,8 +362,8 @@ export default function PoVerificationScreen({ onNavigate }) {
         field.key === "amount"
           ? clientDetails.clientPoAmount
           : field.key === "items"
-          ? clientDetails.clientPoItems
-          : clientDetails.clientPoTerms;
+            ? clientDetails.clientPoItems
+            : clientDetails.clientPoTerms;
       results[field.key] = {
         ...compareValues(data[field.quotationKey], clientVal, field.type),
         field,
@@ -220,7 +379,9 @@ export default function PoVerificationScreen({ onNavigate }) {
   const buildClientPayload = () => ({
     ClientPoNumber: clientDetails.clientPoNumber,
     ClientPoDate: clientDetails.clientPoDate,
-    ClientPoAmount: clientDetails.clientPoAmount ? Number(clientDetails.clientPoAmount) : null,
+    ClientPoAmount: clientDetails.clientPoAmount
+      ? Number(clientDetails.clientPoAmount)
+      : null,
     ClientPoItems: clientDetails.clientPoItems,
     ClientPoTerms: clientDetails.clientPoTerms,
   });
@@ -290,7 +451,9 @@ export default function PoVerificationScreen({ onNavigate }) {
 
   const handleOpenApproveDialog = () => {
     if (!verificationConfirmed) {
-      setError("Please confirm you have checked the uploaded client PO against these values.");
+      setError(
+        "Please confirm you have checked the uploaded client PO against these values.",
+      );
       return;
     }
     if (mismatchCount > 0 && !approvalNotes.trim()) {
@@ -314,7 +477,9 @@ export default function PoVerificationScreen({ onNavigate }) {
     await handleReopen();
   };
 
-  const mismatchCount = Object.values(comparisonResults).filter((r) => !r.match).length;
+  const mismatchCount = Object.values(comparisonResults).filter(
+    (r) => !r.match,
+  ).length;
 
   const normalizeStatus = (status) => {
     if (!status) return "Draft";
@@ -325,7 +490,12 @@ export default function PoVerificationScreen({ onNavigate }) {
   const statusConfig = STATUS_CONFIG[normalizedStatus] || STATUS_CONFIG.Draft;
 
   // Debug: log status for debugging
-  console.log("PO Verification Status:", data?.verificationStatus, "Normalized:", normalizedStatus);
+  console.log(
+    "PO Verification Status:",
+    data?.verificationStatus,
+    "Normalized:",
+    normalizedStatus,
+  );
 
   const isFinalStatus =
     data &&
@@ -368,7 +538,11 @@ export default function PoVerificationScreen({ onNavigate }) {
       <div className="pov-error">
         <span>{error}</span>
         <button onClick={loadData}>Retry</button>
-        <button className="pov-common-back-btn" onClick={() => onNavigate(backView)} aria-label="Back">
+        <button
+          className="pov-common-back-btn"
+          onClick={() => onNavigate(backView)}
+          aria-label="Back"
+        >
           <ArrowBackIcon fontSize="small" />
         </button>
       </div>
@@ -385,7 +559,9 @@ export default function PoVerificationScreen({ onNavigate }) {
           Quotation {data.quotationRefNo || "—"}
           {data.buyerName ? ` · ${data.buyerName}` : ""}
         </span>
-        <span className={`pov-badge ${statusConfig.className}`}>{statusConfig.label}</span>
+        <span className={`pov-badge ${statusConfig.className}`}>
+          {statusConfig.label}
+        </span>
         <button
           className="pov-common-back-btn"
           onClick={() => onNavigate(backView)}
@@ -407,7 +583,11 @@ export default function PoVerificationScreen({ onNavigate }) {
         {/* LEFT: file viewer */}
         <div className="pov-viewer">
           <Paper elevation={0} className="pov-viewer-inner">
-            <FileViewer poId={poId} fileName={data.uploadedFileName} contentType={data.fileContentType} />
+            <FileViewer
+              poId={poId}
+              fileName={data.uploadedFileName}
+              contentType={data.fileContentType}
+            />
           </Paper>
         </div>
 
@@ -421,25 +601,38 @@ export default function PoVerificationScreen({ onNavigate }) {
             <div className="pov-hint">Loaded automatically. Read-only.</div>
             <div className="pov-row">
               <label>Quotation No.</label>
-              <div className="pov-ro">{data.quotationRefNo || "—"}</div>
+              <div className="pov-ro">
+                {quotationDisplay.refNo || data.quotationRefNo || "—"}
+              </div>
             </div>
             <div className="pov-row">
               <label>Quotation Date</label>
               <div className="pov-ro">
-                {data.quotationRefDate ? new Date(data.quotationRefDate).toLocaleDateString() : "—"}
+                {quotationDisplay.refDate
+                  ? new Date(quotationDisplay.refDate).toLocaleDateString()
+                  : "—"}
               </div>
             </div>
             <div className="pov-row">
               <label>Amount</label>
-              <div className="pov-ro pov-ro-amount">{money(data.quotationAmount)}</div>
+              <div className="pov-ro pov-ro-amount">
+                {money(quotationDisplay.amount || data.quotationAmount)}
+              </div>
             </div>
             <div className="pov-row">
               <label>Items / Qty</label>
-              <div className="pov-ro">{data.quotationItems || "—"}</div>
+              <div className="pov-ro">
+                {formatQuotationItems(quotationDisplay.items || data.quotationItems || data.items)}
+              </div>
             </div>
             <div className="pov-row">
               <label>Payment terms</label>
-              <div className="pov-ro">{data.quotationTerms || "—"}</div>
+              <div className="pov-ro">
+                {quotationDisplay.terms ||
+                  data.quotationTerms ||
+                  data.paymentTerms ||
+                  "—"}
+              </div>
             </div>
           </div>
 
@@ -450,16 +643,22 @@ export default function PoVerificationScreen({ onNavigate }) {
               {canEditClientDetails && !isFinalStatus && (
                 <span className="pov-tag pov-tag-editable">Editable</span>
               )}
-              {isFinalStatus && <span className="pov-tag pov-tag-readonly">Read-only</span>}
+              {isFinalStatus && (
+                <span className="pov-tag pov-tag-readonly">Read-only</span>
+              )}
             </h2>
-            <div className="pov-hint">Type what the uploaded document says.</div>
+            <div className="pov-hint">
+              Type what the uploaded document says.
+            </div>
 
             <div className="pov-row">
               <label>Client PO No.</label>
               <div className="pov-input-wrap">
                 <input
                   value={clientDetails.clientPoNumber}
-                  onChange={(e) => handleClientDetailChange("clientPoNumber", e.target.value)}
+                  onChange={(e) =>
+                    handleClientDetailChange("clientPoNumber", e.target.value)
+                  }
                   // disabled={!canEditClientDetails || isFinalStatus}
                 />
                 <MatchIcon result={comparisonResults.clientPoNumber} />
@@ -471,7 +670,9 @@ export default function PoVerificationScreen({ onNavigate }) {
               <input
                 type="date"
                 value={clientDetails.clientPoDate}
-                onChange={(e) => handleClientDetailChange("clientPoDate", e.target.value)}
+                onChange={(e) =>
+                  handleClientDetailChange("clientPoDate", e.target.value)
+                }
                 // disabled={!canEditClientDetails || isFinalStatus}
               />
             </div>
@@ -483,7 +684,9 @@ export default function PoVerificationScreen({ onNavigate }) {
                   type="number"
                   step="0.01"
                   value={clientDetails.clientPoAmount}
-                  onChange={(e) => handleClientDetailChange("clientPoAmount", e.target.value)}
+                  onChange={(e) =>
+                    handleClientDetailChange("clientPoAmount", e.target.value)
+                  }
                   // disabled={!canEditClientDetails || isFinalStatus}
                 />
                 <MatchIcon result={comparisonResults.amount} />
@@ -496,7 +699,9 @@ export default function PoVerificationScreen({ onNavigate }) {
                 <textarea
                   rows={3}
                   value={clientDetails.clientPoItems}
-                  onChange={(e) => handleClientDetailChange("clientPoItems", e.target.value)}
+                  onChange={(e) =>
+                    handleClientDetailChange("clientPoItems", e.target.value)
+                  }
                   // disabled={!canEditClientDetails || isFinalStatus}
                 />
                 <MatchIcon result={comparisonResults.items} />
@@ -509,7 +714,9 @@ export default function PoVerificationScreen({ onNavigate }) {
                 <textarea
                   rows={3}
                   value={clientDetails.clientPoTerms}
-                  onChange={(e) => handleClientDetailChange("clientPoTerms", e.target.value)}
+                  onChange={(e) =>
+                    handleClientDetailChange("clientPoTerms", e.target.value)
+                  }
                   // disabled={!canEditClientDetails || isFinalStatus}
                 />
                 <MatchIcon result={comparisonResults.terms} />
@@ -544,7 +751,9 @@ export default function PoVerificationScreen({ onNavigate }) {
                 {COMPARISON_FIELDS.map((field) => {
                   const result = comparisonResults[field.key];
                   const qVal =
-                    field.type === "number" ? money(data?.[field.quotationKey]) : data?.[field.quotationKey] || "—";
+                    field.type === "number"
+                      ? money(getQuotationField(field.quotationKey))
+                      : getQuotationField(field.quotationKey) || "—";
                   const cVal =
                     field.type === "number"
                       ? money(clientDetails[field.clientKey])
@@ -555,19 +764,25 @@ export default function PoVerificationScreen({ onNavigate }) {
                       <td>{qVal}</td>
                       <td>{cVal}</td>
                       <td className={result?.match ? "pov-ok" : "pov-bad"}>
-                        {result?.match === undefined ? "—" : result.match ? "✓ Match" : "⚠ Differs"}
+                        {result?.match === undefined
+                          ? "—"
+                          : result.match
+                            ? "✓ Match"
+                            : "⚠ Differs"}
                       </td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
-            <div className={`pov-sum ${mismatchCount ? "pov-diff" : "pov-good"}`}>
+            <div
+              className={`pov-sum ${mismatchCount ? "pov-diff" : "pov-good"}`}
+            >
               {mismatchCount ? (
                 <>
                   <WarningIcon fontSize="small" />
-                  {mismatchCount} field{mismatchCount !== 1 ? "s" : ""} differ. The approver will need to add a
-                  note.
+                  {mismatchCount} field{mismatchCount !== 1 ? "s" : ""} differ.
+                  The approver will need to add a note.
                 </>
               ) : (
                 <>
@@ -583,7 +798,8 @@ export default function PoVerificationScreen({ onNavigate }) {
             <div className="pov-card">
               <h2>Actions</h2>
               <Alert severity="info" sx={{ mb: 2 }}>
-                Verify the comparison above, add notes if there are mismatches, then Approve or Reject.
+                Verify the comparison above, add notes if there are mismatches,
+                then Approve or Reject.
               </Alert>
 
               <label className="pov-checkbox-label">
@@ -610,7 +826,11 @@ export default function PoVerificationScreen({ onNavigate }) {
                 <button
                   className="pov-primary"
                   onClick={handleOpenApproveDialog}
-                  disabled={approving || !verificationConfirmed || (mismatchCount > 0 && !approvalNotes.trim())}
+                  disabled={
+                    approving ||
+                    !verificationConfirmed ||
+                    (mismatchCount > 0 && !approvalNotes.trim())
+                  }
                 >
                   {approving ? "Approving..." : "Approve"}
                 </button>
@@ -642,21 +862,35 @@ export default function PoVerificationScreen({ onNavigate }) {
                 <span className="pov-final-label">Verified by</span>
                 <span className="pov-final-value">
                   {data.verifiedByName || "—"}
-                  {data.verifiedBy && <Chip label={`ID: ${data.verifiedBy}`} size="small" sx={{ ml: 1 }} />}
+                  {data.verifiedBy && (
+                    <Chip
+                      label={`ID: ${data.verifiedBy}`}
+                      size="small"
+                      sx={{ ml: 1 }}
+                    />
+                  )}
                 </span>
               </div>
               <div className="pov-final-row">
                 <span className="pov-final-label">Verified at</span>
                 <span className="pov-final-value">
-                  {data.verifiedAt ? new Date(data.verifiedAt).toLocaleString() : "—"}
+                  {data.verifiedAt
+                    ? new Date(data.verifiedAt).toLocaleString()
+                    : "—"}
                 </span>
               </div>
               {data.verificationNotes && (
                 <div className="pov-final-notes">{data.verificationNotes}</div>
               )}
               <div className="pov-actions" style={{ marginTop: 12 }}>
-                <button onClick={() => setShowReopenDialog(true)} disabled={reopening}>
-                  <RefreshIcon fontSize="small" style={{ verticalAlign: "middle", marginRight: 4 }} />
+                <button
+                  onClick={() => setShowReopenDialog(true)}
+                  disabled={reopening}
+                >
+                  <RefreshIcon
+                    fontSize="small"
+                    style={{ verticalAlign: "middle", marginRight: 4 }}
+                  />
                   {reopening ? "Reopening..." : "Reopen PO"}
                 </button>
               </div>
@@ -664,7 +898,10 @@ export default function PoVerificationScreen({ onNavigate }) {
           )}
 
           {/* Audit log */}
-          <button className="pov-audit-toggle" onClick={() => setShowAuditLog(!showAuditLog)}>
+          <button
+            className="pov-audit-toggle"
+            onClick={() => setShowAuditLog(!showAuditLog)}
+          >
             {showAuditLog ? "Hide" : "Show"} audit log ({auditLogs.length})
           </button>
           {showAuditLog && auditLogs.length > 0 && (
@@ -697,8 +934,16 @@ export default function PoVerificationScreen({ onNavigate }) {
       </div>
 
       {/* Approve Confirmation Dialog */}
-      <Dialog open={showApproveDialog} onClose={() => setShowApproveDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle className="pov-dialog-title" sx={{ background: "linear-gradient(120deg,#2b5797,#48a0e4)" }}>
+      <Dialog
+        open={showApproveDialog}
+        onClose={() => setShowApproveDialog(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle
+          className="pov-dialog-title"
+          sx={{ background: "linear-gradient(120deg,#2b5797,#48a0e4)" }}
+        >
           Confirm Approval
         </DialogTitle>
         <DialogContent className="pov-dialog-content">
@@ -707,7 +952,9 @@ export default function PoVerificationScreen({ onNavigate }) {
           </p>
           <p>
             Status will be set to:{" "}
-            <strong>{mismatchCount > 0 ? "ApprovedWithMismatch" : "Approved"}</strong>
+            <strong>
+              {mismatchCount > 0 ? "ApprovedWithMismatch" : "Approved"}
+            </strong>
           </p>
           {mismatchCount > 0 ? (
             <div className="pov-sum pov-diff" style={{ display: "block" }}>
@@ -715,27 +962,47 @@ export default function PoVerificationScreen({ onNavigate }) {
               <ul style={{ margin: "8px 0 0", paddingLeft: 20 }}>
                 {COMPARISON_FIELDS.map((field) => {
                   const result = comparisonResults[field.key];
-                  return result && !result.match ? <li key={field.key}>{field.label}</li> : null;
+                  return result && !result.match ? (
+                    <li key={field.key}>{field.label}</li>
+                  ) : null;
                 })}
               </ul>
             </div>
           ) : (
-            <div className="pov-sum pov-good">All fields match. PO will be Approved.</div>
+            <div className="pov-sum pov-good">
+              All fields match. PO will be Approved.
+            </div>
           )}
         </DialogContent>
         <DialogActions className="pov-dialog-actions">
-          <Button onClick={() => setShowApproveDialog(false)} variant="outlined">
+          <Button
+            onClick={() => setShowApproveDialog(false)}
+            variant="outlined"
+          >
             Cancel
           </Button>
-          <Button onClick={handleConfirmApprove} variant="contained" color="success" disabled={approving}>
+          <Button
+            onClick={handleConfirmApprove}
+            variant="contained"
+            color="success"
+            disabled={approving}
+          >
             {approving ? "Approving..." : "Confirm Approve"}
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* Reopen Dialog */}
-      <Dialog open={showReopenDialog} onClose={() => setShowReopenDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle className="pov-dialog-title" sx={{ background: "linear-gradient(120deg,#b3690a,#e0a24a)" }}>
+      <Dialog
+        open={showReopenDialog}
+        onClose={() => setShowReopenDialog(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle
+          className="pov-dialog-title"
+          sx={{ background: "linear-gradient(120deg,#b3690a,#e0a24a)" }}
+        >
           Reopen Purchase Order
         </DialogTitle>
         <DialogContent className="pov-dialog-content">
