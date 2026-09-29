@@ -215,7 +215,9 @@ export default function AllQuotationRevisions({ onNavigate }) {
           mb: 2,
         }}
       >
-        <h1 className="page-heading page-heading__text">All Quotation Revisions</h1>
+        <h1 className="page-heading page-heading__text">
+          All Quotation Revisions
+        </h1>
       </Box>
 
       {error && (
@@ -241,21 +243,24 @@ export default function AllQuotationRevisions({ onNavigate }) {
 
       {expandedQuotationId && (
         <Box sx={{ mt: 2 }}>
+          <Typography
+            variant="h6"
+            sx={{ fontSize: 16, mb: 1, fontWeight: 600 }}
+          >
+            Revision History for Quotation{" "}
+            {quotations.find((q) => q.quotationId === expandedQuotationId)
+              ?.quotationNo || ""}
+          </Typography>
           <Paper
             sx={{
               p: 1,
               border: "1px solid #d8d2c6",
               boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
-              background: "#fafafa",
+              // background: "#fafafa",
             }}
             elevation={0}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-              <Typography variant="h6" sx={{ fontSize: 16, flexGrow: 1 }}>
-                Revision History for Quotation{" "}
-                {quotations.find((q) => q.quotationId === expandedQuotationId)
-                  ?.quotationNo || ""}
-              </Typography>
               <Tooltip title="Close">
                 <IconButton
                   size="small"

@@ -175,7 +175,7 @@
   border: 1px solid var(--primary-blue);
   border-radius: var(--radius-sm);
   padding: 8px 10px;
-  background: var(--primary-blue);
+  background: linear-gradient(120deg, #308aea, #48cae4);
   color: #fff;
   cursor: pointer;
   font-size: 12px;
@@ -214,7 +214,7 @@
   border-collapse: separate;
   border-spacing: 0;
   color: var(--text-700);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .additional-scope__table th {
@@ -222,6 +222,8 @@
   border-bottom: 1px solid var(--border);
   text-align: left;
   white-space: nowrap;
+  background-color: #65aadb;
+  color: #fff;
 }
 
 .additional-scope__table th:nth-child(1),
@@ -237,11 +239,13 @@
 .additional-scope__table th:nth-child(3),
 .additional-scope__table td:nth-child(3) {
   width: 10%;
+  padding-right: 24px;
 }
 
 .additional-scope__table th:nth-child(4),
 .additional-scope__table td:nth-child(4) {
   width: 10%;
+  padding-left: 24px;
 }
 
 .additional-scope__table th:nth-child(5),
@@ -399,7 +403,7 @@
 .module-selector__pillar-name {
   font-size: 15px;
   font-weight: 600;
- 
+
   color: var(--text-400);
   text-transform: uppercase;
   letter-spacing: 0.08em;
