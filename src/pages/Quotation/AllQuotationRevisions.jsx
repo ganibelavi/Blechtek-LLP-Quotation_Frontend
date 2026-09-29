@@ -2,22 +2,8 @@ import { useEffect, useState } from "react";
 import { fetchQuotations } from "../../services/quotationApi";
 import { fetchQuotationRevisions } from "../../services/quotationApi";
 import EntityTable from "../../components/EntityTable";
-import {
-  Box,
-  Typography,
-  Alert,
-  IconButton,
-  Tooltip,
-  Table,
-  TableHead,
-  TableBody,
-  TableRow,
-  TableCell,
-  Paper,
-  TableContainer,
-} from "@mui/material";
+import { Box, Typography, Alert, IconButton, Tooltip } from "@mui/material";
 import HistoryIcon from "@mui/icons-material/History";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import "./CreateQuotation.css";
 
 const formatDate = (value) =>
@@ -251,94 +237,17 @@ export default function AllQuotationRevisions({ onNavigate }) {
             {quotations.find((q) => q.quotationId === expandedQuotationId)
               ?.quotationNo || ""}
           </Typography>
-          <Paper
-            sx={{
-              p: 1,
-              border: "1px solid #d8d2c6",
-              boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
-              // background: "#fafafa",
-            }}
-            elevation={0}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-              <Tooltip title="Close">
-                <IconButton
-                  size="small"
-                  onClick={() => setExpandedQuotationId(null)}
-                >
-                  <ExpandMoreIcon
-                    fontSize="small"
-                    sx={{ transform: "rotate(180deg)" }}
-                  />
-                </IconButton>
-              </Tooltip>
+          {revisionLoading[expandedQuotationId] ? (
+            <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+              <Typography>Loading revisions...</Typography>
             </Box>
-
-            {revisionLoading[expandedQuotationId] ? (
-              <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
-                <Typography>Loading revisions...</Typography>
-              </Box>
-            ) : (
-              <TableContainer sx={{ maxHeight: 400, overflow: "auto" }}>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow sx={{ background: "#65aadb" }}>
-                      {revisionColumns.map((col) => (
-                        <TableCell
-                          key={col.key}
-                          sx={{
-                            color: "#fff",
-                            fontWeight: 600,
-                            fontSize: 13,
-                            whiteSpace: "nowrap",
-                            minWidth: col.minWidth,
-                          }}
-                        >
-                          {col.label}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {(revisionsCache[expandedQuotationId] || []).length ===
-                    0 ? (
-                      <TableRow>
-                        <TableCell
-                          colSpan={revisionColumns.length}
-                          sx={{ textAlign: "center", p: 4 }}
-                        >
-                          No revisions found
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      (revisionsCache[expandedQuotationId] || []).map(
-                        (rev, idx) => (
-                          <TableRow key={`${rev.id ?? ""}-${idx}`}>
-                            {revisionColumns.map((col) => (
-                              <TableCell
-                                key={col.key}
-                                sx={{
-                                  padding: "5px 10px",
-                                  fontSize: 13,
-                                  borderRight: "1px solid #eee",
-                                  whiteSpace: "nowrap",
-                                  minWidth: col.minWidth,
-                                }}
-                              >
-                                {col.render
-                                  ? col.render({ row: rev, index: idx })
-                                  : (rev[col.key] ?? "")}
-                              </TableCell>
-                            ))}
-                          </TableRow>
-                        ),
-                      )
-                    )}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            )}
-          </Paper>
+          ) : (
+            <EntityTable
+              title=""
+              columns={revisionColumns}
+              rows={revisionsCache[expandedQuotationId] || []}
+            />
+          )}
         </Box>
       )}
     </Box>
