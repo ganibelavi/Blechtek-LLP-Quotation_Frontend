@@ -303,15 +303,29 @@ export default function PoVerificationScreen({ onNavigate }) {
         "quotationNo",
         "quotationNumber",
       );
-      if (quotationRef && !getField(verification, "quotationItems", "items", "moduleDetails", "modules")) {
+      if (
+        quotationRef &&
+        !getField(
+          verification,
+          "quotationItems",
+          "items",
+          "moduleDetails",
+          "modules",
+        )
+      ) {
         try {
           const quotation = await fetchQuotationById(quotationRef);
           if (quotation) {
             console.log("Fetched full quotation:", quotation);
             setQuotationDisplay((prev) => ({
               ...prev,
-              items: quotation.moduleDetails || quotation.modules || quotation.items || "",
-              refDate: prev.refDate || quotation.date || quotation.quotationDate,
+              items:
+                quotation.moduleDetails ||
+                quotation.modules ||
+                quotation.items ||
+                "",
+              refDate:
+                prev.refDate || quotation.date || quotation.quotationDate,
               terms: prev.terms || quotation.terms || quotation.paymentTerms,
             }));
           }
@@ -483,11 +497,11 @@ export default function PoVerificationScreen({ onNavigate }) {
 
   const normalizeStatus = (status) => {
     if (!status) return "Draft";
-    return status.replace(/\s+/g, "");
+    return status.replace(/\s+/g, "").toLowerCase();
   };
 
   const normalizedStatus = normalizeStatus(data?.verificationStatus);
-  const statusConfig = STATUS_CONFIG[normalizedStatus] || STATUS_CONFIG.Draft;
+  const statusConfig = STATUS_CONFIG[normalizedStatus.charAt(0).toUpperCase() + normalizedStatus.slice(1)] || STATUS_CONFIG.Draft;
 
   // Debug: log status for debugging
   console.log(
@@ -507,7 +521,7 @@ export default function PoVerificationScreen({ onNavigate }) {
       "Cancelled",
       "Closed",
       "Completed",
-    ].some((s) => normalizeStatus(s) === normalizedStatus);
+    ].some((s) => normalizeStatus(s).toLowerCase() === normalizedStatus.toLowerCase());
 
   const canEditClientDetails =
     data &&
@@ -516,7 +530,11 @@ export default function PoVerificationScreen({ onNavigate }) {
       normalizedStatus === "PendingReview" ||
       normalizedStatus === "Pending" ||
       normalizedStatus === "UnderReview" ||
-      normalizedStatus === "Submitted");
+      normalizedStatus === "Submitted" ||
+      normalizedStatus === "pending" ||
+      normalizedStatus === "pendingreview" ||
+      normalizedStatus === "underreview" ||
+      normalizedStatus === "submitted");
 
   // Debug: log all relevant values
   console.log("Debug - data:", data);
@@ -622,7 +640,9 @@ export default function PoVerificationScreen({ onNavigate }) {
             <div className="pov-row">
               <label>Items / Qty</label>
               <div className="pov-ro">
-                {formatQuotationItems(quotationDisplay.items || data.quotationItems || data.items)}
+                {formatQuotationItems(
+                  quotationDisplay.items || data.quotationItems || data.items,
+                )}
               </div>
             </div>
             <div className="pov-row">
