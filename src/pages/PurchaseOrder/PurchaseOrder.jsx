@@ -127,7 +127,7 @@ export default function PurchaseOrder({
 
   const canConvert =
     (po.status === "open" || po.status === "partially_fulfilled") &&
-    String(po.verificationStatus || "").toLowerCase() === "verified";
+    (String(po.verificationStatus || "") === "Approved" || String(po.verificationStatus || "") === "ApprovedWithMismatch");
 
   return (
     <div className="po-page">
@@ -145,12 +145,12 @@ export default function PurchaseOrder({
           className="po-btn po-btn-primary"
           onClick={handleConvertToInvoice}
           disabled={isViewOnly || !canConvert}
-          title={
+title={
             isViewOnly
               ? "View-only mode"
               : canConvert
-                ? ""
-                : "Only verified, open, or partially fulfilled POs can be invoiced"
+              ? ""
+              : "Only approved purchase orders can be invoiced"
           }
         >
           Convert to Invoice

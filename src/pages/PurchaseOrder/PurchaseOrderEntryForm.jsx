@@ -7,6 +7,7 @@ import {
   DialogContent,
   DialogTitle,
   TextField,
+  Chip,
 } from "@mui/material";
 import "./PurchaseOrder.css";
 import {
@@ -15,12 +16,13 @@ import {
   fetchModules,
   fetchQuotationById,
   fetchQuotations,
+  fetchQuotationsForPo,
   fetchPurchaseOrders,
   fetchNextPurchaseOrderNo,
   fetchPurchaseOrderById,
   fetchCustomers,
   fetchSuppliers,
-  updatePurchaseOrderVerification,
+  uploadPoFile,
 } from "../../services/quotationApi";
 import {
   dialogPrimaryActionSx,
@@ -28,6 +30,14 @@ import {
 } from "../../styles/modalActionButtonStyles";
 import CustomSnackbar from "../../components/CustomSnackbar";
 import SearchDropdown from "../../components/SearchDropdown";
+
+function RequiredMark() {
+  return (
+    <span className="required-mark" aria-label="required">
+      *
+    </span>
+  );
+}
 
 const readStoredQuotation = () => {
   try {
@@ -203,11 +213,11 @@ const defaultForm = () => {
     poDirection: "customer",
     receivedFromEmail: "",
     attachmentUrl: "",
-    verificationStatus: "pending",
-    verifiedBy: "",
+    verificationStatus: "Draft",
+    verifiedBy: null,
     verifiedAt: "",
     verificationNotes: "",
-    uploadedBy: "",
+    uploadedBy: null,
     receivedAt: "",
     quotationRefNo: quotation?.quotationNo || "",
     quotationRefDate: quotation?.date || "",
@@ -252,6 +262,7 @@ export default function PurchaseOrderEntryForm({
     severity: "success",
   });
   const [validationErrors, setValidationErrors] = useState({});
+  const [mainFormFile, setMainFormFile] = useState(null);
   const isQuotationLocked = viewOnly || Boolean(form.sourceQuotationId);
   const isItemLocked = (item) => viewOnly || Boolean(item?.isSourceData);
 
@@ -273,7 +284,7 @@ export default function PurchaseOrderEntryForm({
           poDirection: purchaseOrder.poDirection || prev.poDirection,
           receivedFromEmail: purchaseOrder.receivedFromEmail || "",
           attachmentUrl: purchaseOrder.attachmentUrl || "",
-          verificationStatus: purchaseOrder.verificationStatus || "pending",
+          verificationStatus: purchaseOrder.verificationStatus || "Draft",
           verifiedBy: purchaseOrder.verifiedBy || "",
           verifiedAt: normalizeDateInput(purchaseOrder.verifiedAt),
           verificationNotes: purchaseOrder.verificationNotes || "",
@@ -313,6 +324,7 @@ export default function PurchaseOrderEntryForm({
           severity: "error",
         });
       });
+    setMainFormFile(null);
   }, [purchaseOrderId]);
 
   useEffect(() => {
@@ -341,7 +353,7 @@ export default function PurchaseOrderEntryForm({
       .then((data) => setModuleCatalog(Array.isArray(data) ? data : []))
       .catch(() => setModuleCatalog([]));
 
-    fetchQuotations(1, 500)
+    fetchQuotationsForPo()
       .then((data) => setQuotationRecords(Array.isArray(data) ? data : []))
       .catch(() => setQuotationRecords([]));
 
@@ -603,11 +615,11 @@ export default function PurchaseOrderEntryForm({
       receivedFromEmail: form.receivedFromEmail,
       attachmentUrl: form.attachmentUrl,
       verificationStatus: form.verificationStatus,
-      verifiedBy: form.verifiedBy,
-      verifiedAt: form.verifiedAt,
+      verifiedBy: form.verifiedBy || null,
+      verifiedAt: form.verifiedAt || null,
       verificationNotes: form.notes,
-      uploadedBy: form.uploadedBy,
-      receivedAt: form.receivedAt,
+      uploadedBy: form.uploadedBy || null,
+      receivedAt: form.receivedAt || null,
       quotationRefNo: form.quotationRefNo,
       quotationRefDate: form.quotationRefDate,
       buyerName: form.buyerName,
@@ -642,6 +654,21 @@ export default function PurchaseOrderEntryForm({
         ? await updatePurchaseOrder(activePurchaseOrderId, payload)
         : await createPurchaseOrder(payload);
       setActivePurchaseOrderId(normalizeId(saved.id));
+
+      // Upload file if attached to main form
+      if (mainFormFile && saved.id) {
+        try {
+          await uploadPoFile(saved.id, mainFormFile);
+          setMainFormFile(null);
+        } catch (uploadError) {
+          console.error("Failed to upload file:", uploadError);
+          setSnackbar({
+            open: true,
+            message: "PO saved but file upload failed. Please upload manually.",
+            severity: "warning",
+          });
+        }
+      }
 
       sessionStorage.setItem(
         "purchaseOrderData",
@@ -692,6 +719,13 @@ export default function PurchaseOrderEntryForm({
         message: "Purchase order saved successfully.",
         severity: "success",
       });
+
+      // Redirect to verification screen for new POs
+      if (!activePurchaseOrderId) {
+        sessionStorage.setItem("purchaseOrderBackView", defaultReturnView);
+        sessionStorage.setItem("purchaseOrderId", String(saved.id));
+        setTimeout(() => onNavigate("po-verification"), 1000);
+      }
     } catch (error) {
       console.error("Failed to save purchase order", error);
       setSnackbar({
@@ -700,6 +734,14 @@ export default function PurchaseOrderEntryForm({
         severity: "error",
       });
     }
+  };
+
+  const statusColorMap = {
+    Draft: "default",
+    PendingReview: "warning",
+    Approved: "success",
+    ApprovedWithMismatch: "warning",
+    Rejected: "error",
   };
 
   const queue = useMemo(() => {
@@ -711,7 +753,7 @@ export default function PurchaseOrderEntryForm({
       amount: totals.totalPrice,
       source: null,
       current: true,
-      verificationStatus: form.verificationStatus || "pending",
+      verificationStatus: form.verificationStatus || "Draft",
     };
     const savedOrders = purchaseOrderRecords.map((purchaseOrder) => ({
       id: purchaseOrder.id,
@@ -724,9 +766,7 @@ export default function PurchaseOrderEntryForm({
       date: purchaseOrder.poDate || "—",
       amount: Number(purchaseOrder.totalAmount || 0),
       source: purchaseOrder,
-      verificationStatus: (
-        purchaseOrder.verificationStatus || "pending"
-      ).toLowerCase(),
+      verificationStatus: purchaseOrder.verificationStatus || "Draft",
     }));
     return [current, ...savedOrders];
   }, [
@@ -741,6 +781,7 @@ export default function PurchaseOrderEntryForm({
   const [queueSearch, setQueueSearch] = useState("");
   const [queueFilter, setQueueFilter] = useState("all");
   const [showUpload, setShowUpload] = useState(false);
+  const [intakeFile, setIntakeFile] = useState(null);
   const [intakeForm, setIntakeForm] = useState({
     quotationId: "",
     poNo: form.poNo || "", // Pre-fill with auto-generated PO number
@@ -757,9 +798,15 @@ export default function PurchaseOrderEntryForm({
     [quotationRecords],
   );
   const selectedQuotationLabel =
-    quotationSearchOptions.find((option) => option.id === String(intakeForm.quotationId))
-      ?.label || "";
-  const statusOptions = ["Open", "Partially fulfilled", "Fulfilled", "Cancelled"];
+    quotationSearchOptions.find(
+      (option) => option.id === String(intakeForm.quotationId),
+    )?.label || "";
+  const statusOptions = [
+    "Open",
+    "Partially fulfilled",
+    "Fulfilled",
+    "Cancelled",
+  ];
   const statusValueMap = {
     Open: "open",
     "Partially fulfilled": "partially_fulfilled",
@@ -812,7 +859,7 @@ export default function PurchaseOrderEntryForm({
       poNo: purchaseOrder.poNo || prev.poNo,
       poDate: purchaseOrder.poDate || prev.poDate,
       status: purchaseOrder.status || prev.status,
-      verificationStatus: purchaseOrder.verificationStatus || "pending",
+      verificationStatus: purchaseOrder.verificationStatus || "Draft",
       quotationRefNo:
         purchaseOrder.quotationRefNo ||
         purchaseOrder.quotationNo ||
@@ -840,7 +887,7 @@ export default function PurchaseOrderEntryForm({
         prev.buyerStateCode,
       buyerGSTN: customer?.gstn || purchaseOrder.buyerGSTN || prev.buyerGSTN,
       supplierName:
-        supplier?.name || purchaseOrder.supplierName || prev.supplierName,
+        supplier?.name || purchaseOrder.organizationName || purchaseOrder.supplierName || prev.supplierName,
       supplierAddress:
         supplier?.address ||
         purchaseOrder.supplierAddress ||
@@ -870,62 +917,7 @@ export default function PurchaseOrderEntryForm({
             }))
           : buildQuotationItems(purchaseOrder, moduleCatalog),
     }));
-  };
-
-  const updateVerificationStatus = async (status) => {
-    if (!activePurchaseOrderId) {
-      setSnackbar({
-        open: true,
-        message:
-          "Save the purchase order before updating its verification status.",
-        severity: "warning",
-      });
-      return;
-    }
-
-    try {
-      const result = await updatePurchaseOrderVerification(
-        activePurchaseOrderId,
-        {
-          verificationStatus: status,
-          verificationNotes: form.notes || form.verificationNotes,
-        },
-      );
-      setForm((prev) => ({
-        ...prev,
-        verificationStatus: result.verificationStatus,
-        verificationNotes: result.verificationNotes || "",
-        notes: result.verificationNotes || "",
-        verifiedAt: result.verifiedAt || "",
-      }));
-      setPurchaseOrderRecords((records) =>
-        records.map((record) =>
-          normalizeId(record.id) === activePurchaseOrderId
-            ? {
-                ...record,
-                verificationStatus: result.verificationStatus,
-                verificationNotes: result.verificationNotes || "",
-                verifiedAt: result.verifiedAt || "",
-              }
-            : record,
-        ),
-      );
-      setSnackbar({
-        open: true,
-        message: `Purchase order verification status updated to ${result.verificationStatus}.`,
-        severity: "success",
-      });
-    } catch (error) {
-      console.error(
-        "Failed to update purchase order verification status",
-        error,
-      );
-      setSnackbar({
-        open: true,
-        message: "Unable to update the purchase order verification status.",
-        severity: "error",
-      });
-    }
+    setMainFormFile(null);
   };
 
   const updateIntakeField = (field, value) => {
@@ -937,7 +929,8 @@ export default function PurchaseOrderEntryForm({
     intakeForm.quotationId &&
     intakeForm.poDate &&
     intakeForm.receivedFromEmail &&
-    intakeForm.attachmentUrl,
+    intakeForm.attachmentUrl &&
+    intakeFile,
   );
 
   const handleEmailPoIntake = async (event) => {
@@ -965,22 +958,99 @@ export default function PurchaseOrderEntryForm({
       });
     }
 
-    setForm((prev) => ({
-      ...prev,
-      poNo: intakeForm.poNo || prev.poNo,
-      poDate: intakeForm.poDate || prev.poDate,
+    // Create the PO payload
+    const payload = {
+      quotationId: intakeForm.quotationId,
+      companyName: quotation?.organizationName || "",
+      poNo: intakeForm.poNo || form.poNo,
+      poDate: intakeForm.poDate || new Date().toISOString().slice(0, 10),
+      status: "open",
       poDirection: "customer",
       receivedFromEmail: intakeForm.receivedFromEmail,
       attachmentUrl: intakeForm.attachmentUrl,
-      verificationStatus: "pending",
+      verificationStatus: "Draft",
       receivedAt: new Date().toISOString(),
-    }));
-    setShowUpload(false);
-    setSnackbar({
-      open: true,
-      message: "Purchase order created successfully from email intake.",
-      severity: "success",
-    });
+      buyerName: quotation?.quotationToName || "",
+      buyerAddress: quotation?.quotationToAddress || "",
+      supplierName: quotation?.organizationName || "",
+      deliveryTerms: "",
+      paymentTerms: "",
+      expectedDeliveryDate: "",
+      notes: "",
+      totalAmount: 0,
+      items: form.items.map((item) => ({
+        description: item.description,
+        qty: Number(item.qty) || 1,
+        uom: item.uom || "Nos.",
+        rate: Number(item.rate) || 0,
+        modulePrice: Number(item.modulePrice) || 0,
+        implementationPrice: Number(item.implementationPrice) || 0,
+        discountPercentage: Number(item.discountPercentage) || 0,
+        discountAmount: Number(item.discountAmount) || 0,
+      })),
+    };
+
+    try {
+      // Create the PO
+      const saved = await createPurchaseOrder(payload);
+      const savedId = normalizeId(saved.id);
+      setActivePurchaseOrderId(savedId);
+
+      // Upload the file if available
+      if (intakeFile && savedId) {
+        try {
+          await uploadPoFile(savedId, intakeFile);
+        } catch (uploadError) {
+          console.error("Failed to upload file:", uploadError);
+          setSnackbar({
+            open: true,
+            message: "PO created but file upload failed. Please upload manually.",
+            severity: "warning",
+          });
+        }
+      }
+
+      // Reload the PO to get updated data with file info
+      if (savedId) {
+        const updatedPo = await fetchPurchaseOrderById(savedId);
+        if (updatedPo) {
+          setForm((prev) => ({
+            ...prev,
+            ...updatedPo,
+            items:
+              Array.isArray(updatedPo.items) && updatedPo.items.length > 0
+                ? updatedPo.items.map((item) => ({
+                    ...item,
+                    discountPercentage: Number(item.discountPercentage) || 0,
+                    discountAmount: Number(item.discountAmount) || 0,
+                    isSourceData: true,
+                  }))
+                : prev.items,
+          }));
+        }
+      }
+
+      setShowUpload(false);
+      setIntakeFile(null);
+      setIntakeForm((prev) => ({
+        ...prev,
+        quotationId: "",
+        receivedFromEmail: "",
+        attachmentUrl: "",
+      }));
+      setSnackbar({
+        open: true,
+        message: "Purchase order created successfully from email intake.",
+        severity: "success",
+      });
+    } catch (error) {
+      console.error("Failed to create purchase order from email intake", error);
+      setSnackbar({
+        open: true,
+        message: "Unable to create purchase order. Please try again.",
+        severity: "error",
+      });
+    }
   };
 
   const formatMoney = (value) =>
@@ -1059,29 +1129,36 @@ export default function PurchaseOrderEntryForm({
             </button>
             <button
               type="button"
-              className={queueFilter === "pending" ? "active" : ""}
-              onClick={() => setQueueFilter("pending")}
+              className={queueFilter === "Draft" ? "active" : ""}
+              onClick={() => setQueueFilter("Draft")}
             >
-              Pending
+              Draft
             </button>
             <button
               type="button"
-              className={queueFilter === "verified" ? "active" : ""}
-              onClick={() => setQueueFilter("verified")}
+              className={queueFilter === "PendingReview" ? "active" : ""}
+              onClick={() => setQueueFilter("PendingReview")}
             >
-              Verified
+              Pending Review
             </button>
             <button
               type="button"
-              className={queueFilter === "mismatch" ? "active" : ""}
-              onClick={() => setQueueFilter("mismatch")}
+              className={queueFilter === "Approved" ? "active" : ""}
+              onClick={() => setQueueFilter("Approved")}
             >
-              Mismatch
+              Approved
             </button>
             <button
               type="button"
-              className={queueFilter === "rejected" ? "active" : ""}
-              onClick={() => setQueueFilter("rejected")}
+              className={queueFilter === "ApprovedWithMismatch" ? "active" : ""}
+              onClick={() => setQueueFilter("ApprovedWithMismatch")}
+            >
+              Approved w/ Mismatch
+            </button>
+            <button
+              type="button"
+              className={queueFilter === "Rejected" ? "active" : ""}
+              onClick={() => setQueueFilter("Rejected")}
             >
               Rejected
             </button>
@@ -1096,7 +1173,12 @@ export default function PurchaseOrderEntryForm({
               >
                 <div className="po-queue-item-top">
                   <strong>{entry.ref}</strong>
-                  <span>{entry.verificationStatus.toUpperCase()}</span>
+                  <Chip
+                    label={entry.verificationStatus}
+                    size="small"
+                    variant="outlined"
+                    color={statusColorMap[entry.verificationStatus] || "default"}
+                  />
                 </div>
                 <div>{entry.company}</div>
                 <small>
@@ -1153,38 +1235,52 @@ export default function PurchaseOrderEntryForm({
                   Edit
                 </button>
               )} */}
-              {!viewOnly &&
-                activePurchaseOrderId &&
-                form.verificationStatus === "pending" && (
-                  <>
-                    <button
-                      type="button"
-                      className="app-action-btn app-action-btn--primary"
-                      onClick={() => updateVerificationStatus("verified")}
-                    >
-                      Verify & allow Invoicing
-                    </button>
-                    <button
-                      type="button"
-                      className="app-action-btn app-action-btn--secondary"
-                      onClick={() => updateVerificationStatus("mismatch")}
-                    >
-                      Flag Mismatch
-                    </button>
-                    <button
-                      type="button"
-                      className="app-action-btn app-action-btn--secondary"
-                      onClick={() => updateVerificationStatus("rejected")}
-                    >
-                      Reject PO
-                    </button>
-                  </>
-                )}
-              {!viewOnly &&
-                activePurchaseOrderId &&
-                form.verificationStatus === "rejected" && (
-                  <button
+              {!viewOnly && activePurchaseOrderId && (
+                <>
+                  <Button
                     type="button"
+                    variant="contained"
+                    className="app-action-btn app-action-btn--primary"
+                    onClick={() => {
+                      sessionStorage.setItem(
+                        "purchaseOrderBackView",
+                        defaultReturnView,
+                      );
+                      sessionStorage.setItem(
+                        "purchaseOrderId",
+                        String(activePurchaseOrderId),
+                      );
+                      onNavigate("po-verification");
+                    }}
+                  >
+                    Verify PO
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outlined"
+                    className="app-action-btn app-action-btn--secondary"
+                    onClick={() => {
+                      sessionStorage.setItem(
+                        "purchaseOrderBackView",
+                        defaultReturnView,
+                      );
+                      sessionStorage.setItem(
+                        "purchaseOrderId",
+                        String(activePurchaseOrderId),
+                      );
+                      onNavigate("purchase-order-entry");
+                    }}
+                  >
+                    Edit PO
+                  </Button>
+                </>
+              )}
+              {!viewOnly &&
+                activePurchaseOrderId &&
+                form.verificationStatus === "Rejected" && (
+                  <Button
+                    type="button"
+                    variant="contained"
                     className="app-action-btn app-action-btn--primary"
                     onClick={() => {
                       if (form.sourceQuotationId) {
@@ -1201,18 +1297,31 @@ export default function PurchaseOrderEntryForm({
                     }}
                   >
                     Create Quotation Revision
-                  </button>
+                  </Button>
                 )}
               {!viewOnly &&
                 activePurchaseOrderId &&
-                form.verificationStatus !== "pending" && (
-                  <button
+                (form.verificationStatus === "Approved" ||
+                  form.verificationStatus === "ApprovedWithMismatch" ||
+                  form.verificationStatus === "Rejected") && (
+                  <Button
                     type="button"
+                    variant="outlined"
                     className="app-action-btn app-action-btn--secondary"
-                    onClick={() => updateVerificationStatus("pending")}
+                    onClick={() => {
+                      sessionStorage.setItem(
+                        "purchaseOrderBackView",
+                        defaultReturnView,
+                      );
+                      sessionStorage.setItem(
+                        "purchaseOrderId",
+                        String(activePurchaseOrderId),
+                      );
+                      onNavigate("po-verification");
+                    }}
                   >
-                    Move to pending
-                  </button>
+                    View Verification
+                  </Button>
                 )}
             </div>
           </div>
@@ -1250,7 +1359,9 @@ export default function PurchaseOrderEntryForm({
                       label="Status"
                       options={statusOptions}
                       value={statusValueMap[form.status] || form.status}
-                      onChange={(value) => updateField("status", statusValueMap[value] || value)}
+                      onChange={(value) =>
+                        updateField("status", statusValueMap[value] || value)
+                      }
                       disabled={viewOnly}
                     />
                     <label>
@@ -1292,6 +1403,60 @@ export default function PurchaseOrderEntryForm({
                     </label>
                   </div>
                 </section>
+                {/* Attachment Section */}
+                {!viewOnly && (
+                  <section className="po-card">
+                    <div className="po-card-title">
+                      <span>02b</span>
+                      <h3>PO Attachment</h3>
+                    </div>
+                    <div className="po-fields po-fields-2">
+                      <label>
+                        Received from (email)
+                        <input
+                          type="email"
+                          value={form.receivedFromEmail}
+                          onChange={(e) => updateField("receivedFromEmail", e.target.value)}
+                          placeholder="procurement@client.com"
+                        />
+                      </label>
+                      <label>
+                        Attachment
+                        <Box
+                          component="label"
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1,
+                            minHeight: 40,
+                            border: "1px dashed",
+                            borderColor: "divider",
+                            borderRadius: 1,
+                            px: 1.5,
+                            color: "text.secondary",
+                            fontSize: "13px",
+                            cursor: "pointer",
+                          }}
+                        >
+                          📎{" "}
+                          {form.attachmentUrl || "Choose the PO file..."}
+                          <input
+                            hidden
+                            type="file"
+                            accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                setMainFormFile(file);
+                                updateField("attachmentUrl", file.name);
+                              }
+                            }}
+                          />
+                        </Box>
+                      </label>
+                    </div>
+                  </section>
+                )}
                 <section className="po-card">
                   <div className="po-card-title">
                     <span>02</span>
@@ -1436,40 +1601,43 @@ export default function PurchaseOrderEntryForm({
                       <h3>Additional scope</h3>
                       <em>{form.additionalScopes.length} items</em>
                     </div>
-                  <div className="po-table-wrap">
-                    <table className="po-table po-additional-scope-table">
-                      <thead>
-                        <tr>
-                          <th>Requirement</th>
-                          <th>Module</th>
-                          <th>Manpower</th>
-                          <th>Days</th>
-                          <th>Rate</th>
-                          <th>Amount</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {form.additionalScopes.length > 0 ? (
-                          form.additionalScopes.map((scope, index) => (
-                            <tr key={`additional-scope-${index}`}>
-                              <td>{scope.requirement || "-"}</td>
-                              <td>{scope.modules || "-"}</td>
-                              <td>{scope.noOfManpower}</td>
-                              <td>{scope.noOfDays}</td>
-                              <td>{formatMoney(scope.rate)}</td>
-                              <td>{formatMoney(scope.amount)}</td>
-                            </tr>
-                          ))
-                        ) : (
+                    <div className="po-table-wrap">
+                      <table className="po-table po-additional-scope-table">
+                        <thead>
                           <tr>
-                            <td colSpan="6" className="po-additional-scope-empty">
-                              No additional scope added.
-                            </td>
+                            <th>Requirement</th>
+                            <th>Module</th>
+                            <th>Manpower</th>
+                            <th>Days</th>
+                            <th>Rate</th>
+                            <th>Amount</th>
                           </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+                        <tbody>
+                          {form.additionalScopes.length > 0 ? (
+                            form.additionalScopes.map((scope, index) => (
+                              <tr key={`additional-scope-${index}`}>
+                                <td>{scope.requirement || "-"}</td>
+                                <td>{scope.modules || "-"}</td>
+                                <td>{scope.noOfManpower}</td>
+                                <td>{scope.noOfDays}</td>
+                                <td>{formatMoney(scope.rate)}</td>
+                                <td>{formatMoney(scope.amount)}</td>
+                              </tr>
+                            ))
+                          ) : (
+                            <tr>
+                              <td
+                                colSpan="6"
+                                className="po-additional-scope-empty"
+                              >
+                                No additional scope added.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                   <div className="po-total-row">
                     <span>
@@ -1523,9 +1691,7 @@ export default function PurchaseOrderEntryForm({
                         onChange={(e) => updateField("notes", e.target.value)}
                         disabled={viewOnly}
                         className={
-                          validationErrors.notes
-                            ? "validation-error"
-                            : ""
+                          validationErrors.notes ? "validation-error" : ""
                         }
                       />
                     </label>
@@ -1544,7 +1710,10 @@ export default function PurchaseOrderEntryForm({
       {showUpload && (
         <Dialog
           open
-          onClose={() => setShowUpload(false)}
+          onClose={() => {
+            setShowUpload(false);
+            setIntakeFile(null);
+          }}
           fullWidth
           maxWidth="sm"
         >
@@ -1584,10 +1753,7 @@ export default function PurchaseOrderEntryForm({
                     const selectedOption = quotationSearchOptions.find(
                       (option) => option.label === label,
                     );
-                    updateIntakeField(
-                      "quotationId",
-                      selectedOption?.id || "",
-                    );
+                    updateIntakeField("quotationId", selectedOption?.id || "");
                   }}
                   required
                   allowFreeText={false}
@@ -1661,12 +1827,13 @@ export default function PurchaseOrderEntryForm({
                       type="file"
                       accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
                       required
-                      onChange={(e) =>
-                        updateIntakeField(
-                          "attachmentUrl",
-                          e.target.files?.[0]?.name || "",
-                        )
-                      }
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setIntakeFile(file);
+                          updateIntakeField("attachmentUrl", file.name);
+                        }
+                      }}
                     />
                   </Box>
                 </Box>
@@ -1675,7 +1842,10 @@ export default function PurchaseOrderEntryForm({
           </DialogContent>
           <DialogActions sx={{ px: 3, py: 1.5 }}>
             <Button
-              onClick={() => setShowUpload(false)}
+              onClick={() => {
+                setShowUpload(false);
+                setIntakeFile(null);
+              }}
               sx={dialogSecondaryActionSx}
             >
               Cancel
@@ -1699,14 +1869,6 @@ export default function PurchaseOrderEntryForm({
         onClose={() => setSnackbar((current) => ({ ...current, open: false }))}
       />
     </div>
-  );
-}
-
-function RequiredMark() {
-  return (
-    <span className="required-mark" aria-label="required">
-      *
-    </span>
   );
 }
 

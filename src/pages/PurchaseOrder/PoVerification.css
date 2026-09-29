@@ -1,0 +1,557 @@
+.pov-page {
+  --ink: #1b2430;
+  --soft: #5b6675;
+  --line: #dfe4ea;
+  --bg: #f2f4f7;
+  --panel: #fff;
+  --field: #fafbfc;
+  --accent: #2b5797;
+  --ok: #1f8a4c;
+  --okbg: #e6f6ec;
+  --warn: #b3690a;
+  --warnbg: #fdf0dc;
+  --bad: #c0392b;
+
+  background: var(--bg);
+  color: var(--ink);
+  font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 14px;
+  min-height: 100vh;
+}
+
+.pov-page * {
+  box-sizing: border-box;
+}
+
+/* ---------- Header ---------- */
+
+.pov-header {
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  padding: 14px 20px;
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.pov-header h1 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 650;
+}
+
+.pov-sub {
+  color: var(--soft);
+  font-size: 12.5px;
+}
+
+.pov-back-button {
+  text-transform: none !important;
+  color: var(--soft) !important;
+}
+
+.pov-common-back-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  background: #757575;
+  color: #fff;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(117, 117, 117, 0.25);
+  transition: all 0.2s ease;
+}
+
+.pov-common-back-btn:hover {
+  background: #616161;
+  box-shadow: 0 4px 8px rgba(117, 117, 117, 0.35);
+  transform: translateY(-1px);
+}
+
+.pov-common-back-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.pov-badge {
+  margin-left: auto;
+  font-weight: 600;
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 5px;
+}
+
+.pov-status-draft,
+.pov-status-pending {
+  background: var(--warnbg);
+  color: var(--warn);
+}
+
+.pov-status-approved {
+  background: var(--okbg);
+  color: var(--ok);
+}
+
+.pov-status-mismatch {
+  background: var(--warnbg);
+  color: var(--warn);
+}
+
+.pov-status-rejected {
+  background: #fce4ec;
+  color: var(--bad);
+}
+
+/* ---------- Layout grid ---------- */
+
+.pov-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 16px;
+  padding: 16px 20px 30px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+@media (max-width: 900px) {
+  .pov-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .pov-viewer {
+    position: static !important;
+    height: 60vh !important;
+  }
+}
+
+/* ---------- Left: file viewer ---------- */
+
+.pov-viewer {
+  position: sticky;
+  top: 76px;
+  height: calc(100vh - 96px);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.pov-viewer-inner {
+  height: 100%;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+}
+
+/* ---------- Right: cards ---------- */
+
+.pov-col {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.pov-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.pov-card h2 {
+  margin: 0 0 2px;
+  font-size: 14.5px;
+  font-weight: 650;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pov-hint {
+  color: var(--soft);
+  font-size: 12px;
+  margin-bottom: 12px;
+}
+
+.pov-tag {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-left: 6px;
+}
+
+.pov-tag-editable {
+  background: var(--okbg);
+  color: var(--ok);
+}
+
+.pov-tag-readonly {
+  background: var(--field);
+  color: var(--soft);
+  border: 1px solid var(--line);
+}
+
+/* ---------- Rows (label + value/input) ---------- */
+
+.pov-row {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 9px;
+}
+
+.pov-row-textarea {
+  align-items: flex-start;
+}
+
+.pov-row label {
+  color: var(--soft);
+  font-size: 12.5px;
+  font-weight: 500;
+  padding-top: 2px;
+}
+
+.pov-ro {
+  background: var(--field);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 7px 10px;
+  color: var(--ink);
+}
+
+.pov-ro-amount {
+  font-weight: 700;
+  color: var(--ok);
+}
+
+.pov-row input,
+.pov-row textarea {
+  width: 100%;
+  font: inherit;
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 7px 10px;
+}
+
+.pov-row input:focus,
+.pov-row textarea:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+}
+
+.pov-row input:disabled,
+.pov-row textarea:disabled {
+  background: var(--field);
+  color: var(--soft);
+}
+
+.pov-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pov-input-wrap input,
+.pov-input-wrap textarea {
+  flex: 1;
+}
+
+.pov-icon-ok {
+  color: var(--ok) !important;
+  flex-shrink: 0;
+}
+
+.pov-icon-warn {
+  color: var(--warn) !important;
+  flex-shrink: 0;
+}
+
+/* ---------- Comparison table ---------- */
+
+.pov-cmp {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.pov-cmp th,
+.pov-cmp td {
+  text-align: left;
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--line);
+}
+
+.pov-cmp th {
+  color: var(--soft);
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.pov-cmp tr:last-child td {
+  border-bottom: 0;
+}
+
+.pov-ok {
+  color: var(--ok);
+  font-weight: 600;
+}
+
+.pov-bad {
+  color: var(--warn);
+  font-weight: 600;
+}
+
+.pov-sum {
+  margin-top: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pov-good {
+  background: var(--okbg);
+  color: var(--ok);
+}
+
+.pov-diff {
+  background: var(--warnbg);
+  color: var(--warn);
+}
+
+/* ---------- Actions ---------- */
+
+.pov-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.pov-actions button {
+  font: inherit;
+  font-weight: 600;
+  font-size: 13.5px;
+  padding: 9px 16px;
+  border-radius: 7px;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+}
+
+.pov-actions button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.pov-actions .pov-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.pov-actions .pov-danger {
+  background: var(--bad);
+  border-color: var(--bad);
+  color: #fff;
+}
+
+/* ---------- Checkbox / notes ---------- */
+
+.pov-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  margin-bottom: 14px;
+}
+
+.pov-checkbox-label input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+}
+
+.pov-notes-field label {
+  display: block;
+  font-size: 12.5px;
+  color: var(--soft);
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.pov-notes-field textarea {
+  width: 100%;
+  font: inherit;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  resize: vertical;
+}
+
+/* ---------- Final status card ---------- */
+
+.pov-final-row {
+  display: flex;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f2f5;
+  font-size: 13.5px;
+}
+
+.pov-final-row:last-of-type {
+  border-bottom: none;
+}
+
+.pov-final-label {
+  font-weight: 500;
+  color: var(--soft);
+  min-width: 100px;
+  flex-shrink: 0;
+}
+
+.pov-final-notes {
+  white-space: pre-wrap;
+  background: var(--field);
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+/* ---------- Audit log ---------- */
+
+.pov-audit-toggle {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-weight: 500;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.pov-audit-toggle:hover {
+  text-decoration: underline;
+}
+
+.pov-audit-log {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  max-height: 280px;
+  overflow: auto;
+  background: var(--panel);
+}
+
+.pov-audit-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.pov-audit-table th,
+.pov-audit-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+
+.pov-audit-table th {
+  background: var(--field);
+  color: var(--soft);
+  font-size: 11.5px;
+  text-transform: uppercase;
+}
+
+.pov-audit-action {
+  background: var(--field);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 11.5px;
+}
+
+/* ---------- Dialogs ---------- */
+
+.pov-dialog-title {
+  color: #fff !important;
+}
+
+.pov-dialog-content {
+  padding: 20px 24px !important;
+}
+
+.pov-dialog-actions {
+  padding: 14px 24px !important;
+}
+
+/* ---------- Error / loading ---------- */
+
+.pov-error {
+  background: #fce4ec;
+  border: 1px solid #f8bbd0;
+  color: var(--bad);
+  padding: 14px 18px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.pov-error button {
+  font: inherit;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--bad);
+  background: #fff;
+  color: var(--bad);
+  cursor: pointer;
+}
+
+.pov-error-primary {
+  background: var(--bad) !important;
+  color: #fff !important;
+}
+
+.pov-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 60vh;
+}
+
+.pov-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--line);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: pov-spin 0.8s linear infinite;
+}
+
+@keyframes pov-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

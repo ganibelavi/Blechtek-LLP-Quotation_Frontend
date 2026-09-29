@@ -835,13 +835,15 @@ export default function InvoiceEntryForm({
       new Set(
         purchaseOrders
           .filter(
-            (po) =>
-              String(
+            (po) => {
+              const vStatus = String(
                 po.verificationStatus ??
                   po.VerificationStatus ??
                   po.po?.verificationStatus ??
                   "",
-              ).toLowerCase() === "verified",
+              );
+              return vStatus === "Approved" || vStatus === "ApprovedWithMismatch";
+            }
           )
           .map((po) => po.quotationId ?? po.quotation?.quotationId)
           .filter(Boolean)
@@ -880,13 +882,15 @@ export default function InvoiceEntryForm({
     () =>
       purchaseOrders
         .filter(
-          (purchaseOrder) =>
-            String(
+          (purchaseOrder) => {
+            const vStatus = String(
               purchaseOrder.verificationStatus ??
                 purchaseOrder.VerificationStatus ??
                 purchaseOrder.po?.verificationStatus ??
                 "",
-            ).toLowerCase() === "verified",
+            );
+            return vStatus === "Approved" || vStatus === "ApprovedWithMismatch";
+          }
         )
         .map((purchaseOrder) => {
           const organizationName = String(
@@ -1012,12 +1016,15 @@ export default function InvoiceEntryForm({
       (record) =>
         String(record.quotationId ?? record.po?.quotationId ?? "") ===
           quotationId &&
-        String(
-          record.verificationStatus ??
-            record.VerificationStatus ??
-            record.po?.verificationStatus ??
-            "",
-        ).toLowerCase() === "verified",
+        (() => {
+          const vStatus = String(
+            record.verificationStatus ??
+              record.VerificationStatus ??
+              record.po?.verificationStatus ??
+              "",
+          );
+          return vStatus === "Approved" || vStatus === "ApprovedWithMismatch";
+        })(),
     );
     const linkedPoId = normalizeId(
       linkedPoSummary?.id ?? linkedPoSummary?.po?.id,

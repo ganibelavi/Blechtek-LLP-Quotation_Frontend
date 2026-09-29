@@ -16,6 +16,38 @@ const client = axios.create({
   headers: { "Content-Type": "application/json" }
 });
 
+// Add auth token interceptor
+client.interceptors.request.use((config) => {
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("qa_token");
+    console.log('API Request:', config.url, 'Token present:', !!token);
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    } else {
+      console.warn('No auth token found in localStorage!');
+    }
+  }
+  return config;
+});
+
+// Add response interceptor to handle 401
+client.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      console.error('401 Unauthorized - redirecting to login');
+      // Clear invalid token
+      localStorage.removeItem("qa_token");
+      localStorage.removeItem("qa_user");
+      // Redirect to login
+      if (typeof window !== "undefined") {
+        window.location.href = "/login";
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 /** GET /api/modules reads the database-backed Modules master table. */
 export async function fetchModules() {
   const { data } = await client.get("/api/modules");
@@ -190,6 +222,71 @@ export async function updatePurchaseOrderVerification(id, payload) {
 
 export async function deletePurchaseOrder(id) {
   await client.delete(`/api/purchase-order/${id}`);
+}
+
+export async function fetchQuotationsForPo() {
+  const { data } = await client.get("/api/purchase-order/quotations-for-po");
+  return Array.isArray(data) ? data : [];
+}
+
+export async function fetchPoVerification(id) {
+  const { data } = await client.get(`/api/purchase-order/${id}/verification`);
+  return data;
+}
+
+export async function updatePoClientDetails(id, payload) {
+  const { data } = await client.put(`/api/purchase-order/${id}/client-details`, payload);
+  return data;
+}
+
+export async function approvePo(id, payload) {
+  const { data } = await client.post(`/api/purchase-order/${id}/approve`, payload);
+  return data;
+}
+
+export async function rejectPo(id, payload) {
+  const { data } = await client.post(`/api/purchase-order/${id}/reject`, payload);
+  return data;
+}
+
+export async function reopenPo(id, payload) {
+  const { data } = await client.post(`/api/purchase-order/${id}/reopen`, payload);
+  return data;
+}
+
+export async function fetchPoAuditLog(id) {
+  const { data } = await client.get(`/api/purchase-order/${id}/audit-log`);
+  return Array.isArray(data) ? data : [];
+}
+
+export async function fetchPoFile(id) {
+  try {
+    const response = await client.get(`/api/purchase-order/${id}/file`, {
+      responseType: 'blob',
+      timeout: 10000,
+    });
+    return response.data;
+  } catch (err) {
+    // Handle axios error with blob responseType - the error response won't be parsed
+    if (err.response) {
+      // Try to get error message from blob if possible
+      const status = err.response.status;
+      const statusText = err.response.statusText;
+      const error = new Error(`HTTP ${status}: ${statusText}`);
+      error.response = { status, statusText };
+      throw error;
+    }
+    throw err;
+  }
+}
+
+export async function uploadPoFile(id, file) {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await client.post(`/api/purchase-order/${id}/file`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
+  return response.data;
 }
 
 export async function createInvoice(payload) {

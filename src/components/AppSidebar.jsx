@@ -55,7 +55,10 @@ export default function AppSidebar({
     if (itemView === "created-purchase-orders") {
       sessionStorage.removeItem("purchaseOrderId");
       sessionStorage.removeItem("purchaseOrderViewOnly");
-      sessionStorage.setItem("purchaseOrderBackView", "created-purchase-orders");
+      sessionStorage.setItem(
+        "purchaseOrderBackView",
+        "created-purchase-orders",
+      );
       navigate("purchase-order-entry");
       return;
     }
@@ -93,6 +96,7 @@ export default function AppSidebar({
         "purchase-order",
         "purchase-order-entry",
         "purchase-order-print",
+        "po-verification",
       ].includes(view);
     }
     if (itemView === "created-invoices") {
@@ -166,7 +170,9 @@ export default function AppSidebar({
                   )}
                 </button>
                 {createViews.includes(item.view) && (
-                  <Tooltip title={`Create ${item.label.replace(/s$/, "").toLowerCase()}`}>
+                  <Tooltip
+                    title={`Create ${item.label.replace(/s$/, "").toLowerCase()}`}
+                  >
                     <IconButton
                       className="app-sidebar__create-action"
                       size="small"
@@ -195,24 +201,26 @@ export default function AppSidebar({
                   ))}
                 </div>
               )}
-              {item.view === "subscriptions" && subscriptionsExpanded && !collapsed && (
-                <div className="app-sidebar__submenu">
-                  {[
-                    ["customer-subscriptions", "Customer subscriptions"],
-                    ["renewals", "Renewals"],
-                    ["renewal-quotations", "Renewal quotations"],
-                  ].map(([subscriptionView, label]) => (
-                    <button
-                      type="button"
-                      key={subscriptionView}
-                      className={`app-sidebar__submenu-item ${view === subscriptionView ? "app-sidebar__submenu-item--active" : ""}`}
-                      onClick={() => navigate(subscriptionView)}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              )}
+              {item.view === "subscriptions" &&
+                subscriptionsExpanded &&
+                !collapsed && (
+                  <div className="app-sidebar__submenu">
+                    {[
+                      ["customer-subscriptions", "Customer subscriptions"],
+                      ["renewals", "Renewals"],
+                      ["renewal-quotations", "Renewal quotations"],
+                    ].map(([subscriptionView, label]) => (
+                      <button
+                        type="button"
+                        key={subscriptionView}
+                        className={`app-sidebar__submenu-item ${view === subscriptionView ? "app-sidebar__submenu-item--active" : ""}`}
+                        onClick={() => navigate(subscriptionView)}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                )}
             </React.Fragment>
           );
         })}

@@ -11,11 +11,17 @@ import {
   DialogContent,
   DialogTitle,
   Chip,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Input,
 } from "@mui/material";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
+import FilterListIcon from "@mui/icons-material/FilterList";
 import EntityTable from "../../components/EntityTable";
 import {
   fetchPurchaseOrders,
@@ -40,12 +46,29 @@ const STATUS_COLOR = {
   cancelled: "error",
 };
 
+const VERIFICATION_STATUS_LABEL = {
+  Draft: "Draft",
+  PendingReview: "Pending Review",
+  Approved: "Approved",
+  ApprovedWithMismatch: "Approved with Mismatch",
+  Rejected: "Rejected",
+};
+
+const VERIFICATION_STATUS_COLOR = {
+  Draft: "default",
+  PendingReview: "warning",
+  Approved: "success",
+  ApprovedWithMismatch: "warning",
+  Rejected: "error",
+};
+
 export default function CreatedPurchaseOrders({ onNavigate }) {
   const [purchaseOrders, setPurchaseOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [purchaseOrderToDelete, setPurchaseOrderToDelete] = useState(null);
+  const [verificationFilter, setVerificationFilter] = useState("all");
 
   const loadPurchaseOrders = async () => {
     try {
@@ -77,6 +100,13 @@ export default function CreatedPurchaseOrders({ onNavigate }) {
     onNavigate("purchase-order-entry");
   };
 
+  const openVerification = (row) => {
+    const purchaseOrderData = row.data || row;
+    sessionStorage.setItem("purchaseOrderBackView", "created-purchase-orders");
+    sessionStorage.setItem("purchaseOrderId", String(purchaseOrderData.id));
+    onNavigate("po-verification");
+  };
+
   const handleRemovePurchaseOrder = (row) => {
     setPurchaseOrderToDelete(row);
     setDeleteDialogOpen(true);
@@ -105,6 +135,11 @@ export default function CreatedPurchaseOrders({ onNavigate }) {
     setPurchaseOrderToDelete(null);
   };
 
+  const filteredPurchaseOrders = purchaseOrders.filter((po) => {
+    if (verificationFilter === "all") return true;
+    return po.verificationStatus === verificationFilter;
+  });
+
   const columns = [
     {
       key: "srNo",
@@ -124,7 +159,7 @@ export default function CreatedPurchaseOrders({ onNavigate }) {
     { key: "poDate", label: "PO Date", sortable: true, minWidth: 140 },
     {
       key: "status",
-      label: "Status",
+      label: "PO Status",
       sortable: true,
       minWidth: 150,
       render: ({ row }) => {
@@ -139,22 +174,50 @@ export default function CreatedPurchaseOrders({ onNavigate }) {
         );
       },
     },
+    {
+      key: "verificationStatus",
+      label: "Verification",
+      sortable: true,
+      minWidth: 180,
+      render: ({ row }) => {
+        const vStatus = row.verificationStatus || "Draft";
+        return (
+          <Chip
+            label={VERIFICATION_STATUS_LABEL[vStatus] || vStatus}
+            color={VERIFICATION_STATUS_COLOR[vStatus] || "default"}
+            size="small"
+            variant="outlined"
+          />
+        );
+      },
+    },
     { key: "totalAmount", label: "Amount", sortable: true, minWidth: 140 },
     {
       key: "actions",
       label: "Actions",
       sortable: false,
-      minWidth: 120,
+      minWidth: 160,
       render: ({ row }) => (
-        <Box sx={{ display: "flex", gap: 0.5 }}>
+        <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
           <Tooltip title="Open PO">
-            <IconButton size="small" onClick={() => openPurchaseOrder(row, true)}>
+            <IconButton
+              size="small"
+              onClick={() => openPurchaseOrder(row, true)}
+            >
               <VisibilityIcon fontSize="small" />
             </IconButton>
           </Tooltip>
           <Tooltip title="Edit PO">
-            <IconButton size="small" onClick={() => openPurchaseOrder(row, false)}>
+            <IconButton
+              size="small"
+              onClick={() => openPurchaseOrder(row, false)}
+            >
               <EditIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Verify PO">
+            <IconButton size="small" onClick={() => openVerification(row)}>
+              <FilterListIcon fontSize="small" />
             </IconButton>
           </Tooltip>
           <Tooltip title="Delete PO">
@@ -170,13 +233,14 @@ export default function CreatedPurchaseOrders({ onNavigate }) {
     },
   ];
 
-  const rows = purchaseOrders.map((po) => ({
+  const rows = filteredPurchaseOrders.map((po) => ({
     id: po.id,
     poNo: po.poNo || "-",
     buyerName: po.organizationName || po.companyName || po.buyerName || "-",
     quotationRefNo: po.quotationRefNo || "-",
     poDate: po.poDate || "-",
     status: po.status || "open",
+    verificationStatus: po.verificationStatus || "Draft",
     totalAmount: po.totalAmount
       ? `₹${Number(po.totalAmount).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
       : "₹0.00",
@@ -191,32 +255,63 @@ export default function CreatedPurchaseOrders({ onNavigate }) {
           justifyContent: "space-between",
           alignItems: "center",
           mb: 2,
+          flexWrap: "wrap",
+          gap: 2,
         }}
       >
         <h1 className="page-heading page-heading__text">Purchase Orders</h1>
-        <Tooltip title="Create purchase order">
-          <IconButton
-            color="primary"
-            aria-label="Create purchase order"
-            onClick={() => {
-              sessionStorage.removeItem("purchaseOrderId");
-              sessionStorage.removeItem("purchaseOrderViewOnly");
-              sessionStorage.setItem(
-                "purchaseOrderBackView",
-                "created-purchase-orders",
-              );
-              onNavigate("purchase-order-entry");
-            }}
-            sx={{
-              bgcolor: "primary.main",
-              color: "common.white",
-              borderRadius: 1,
-              "&:hover": { bgcolor: "primary.dark" },
-            }}
-          >
-            <AddIcon />
-          </IconButton>
-        </Tooltip>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 2,
+            flexWrap: "wrap",
+          }}
+        >
+          <FormControl size="small" sx={{ minWidth: 200 }}>
+            <InputLabel id="verification-filter-label">
+              Verification Status
+            </InputLabel>
+            <Select
+              labelId="verification-filter-label"
+              value={verificationFilter}
+              label="Verification Status"
+              onChange={(e) => setVerificationFilter(e.target.value)}
+            >
+              <MenuItem value="all">All</MenuItem>
+              <MenuItem value="Draft">Draft</MenuItem>
+              <MenuItem value="PendingReview">Pending Review</MenuItem>
+              <MenuItem value="Approved">Approved</MenuItem>
+              <MenuItem value="ApprovedWithMismatch">
+                Approved with Mismatch
+              </MenuItem>
+              <MenuItem value="Rejected">Rejected</MenuItem>
+            </Select>
+          </FormControl>
+          <Tooltip title="Create purchase order">
+            <IconButton
+              color="primary"
+              aria-label="Create purchase order"
+              onClick={() => {
+                sessionStorage.removeItem("purchaseOrderId");
+                sessionStorage.removeItem("purchaseOrderViewOnly");
+                sessionStorage.setItem(
+                  "purchaseOrderBackView",
+                  "created-purchase-orders",
+                );
+                onNavigate("purchase-order-entry");
+              }}
+              sx={{
+                bgcolor: "primary.main",
+                color: "common.white",
+                borderRadius: 1,
+                "&:hover": { bgcolor: "primary.dark" },
+              }}
+            >
+              <AddIcon />
+            </IconButton>
+          </Tooltip>
+        </Box>
       </Box>
 
       {error && (

@@ -20,6 +20,7 @@ import PurchaseOrder from "./pages/PurchaseOrder/PurchaseOrder";
 import PurchaseOrderPrint from "./pages/PurchaseOrder/PurchaseOrderPrint";
 import PurchaseOrderEntryForm from "./pages/PurchaseOrder/PurchaseOrderEntryForm";
 import CreatedPurchaseOrders from "./pages/PurchaseOrder/CreatedPurchaseOrders";
+import PoVerificationScreen from "./pages/PurchaseOrder/PoVerificationScreen";
 import CreatedInvoices from "./pages/Inovice/CreatedInvoices";
 import InvoiceEntryForm from "./pages/Inovice/InvoiceEntryForm";
 import GSTInvoice from "./pages/Inovice/GSTInvoice";
@@ -137,6 +138,7 @@ export default function App() {
       "purchase-order": "Purchase Order",
       "purchase-order-print": "Purchase Order Print Preview",
       "purchase-order-entry": "Purchase Order Entry",
+      "po-verification": "PO Verification",
       "created-purchase-orders": "Purchase Orders",
       "created-invoices": "Invoices",
       users: "Users",
@@ -197,6 +199,7 @@ export default function App() {
               "purchase-order",
               "purchase-order-print",
               "purchase-order-entry",
+              "po-verification",
               "created-purchase-orders",
               "created-invoices",
               "invoice",
@@ -278,6 +281,8 @@ export default function App() {
                       }
                     />
                   );
+                case "po-verification":
+                  return <PoVerificationScreen onNavigate={navigate} />;
                 case "created-purchase-orders":
                   return <CreatedPurchaseOrders onNavigate={navigate} />;
                 case "purchase-order":
