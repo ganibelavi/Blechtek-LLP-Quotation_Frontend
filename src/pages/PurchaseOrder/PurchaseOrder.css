@@ -514,7 +514,7 @@
 }
 
 .po-line-items-table {
-    min-width: 1100px;
+    table-layout: fixed;
 }
 
 .po-line-items-table th:nth-child(2),

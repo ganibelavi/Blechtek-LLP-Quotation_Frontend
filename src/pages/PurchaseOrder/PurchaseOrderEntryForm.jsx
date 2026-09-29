@@ -1257,8 +1257,8 @@ export default function PurchaseOrderEntryForm({
                   </Button>
                   <Button
                     type="button"
-                    variant="outlined"
-                    className="app-action-btn app-action-btn--secondary"
+                    variant="contained"
+                    className="app-action-btn app-action-btn--primary"
                     onClick={() => {
                       sessionStorage.setItem(
                         "purchaseOrderBackView",
@@ -1306,8 +1306,8 @@ export default function PurchaseOrderEntryForm({
                   form.verificationStatus === "Rejected") && (
                   <Button
                     type="button"
-                    variant="outlined"
-                    className="app-action-btn app-action-btn--secondary"
+                    variant="contained"
+                    className="app-action-btn app-action-btn--primary"
                     onClick={() => {
                       sessionStorage.setItem(
                         "purchaseOrderBackView",
