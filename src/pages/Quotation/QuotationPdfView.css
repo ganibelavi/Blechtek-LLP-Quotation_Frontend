@@ -471,14 +471,14 @@
 
 .q-result__btn {
   flex: 1;
-  min-width: 130px;
+  /* min-width: 130px; */
   text-align: center;
   padding: 5px 9px;
   border-radius: var(--radius-sm);
   font-size: 13px;
   font-weight: 600;
   text-decoration: none;
-  border: 1.5px solid var(--border);
+  border: none;
   color: var(--text-dark);
   cursor: pointer;
   transition: all 0.2s ease;
@@ -486,7 +486,7 @@
 
 .q-result__btn--primary {
   background: var(--primary-gradient);
-  border-color: var(--primary-blue);
+  border: none;
   color: #fff;
 }
 
@@ -496,7 +496,7 @@
 
 .q-result__btn--view {
   background: var(--surface);
-  border-color: var(--primary-blue);
+  border: none;
   color: var(--primary-blue);
 }
 

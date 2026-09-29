@@ -122,7 +122,7 @@
 .q-submit {
   margin-top: auto;
   margin-left: auto;
-  padding: 10px 15px;
+  padding: 7px 10px;
   border: none;
   border-radius: var(--radius-sm);
   background: var(--primary-gradient);

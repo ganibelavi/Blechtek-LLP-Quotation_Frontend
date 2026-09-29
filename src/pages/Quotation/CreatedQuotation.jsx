@@ -265,7 +265,7 @@ export default function CreatedQuotation({ onNavigate }) {
               <VisibilityIcon fontSize="small" color="primary" />
             </IconButton>
           </Tooltip>
-          <Tooltip title="Create Purchase Order">
+          {/* <Tooltip title="Create Purchase Order">
             <IconButton
               size="small"
               onClick={(e) => {
@@ -275,7 +275,7 @@ export default function CreatedQuotation({ onNavigate }) {
             >
               <ReceiptLongIcon fontSize="small" color="success" />
             </IconButton>
-          </Tooltip>
+          </Tooltip> */}
           {/* <Tooltip title="Revision History">
             <IconButton
               size="small"

@@ -172,7 +172,7 @@
 
 .additional-scope__add-btn,
 .additional-scope__remove-btn {
-  border: 1px solid var(--primary-blue);
+  border: none;
   border-radius: var(--radius-sm);
   padding: 8px 10px;
   background: linear-gradient(120deg, #308aea, #48cae4);
