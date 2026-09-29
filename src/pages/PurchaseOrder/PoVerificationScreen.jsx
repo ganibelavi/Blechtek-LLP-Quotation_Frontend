@@ -1,27 +1,18 @@
 import React, { useEffect, useState, useCallback } from "react";
 import {
-  Box,
   Button,
-  Chip,
   Alert,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
-  Paper,
-  CircularProgress,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
   TextField,
+  Chip,
+  Paper,
 } from "@mui/material";
 import {
   CheckCircle as CheckCircleIcon,
   Warning as WarningIcon,
-  Info as InfoIcon,
-  Close as CloseIcon,
   Visibility as VisibilityIcon,
   Description as DescriptionIcon,
   Refresh as RefreshIcon,
@@ -37,6 +28,8 @@ import {
   reopenPo,
   fetchQuotationById,
 } from "../../services/quotationApi";
+import CustomSnackbar from "../../components/CustomSnackbar";
+import { dialogPrimaryActionSx, dialogSecondaryActionSx } from "../../styles/modalActionButtonStyles";
 import "./PoVerification.css";
 
 const STATUS_CONFIG = {
@@ -67,7 +60,7 @@ const COMPARISON_FIELDS = [
   },
   {
     key: "terms",
-    label: "Payment Terms",
+    label: "Selected Modules",
     quotationKey: "quotationTerms",
     clientKey: "clientPoTerms",
     type: "text",
@@ -146,6 +139,12 @@ export default function PoVerificationScreen({ onNavigate }) {
   const [verificationConfirmed, setVerificationConfirmed] = useState(false);
   const [showApproveDialog, setShowApproveDialog] = useState(false);
   const [showReopenDialog, setShowReopenDialog] = useState(false);
+
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
 
   const [clientDetails, setClientDetails] = useState({
     clientPoNumber: "",
@@ -400,14 +399,40 @@ export default function PoVerificationScreen({ onNavigate }) {
     ClientPoTerms: clientDetails.clientPoTerms,
   });
 
+  const validateClientDetails = () => {
+    if (!clientDetails.clientPoNumber?.trim()) return false;
+    if (!clientDetails.clientPoDate) return false;
+    if (!clientDetails.clientPoAmount?.trim()) return false;
+    if (!clientDetails.clientPoItems?.trim()) return false;
+    if (!clientDetails.clientPoTerms?.trim()) return false;
+    return true;
+  };
+
   const handleSaveDraft = async () => {
     if (!data) return;
+    if (!validateClientDetails()) {
+      setSnackbar({
+        open: true,
+        message: "Please fill all required Client PO details.",
+        severity: "warning",
+      });
+      return;
+    }
     setSaving(true);
     try {
       await updatePoClientDetails(poId, buildClientPayload());
       await loadData();
+      setSnackbar({
+        open: true,
+        message: "Draft saved successfully.",
+        severity: "success",
+      });
     } catch (err) {
-      setError("Failed to save draft. Please try again.");
+      setSnackbar({
+        open: true,
+        message: "Failed to save draft. Please try again.",
+        severity: "error",
+      });
     } finally {
       setSaving(false);
     }
@@ -415,10 +440,22 @@ export default function PoVerificationScreen({ onNavigate }) {
 
   const handleApprove = async () => {
     if (!data) return;
+    if (!validateClientDetails()) {
+      setSnackbar({
+        open: true,
+        message: "Please fill all required Client PO details before approval.",
+        severity: "warning",
+      });
+      return;
+    }
     try {
       await updatePoClientDetails(poId, buildClientPayload());
     } catch (err) {
-      setError("Failed to save client details before approval.");
+      setSnackbar({
+        open: true,
+        message: "Failed to save client details before approval.",
+        severity: "error",
+      });
       return;
     }
     setApproving(true);
@@ -427,8 +464,17 @@ export default function PoVerificationScreen({ onNavigate }) {
       await loadData();
       setApprovalNotes("");
       setVerificationConfirmed(false);
+      setSnackbar({
+        open: true,
+        message: `PO ${mismatchCount > 0 ? "approved with mismatch" : "approved"} successfully.`,
+        severity: "success",
+      });
     } catch (err) {
-      setError(err.response?.data?.error || "Failed to approve.");
+      setSnackbar({
+        open: true,
+        message: err.response?.data?.error || "Failed to approve.",
+        severity: "error",
+      });
     } finally {
       setApproving(false);
     }
@@ -436,13 +482,30 @@ export default function PoVerificationScreen({ onNavigate }) {
 
   const handleReject = async () => {
     if (!data) return;
+    if (!validateClientDetails()) {
+      setSnackbar({
+        open: true,
+        message: "Please fill all required Client PO details before rejection.",
+        severity: "warning",
+      });
+      return;
+    }
     setRejecting(true);
     try {
       await rejectPo(poId, { Notes: rejectionNotes });
       await loadData();
       setRejectionNotes("");
+      setSnackbar({
+        open: true,
+        message: "PO rejected successfully.",
+        severity: "success",
+      });
     } catch (err) {
-      setError(err.response?.data?.error || "Failed to reject.");
+      setSnackbar({
+        open: true,
+        message: err.response?.data?.error || "Failed to reject.",
+        severity: "error",
+      });
     } finally {
       setRejecting(false);
     }
@@ -455,23 +518,39 @@ export default function PoVerificationScreen({ onNavigate }) {
       await reopenPo(poId, { Reason: reopenReason });
       await loadData();
       setReopenReason("");
+      setShowReopenDialog(false);
+      setSnackbar({
+        open: true,
+        message: "PO reopened successfully.",
+        severity: "success",
+      });
     } catch (err) {
-      setError(err.response?.data?.error || "Failed to reopen.");
+      setSnackbar({
+        open: true,
+        message: err.response?.data?.error || "Failed to reopen.",
+        severity: "error",
+      });
     } finally {
       setReopening(false);
-      setShowReopenDialog(false);
     }
   };
 
   const handleOpenApproveDialog = () => {
     if (!verificationConfirmed) {
-      setError(
-        "Please confirm you have checked the uploaded client PO against these values.",
-      );
+      setSnackbar({
+        open: true,
+        message:
+          "Please confirm you have checked the uploaded client PO against these values.",
+        severity: "warning",
+      });
       return;
     }
     if (mismatchCount > 0 && !approvalNotes.trim()) {
-      setError("Notes are required when there are mismatches.");
+      setSnackbar({
+        open: true,
+        message: "Notes are required when there are mismatches.",
+        severity: "warning",
+      });
       return;
     }
     setShowApproveDialog(true);
@@ -484,7 +563,11 @@ export default function PoVerificationScreen({ onNavigate }) {
 
   const handleConfirmReopen = async () => {
     if (!reopenReason.trim()) {
-      setError("Reason is required to reopen the purchase order.");
+      setSnackbar({
+        open: true,
+        message: "Reason is required to reopen the purchase order.",
+        severity: "warning",
+      });
       return;
     }
     setShowReopenDialog(false);
@@ -501,7 +584,10 @@ export default function PoVerificationScreen({ onNavigate }) {
   };
 
   const normalizedStatus = normalizeStatus(data?.verificationStatus);
-  const statusConfig = STATUS_CONFIG[normalizedStatus.charAt(0).toUpperCase() + normalizedStatus.slice(1)] || STATUS_CONFIG.Draft;
+  const statusConfig =
+    STATUS_CONFIG[
+      normalizedStatus.charAt(0).toUpperCase() + normalizedStatus.slice(1)
+    ] || STATUS_CONFIG.Draft;
 
   // Debug: log status for debugging
   console.log(
@@ -521,7 +607,10 @@ export default function PoVerificationScreen({ onNavigate }) {
       "Cancelled",
       "Closed",
       "Completed",
-    ].some((s) => normalizeStatus(s).toLowerCase() === normalizedStatus.toLowerCase());
+    ].some(
+      (s) =>
+        normalizeStatus(s).toLowerCase() === normalizedStatus.toLowerCase(),
+    );
 
   const canEditClientDetails =
     data &&
@@ -646,7 +735,7 @@ export default function PoVerificationScreen({ onNavigate }) {
               </div>
             </div>
             <div className="pov-row">
-              <label>Payment terms</label>
+              <label>Selected Modules</label>
               <div className="pov-ro">
                 {quotationDisplay.terms ||
                   data.quotationTerms ||
@@ -679,7 +768,6 @@ export default function PoVerificationScreen({ onNavigate }) {
                   onChange={(e) =>
                     handleClientDetailChange("clientPoNumber", e.target.value)
                   }
-                  // disabled={!canEditClientDetails || isFinalStatus}
                 />
                 <MatchIcon result={comparisonResults.clientPoNumber} />
               </div>
@@ -693,7 +781,6 @@ export default function PoVerificationScreen({ onNavigate }) {
                 onChange={(e) =>
                   handleClientDetailChange("clientPoDate", e.target.value)
                 }
-                // disabled={!canEditClientDetails || isFinalStatus}
               />
             </div>
 
@@ -707,7 +794,6 @@ export default function PoVerificationScreen({ onNavigate }) {
                   onChange={(e) =>
                     handleClientDetailChange("clientPoAmount", e.target.value)
                   }
-                  // disabled={!canEditClientDetails || isFinalStatus}
                 />
                 <MatchIcon result={comparisonResults.amount} />
               </div>
@@ -722,14 +808,13 @@ export default function PoVerificationScreen({ onNavigate }) {
                   onChange={(e) =>
                     handleClientDetailChange("clientPoItems", e.target.value)
                   }
-                  // disabled={!canEditClientDetails || isFinalStatus}
                 />
                 <MatchIcon result={comparisonResults.items} />
               </div>
             </div>
 
             <div className="pov-row pov-row-textarea">
-              <label>Payment terms</label>
+              <label>Selected Modules</label>
               <div className="pov-input-wrap">
                 <textarea
                   rows={3}
@@ -737,7 +822,6 @@ export default function PoVerificationScreen({ onNavigate }) {
                   onChange={(e) =>
                     handleClientDetailChange("clientPoTerms", e.target.value)
                   }
-                  // disabled={!canEditClientDetails || isFinalStatus}
                 />
                 <MatchIcon result={comparisonResults.terms} />
               </div>
@@ -745,7 +829,11 @@ export default function PoVerificationScreen({ onNavigate }) {
 
             {canEditClientDetails && !isFinalStatus && (
               <div className="pov-actions">
-                <button onClick={handleSaveDraft} disabled={saving}>
+                <button
+                  className="app-action-btn app-action-btn--primary"
+                  onClick={handleSaveDraft}
+                  disabled={saving}
+                >
                   {saving ? "Saving..." : "Save draft"}
                 </button>
               </div>
@@ -844,7 +932,7 @@ export default function PoVerificationScreen({ onNavigate }) {
 
               <div className="pov-actions">
                 <button
-                  className="pov-primary"
+                  className="app-action-btn app-action-btn--primary"
                   onClick={handleOpenApproveDialog}
                   disabled={
                     approving ||
@@ -855,7 +943,7 @@ export default function PoVerificationScreen({ onNavigate }) {
                   {approving ? "Approving..." : "Approve"}
                 </button>
                 <button
-                  className="pov-danger"
+                  className="app-action-btn app-action-btn--secondary"
                   onClick={handleReject}
                   disabled={rejecting || !rejectionNotes.trim()}
                 >
@@ -904,6 +992,7 @@ export default function PoVerificationScreen({ onNavigate }) {
               )}
               <div className="pov-actions" style={{ marginTop: 12 }}>
                 <button
+                  className="app-action-btn app-action-btn--primary"
                   onClick={() => setShowReopenDialog(true)}
                   disabled={reopening}
                 >
@@ -997,14 +1086,14 @@ export default function PoVerificationScreen({ onNavigate }) {
         <DialogActions className="pov-dialog-actions">
           <Button
             onClick={() => setShowApproveDialog(false)}
-            variant="outlined"
+            sx={dialogSecondaryActionSx}
           >
             Cancel
           </Button>
           <Button
             onClick={handleConfirmApprove}
             variant="contained"
-            color="success"
+            sx={dialogPrimaryActionSx}
             disabled={approving}
           >
             {approving ? "Approving..." : "Confirm Approve"}
@@ -1041,19 +1130,25 @@ export default function PoVerificationScreen({ onNavigate }) {
           />
         </DialogContent>
         <DialogActions className="pov-dialog-actions">
-          <Button onClick={() => setShowReopenDialog(false)} variant="outlined">
+          <Button onClick={() => setShowReopenDialog(false)} sx={dialogSecondaryActionSx}>
             Cancel
           </Button>
           <Button
             onClick={handleConfirmReopen}
             variant="contained"
-            color="warning"
+            sx={dialogPrimaryActionSx}
             disabled={reopening || !reopenReason.trim()}
           >
             {reopening ? "Reopening..." : "Confirm Reopen"}
           </Button>
         </DialogActions>
       </Dialog>
+      <CustomSnackbar
+        open={snackbar.open}
+        message={snackbar.message}
+        severity={snackbar.severity}
+        onClose={() => setSnackbar((current) => ({ ...current, open: false }))}
+      />
     </div>
   );
 }

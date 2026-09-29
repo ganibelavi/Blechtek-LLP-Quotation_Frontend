@@ -172,6 +172,12 @@
   padding: 0 !important;
 }
 
+.app-main--none {
+  padding: 0 !important;
+  overflow-y: auto;
+  overflow-x: visible;
+}
+
 @media print {
 
   html,

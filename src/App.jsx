@@ -183,7 +183,7 @@ export default function App() {
             onSettingsTabChange={setSettingsInitialTab}
           />
           <main
-            className={`app-main ${view === "purchase-order-entry" ? "app-main--po" : view === "invoice-entry" ? "app-main--invoice" : ""}`}
+            className={`app-main ${view === "purchase-order-entry" ? "app-main--po" : view === "invoice-entry" ? "app-main--invoice" : view === "po-verification" ? "app-main--none" : ""}`}
           >
             {![
               "create",

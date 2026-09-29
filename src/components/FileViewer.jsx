@@ -294,7 +294,9 @@ const FileViewer = ({ poId, fileName, contentType }) => {
             height: "100%",
             border: "none",
             background: "#fff",
+            overflow: "hidden",
           }}
+          scrolling="no"
           title={fileName || "Uploaded PO document"}
         />
       );
