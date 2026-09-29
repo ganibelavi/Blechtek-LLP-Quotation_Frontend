@@ -314,11 +314,46 @@ export default function PoVerificationScreen({ onNavigate }) {
     await handleReopen();
   };
 
-  const canEditClientDetails =
-    data && (data.verificationStatus === "Draft" || data.verificationStatus === "PendingReview");
-  const isFinalStatus =
-    data && ["Approved", "ApprovedWithMismatch", "Rejected"].includes(data.verificationStatus);
   const mismatchCount = Object.values(comparisonResults).filter((r) => !r.match).length;
+
+  const normalizeStatus = (status) => {
+    if (!status) return "Draft";
+    return status.replace(/\s+/g, "");
+  };
+
+  const normalizedStatus = normalizeStatus(data?.verificationStatus);
+  const statusConfig = STATUS_CONFIG[normalizedStatus] || STATUS_CONFIG.Draft;
+
+  // Debug: log status for debugging
+  console.log("PO Verification Status:", data?.verificationStatus, "Normalized:", normalizedStatus);
+
+  const isFinalStatus =
+    data &&
+    [
+      "Approved",
+      "ApprovedWithMismatch",
+      "Rejected",
+      "ApprovedWithMismatch",
+      "Cancelled",
+      "Closed",
+      "Completed",
+    ].some((s) => normalizeStatus(s) === normalizedStatus);
+
+  const canEditClientDetails =
+    data &&
+    !isFinalStatus &&
+    (normalizedStatus === "Draft" ||
+      normalizedStatus === "PendingReview" ||
+      normalizedStatus === "Pending" ||
+      normalizedStatus === "UnderReview" ||
+      normalizedStatus === "Submitted");
+
+  // Debug: log all relevant values
+  console.log("Debug - data:", data);
+  console.log("Debug - verificationStatus:", data?.verificationStatus);
+  console.log("Debug - normalizedStatus:", normalizedStatus);
+  console.log("Debug - isFinalStatus:", isFinalStatus);
+  console.log("Debug - canEditClientDetails:", canEditClientDetails);
 
   if (loading) {
     return (
@@ -341,8 +376,6 @@ export default function PoVerificationScreen({ onNavigate }) {
   }
 
   if (!data) return null;
-
-  const statusConfig = STATUS_CONFIG[data.verificationStatus] || STATUS_CONFIG.Draft;
 
   return (
     <div className="pov-page">
@@ -427,7 +460,7 @@ export default function PoVerificationScreen({ onNavigate }) {
                 <input
                   value={clientDetails.clientPoNumber}
                   onChange={(e) => handleClientDetailChange("clientPoNumber", e.target.value)}
-                  disabled={!canEditClientDetails || isFinalStatus}
+                  // disabled={!canEditClientDetails || isFinalStatus}
                 />
                 <MatchIcon result={comparisonResults.clientPoNumber} />
               </div>
@@ -439,7 +472,7 @@ export default function PoVerificationScreen({ onNavigate }) {
                 type="date"
                 value={clientDetails.clientPoDate}
                 onChange={(e) => handleClientDetailChange("clientPoDate", e.target.value)}
-                disabled={!canEditClientDetails || isFinalStatus}
+                // disabled={!canEditClientDetails || isFinalStatus}
               />
             </div>
 
@@ -451,7 +484,7 @@ export default function PoVerificationScreen({ onNavigate }) {
                   step="0.01"
                   value={clientDetails.clientPoAmount}
                   onChange={(e) => handleClientDetailChange("clientPoAmount", e.target.value)}
-                  disabled={!canEditClientDetails || isFinalStatus}
+                  // disabled={!canEditClientDetails || isFinalStatus}
                 />
                 <MatchIcon result={comparisonResults.amount} />
               </div>
@@ -464,7 +497,7 @@ export default function PoVerificationScreen({ onNavigate }) {
                   rows={3}
                   value={clientDetails.clientPoItems}
                   onChange={(e) => handleClientDetailChange("clientPoItems", e.target.value)}
-                  disabled={!canEditClientDetails || isFinalStatus}
+                  // disabled={!canEditClientDetails || isFinalStatus}
                 />
                 <MatchIcon result={comparisonResults.items} />
               </div>
@@ -477,7 +510,7 @@ export default function PoVerificationScreen({ onNavigate }) {
                   rows={3}
                   value={clientDetails.clientPoTerms}
                   onChange={(e) => handleClientDetailChange("clientPoTerms", e.target.value)}
-                  disabled={!canEditClientDetails || isFinalStatus}
+                  // disabled={!canEditClientDetails || isFinalStatus}
                 />
                 <MatchIcon result={comparisonResults.terms} />
               </div>
