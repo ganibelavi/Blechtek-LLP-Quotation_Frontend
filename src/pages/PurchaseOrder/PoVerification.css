@@ -26,7 +26,7 @@
 /* ---------- Header ---------- */
 
 .pov-header {
-  background: var(--panel);
+  /* background: var(--panel); */
   border-bottom: 1px solid var(--line);
   padding: 14px 20px;
   display: flex;
@@ -36,17 +36,20 @@
   position: sticky;
   top: 0;
   z-index: 10;
+  background: linear-gradient(120deg, #308aea, #48cae4);
+  color: white;
 }
 
 .pov-header h1 {
   margin: 0;
   font-size: 17px;
   font-weight: 650;
+  color: white;
 }
 
 .pov-sub {
-  color: var(--soft);
-  font-size: 12.5px;
+  /* color: var(--soft); */
+  font-size: 13px;
 }
 
 .pov-back-button {
