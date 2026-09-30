@@ -44,7 +44,7 @@ export default function LoginPage({ onForgotPassword }) {
         position: "relative",
         overflow: "hidden",
         px: 2,
-        py: 4,
+        py: 2,
       }}
     >
       <Box
@@ -76,7 +76,7 @@ export default function LoginPage({ onForgotPassword }) {
                 fontWeight: 800,
                 mx: "auto",
                 mb: 2,
-                boxShadow: "0 8px 16px rgba(15, 107, 95, 0.3)",
+                boxShadow: "0 8px 16px rgba(103, 105, 104, 0.3)",
               }}
             >
               Q
@@ -93,7 +93,7 @@ export default function LoginPage({ onForgotPassword }) {
               Quotation Suite
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              Secure portal for estimates, rates, and production.
+              Manage quotations, purchase orders, invoices, subscriptions & renewals — all in one place.
             </Typography>
           </Box>
 
