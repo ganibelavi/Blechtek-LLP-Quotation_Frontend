@@ -1557,8 +1557,9 @@ export default function CreateQuotation({
                 "&:hover": { bgcolor: "#757575" },
                 textTransform: "none",
                 borderRadius: 2,
-                px: 2,
-                py: 1,
+                lineHeight:"normal"
+                // px: 2,
+                // py: 1,
               }}
             >
               Cancel
@@ -1596,6 +1597,9 @@ export default function CreateQuotation({
                 } finally {
                   setSendingEmail(false);
                 }
+              }}
+               sx={{
+                lineHeight:"normal"
               }}
             >
               {sendingEmail ? "Sending…" : "Send"}

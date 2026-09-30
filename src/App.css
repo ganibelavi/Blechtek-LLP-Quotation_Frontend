@@ -330,10 +330,16 @@
 }
 
 .app-sidebar__create-action:hover {
-  background: #03a9f4;
-  border-color: #03a9f4;
-  color: #fff;
+  background: #03a9f4 !important;
+  border-color: #03a9f4 !important;
+  color: #fff !important;
   transform: scale(1.08);
+}
+
+.app-sidebar__create-action:hover .MuiSvgIcon-root,
+.app-sidebar__create-action:hover svg {
+  color: #fff !important;
+  fill: #fff !important;
 }
 
 .app-sidebar__create-action:focus-visible {
