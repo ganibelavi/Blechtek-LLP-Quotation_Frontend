@@ -82,6 +82,11 @@ function currency(n) {
   });
 }
 
+function getLineAmount(row) {
+  // Invoice rate already includes any PO/quotation discount.
+  return (Number(row.qty) || 0) * (Number(row.rate) || 0);
+}
+
 export default function GSTInvoicePrint({ initialData, onBack }) {
   const initialPrintData = normalizePrintData(initialData);
   const [invoice, setInvoice] = useState(
@@ -140,10 +145,7 @@ export default function GSTInvoicePrint({ initialData, onBack }) {
 
   const totals = useMemo(() => {
     const totalQty = items.reduce((sum, row) => sum + (Number(row.qty) || 0), 0);
-    const totalPrice = items.reduce(
-      (sum, row) => sum + (Number(row.qty) || 0) * (Number(row.rate) || 0),
-      0,
-    );
+    const totalPrice = items.reduce((sum, row) => sum + getLineAmount(row), 0);
     const sgst = (totalPrice * (Number(invoice.sgstPct) || 0)) / 100;
     const cgst = (totalPrice * (Number(invoice.cgstPct) || 0)) / 100;
     const igst = (totalPrice * (Number(invoice.igstPct) || 0)) / 100;
@@ -275,9 +277,6 @@ export default function GSTInvoicePrint({ initialData, onBack }) {
               <th>Description</th>
               <th className="gi-col-qty">Qty</th>
               <th className="gi-col-uom">UOM</th>
-              <th className="gi-col-rate">Rate</th>
-              <th>Discount %</th>
-              <th>Discount amount</th>
               <th className="gi-col-total">Amount</th>
             </tr>
           </thead>
@@ -289,15 +288,12 @@ export default function GSTInvoicePrint({ initialData, onBack }) {
                   <td>{row.description || "-"}</td>
                   <td className="gi-col-qty">{Number(row.qty) || 0}</td>
                   <td className="gi-col-uom">{row.uom || "Nos."}</td>
-                  <td className="gi-col-rate">₹ {currency(Number(row.rate) || 0)}</td>
-                  <td>{Number(row.discountPercentage || 0).toFixed(2)}%</td>
-                  <td>₹ {currency(Number(row.discountAmount) || 0)}</td>
-                  <td className="gi-col-total">₹ {currency((Number(row.qty) || 0) * (Number(row.rate) || 0))}</td>
+                  <td className="gi-col-total">₹ {currency(getLineAmount(row))}</td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan="8" className="gi-empty-row">No items found</td>
+                <td colSpan="5" className="gi-empty-row">No items found</td>
               </tr>
             )}
           </tbody>
@@ -359,12 +355,8 @@ export default function GSTInvoicePrint({ initialData, onBack }) {
             </div>
             <div className="gi-field"><span className="gi-label">Terms of Sale:</span><span>{invoice.termsOfSale || "-"}</span></div>
           </div>
-          <div className="gi-signatory">
-            <div className="gi-signatory-line">For BlechTek Software Solutions LLP</div>
-            <div className="gi-signatory-space">
-              <img src="/logo/Authority_Seal.png" alt="Authority seal" />
-            </div>
-            <div className="gi-signatory-line">Authorised Signatory</div>
+          <div className="gi-system-generated">
+            This is a System Generated Invoice. No signature is required.
           </div>
         </div>
       </div>

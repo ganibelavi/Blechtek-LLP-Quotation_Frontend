@@ -881,25 +881,15 @@ export default function InvoiceEntryForm({
   const purchaseOrderOptions = useMemo(
     () =>
       purchaseOrders
-        .filter(
-          (purchaseOrder) => {
-            const vStatus = String(
-              purchaseOrder.verificationStatus ??
-                purchaseOrder.VerificationStatus ??
-                purchaseOrder.po?.verificationStatus ??
-                "",
-            );
-            return vStatus === "Approved" || vStatus === "ApprovedWithMismatch";
-          }
-        )
         .map((purchaseOrder) => {
           const organizationName = String(
             purchaseOrder.organizationName ||
               purchaseOrder.companyName ||
               purchaseOrder.buyerName ||
+              purchaseOrder.supplierName ||
               "",
           ).trim();
-          const poNo = String(purchaseOrder.poNo || "").trim();
+          const poNo = String(purchaseOrder.poNo || purchaseOrder.po?.poNo || "").trim();
           return organizationName && poNo
             ? `${organizationName} - ${poNo}`
             : organizationName;
@@ -1602,12 +1592,8 @@ export default function InvoiceEntryForm({
       0,
     );
     const totalPrice = form.items.reduce(
-      (sum, item) => {
-        const itemTotal = (Number(item.qty) || 0) * (Number(item.rate) || 0);
-        const discountPct = Number(item.discountPercentage) || 0;
-        const discount = itemTotal * (discountPct / 100);
-        return sum + (itemTotal - discount);
-      },
+      (sum, item) =>
+        sum + (Number(item.qty) || 0) * (Number(item.rate) || 0),
       0,
     );
     const sgst = (totalPrice * (Number(form.sgstPct) || 0)) / 100;
@@ -1641,27 +1627,19 @@ export default function InvoiceEntryForm({
 
   const handleOrganizationChange = (organizationName) => {
     const selectedPurchaseOrder = purchaseOrders
-      .filter(
-        (purchaseOrder) =>
-          String(
-            purchaseOrder.verificationStatus ??
-              purchaseOrder.VerificationStatus ??
-              purchaseOrder.po?.verificationStatus ??
-              "",
-          ).toLowerCase() === "verified",
-      )
       .find((purchaseOrder) => {
-      const organization = String(
-        purchaseOrder.organizationName ||
-          purchaseOrder.companyName ||
-          purchaseOrder.buyerName ||
-          "",
-      ).trim();
-      const poNo = String(purchaseOrder.poNo || "").trim();
-      return (
-        `${organization} - ${poNo}` === organizationName ||
-        organization === organizationName
-      );
+        const organization = String(
+          purchaseOrder.organizationName ||
+            purchaseOrder.companyName ||
+            purchaseOrder.buyerName ||
+            purchaseOrder.supplierName ||
+            "",
+        ).trim();
+        const poNo = String(purchaseOrder.poNo || purchaseOrder.po?.poNo || "").trim();
+        return (
+          `${organization} - ${poNo}` === organizationName ||
+          organization === organizationName
+        );
       });
 
     if (selectedPurchaseOrder) {
@@ -1669,6 +1647,7 @@ export default function InvoiceEntryForm({
         selectedPurchaseOrder.organizationName ||
           selectedPurchaseOrder.companyName ||
           selectedPurchaseOrder.buyerName ||
+          selectedPurchaseOrder.supplierName ||
           "",
       ).trim();
       const items = Array.isArray(selectedPurchaseOrder.items)
@@ -2416,7 +2395,7 @@ export default function InvoiceEntryForm({
                           <th>Implementation</th>
                           <th>Discount %</th>
                           <th>Discount amount</th>
-                          <th>Total price</th>
+                          <th>Net price</th>
                           <th>Amount</th>
                         </tr>
                       </thead>
