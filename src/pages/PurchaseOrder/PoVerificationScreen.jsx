@@ -138,6 +138,7 @@ export default function PoVerificationScreen({ onNavigate }) {
   const [reopenReason, setReopenReason] = useState("");
   const [verificationConfirmed, setVerificationConfirmed] = useState(false);
   const [showApproveDialog, setShowApproveDialog] = useState(false);
+  const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [showReopenDialog, setShowReopenDialog] = useState(false);
 
   const [snackbar, setSnackbar] = useState({
@@ -561,6 +562,32 @@ export default function PoVerificationScreen({ onNavigate }) {
     await handleApprove();
   };
 
+  const handleOpenRejectDialog = () => {
+    if (!verificationConfirmed) {
+      setSnackbar({
+        open: true,
+        message:
+          "Please confirm you have checked the uploaded client PO against these values.",
+        severity: "warning",
+      });
+      return;
+    }
+    if (!rejectionNotes.trim()) {
+      setSnackbar({
+        open: true,
+        message: "Rejection notes are required.",
+        severity: "warning",
+      });
+      return;
+    }
+    setShowRejectDialog(true);
+  };
+
+  const handleConfirmReject = async () => {
+    setShowRejectDialog(false);
+    await handleReject();
+  };
+
   const handleConfirmReopen = async () => {
     if (!reopenReason.trim()) {
       setSnackbar({
@@ -644,7 +671,7 @@ export default function PoVerificationScreen({ onNavigate }) {
     return (
       <div className="pov-error">
         <span>{error}</span>
-        <button onClick={loadData}>Retry</button>
+        <button className="pov-primary" onClick={loadData}>Retry</button>
         <button
           className="pov-common-back-btn"
           onClick={() => onNavigate(backView)}
@@ -682,7 +709,7 @@ export default function PoVerificationScreen({ onNavigate }) {
       {error && (
         <div className="pov-error" style={{ margin: "16px 20px" }}>
           <span>{error}</span>
-          <button onClick={() => setError(null)}>Dismiss</button>
+          <button className="pov-secondary" onClick={() => setError(null)}>Dismiss</button>
         </div>
       )}
 
@@ -830,7 +857,7 @@ export default function PoVerificationScreen({ onNavigate }) {
             {canEditClientDetails && !isFinalStatus && (
               <div className="pov-actions">
                 <button
-                  className="app-action-btn app-action-btn--primary"
+                  className="pov-primary"
                   onClick={handleSaveDraft}
                   disabled={saving}
                 >
@@ -932,7 +959,7 @@ export default function PoVerificationScreen({ onNavigate }) {
 
               <div className="pov-actions">
                 <button
-                  className="app-action-btn app-action-btn--primary"
+                  className="pov-primary"
                   onClick={handleOpenApproveDialog}
                   disabled={
                     approving ||
@@ -943,8 +970,8 @@ export default function PoVerificationScreen({ onNavigate }) {
                   {approving ? "Approving..." : "Approve"}
                 </button>
                 <button
-                  className="app-action-btn app-action-btn--secondary"
-                  onClick={handleReject}
+                  className="pov-secondary"
+                  onClick={handleOpenRejectDialog}
                   disabled={rejecting || !rejectionNotes.trim()}
                 >
                   {rejecting ? "Rejecting..." : "Reject"}
@@ -992,7 +1019,7 @@ export default function PoVerificationScreen({ onNavigate }) {
               )}
               <div className="pov-actions" style={{ marginTop: 12 }}>
                 <button
-                  className="app-action-btn app-action-btn--primary"
+                  className="pov-primary"
                   onClick={() => setShowReopenDialog(true)}
                   disabled={reopening}
                 >
@@ -1007,12 +1034,12 @@ export default function PoVerificationScreen({ onNavigate }) {
           )}
 
           {/* Audit log */}
-          <button
+          {/* <button
             className="pov-audit-toggle"
             onClick={() => setShowAuditLog(!showAuditLog)}
           >
             {showAuditLog ? "Hide" : "Show"} audit log ({auditLogs.length})
-          </button>
+          </button> */}
           {showAuditLog && auditLogs.length > 0 && (
             <div className="pov-audit-log">
               <table className="pov-audit-table">
@@ -1048,14 +1075,24 @@ export default function PoVerificationScreen({ onNavigate }) {
         onClose={() => setShowApproveDialog(false)}
         maxWidth="sm"
         fullWidth
+        sx={{
+          "& .MuiDialog-container": {
+            alignItems: "flex-start",
+            paddingTop: "1vh",
+          },
+        }}
+        PaperProps={{ sx: { borderRadius: 1 } }}
       >
         <DialogTitle
-          className="pov-dialog-title"
-          sx={{ background: "linear-gradient(120deg,#2b5797,#48a0e4)" }}
+          sx={{
+            color: "white",
+            background: "linear-gradient(120deg, #308aea 0%, #48cae4 100%)",
+            py: 1.5,
+          }}
         >
           Confirm Approval
         </DialogTitle>
-        <DialogContent className="pov-dialog-content">
+        <DialogContent>
           <p>
             <strong>PO No: {data?.poNo}</strong>
           </p>
@@ -1083,7 +1120,7 @@ export default function PoVerificationScreen({ onNavigate }) {
             </div>
           )}
         </DialogContent>
-        <DialogActions className="pov-dialog-actions">
+        <DialogActions sx={{ p: 1, pt: 0 }}>
           <Button
             onClick={() => setShowApproveDialog(false)}
             sx={dialogSecondaryActionSx}
@@ -1101,20 +1138,78 @@ export default function PoVerificationScreen({ onNavigate }) {
         </DialogActions>
       </Dialog>
 
+      {/* Reject Confirmation Dialog */}
+      <Dialog
+        open={showRejectDialog}
+        onClose={() => setShowRejectDialog(false)}
+        maxWidth="sm"
+        fullWidth
+        sx={{
+          "& .MuiDialog-container": {
+            alignItems: "flex-start",
+            paddingTop: "1vh",
+          },
+        }}
+        PaperProps={{ sx: { borderRadius: 1 } }}
+      >
+        <DialogTitle
+          sx={{
+            color: "white",
+             background: "linear-gradient(120deg, #308aea 0%, #48cae4 100%)",
+            py: 1.5,
+          }}
+        >
+          Confirm Rejection
+        </DialogTitle>
+        <DialogContent>
+          <p>
+            <strong>PO No: {data?.poNo}</strong>
+          </p>
+          <p>Status will be set to: <strong>Rejected</strong></p>
+          <div className="pov-sum pov-diff" style={{ display: "block", marginTop: 12 }}>
+            <strong>Rejection Notes:</strong>
+            <p style={{ margin: "8px 0 0", whiteSpace: "pre-wrap" }}>{rejectionNotes}</p>
+          </div>
+        </DialogContent>
+        <DialogActions sx={{ p: 3, pt: 0 }}>
+          <Button onClick={() => setShowRejectDialog(false)} sx={dialogSecondaryActionSx}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleConfirmReject}
+            variant="contained"
+            sx={dialogPrimaryActionSx}
+            disabled={rejecting}
+          >
+            {rejecting ? "Rejecting..." : "Confirm Reject"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {/* Reopen Dialog */}
       <Dialog
         open={showReopenDialog}
         onClose={() => setShowReopenDialog(false)}
         maxWidth="sm"
         fullWidth
+        sx={{
+          "& .MuiDialog-container": {
+            alignItems: "flex-start",
+            paddingTop: "1vh",
+          },
+        }}
+        PaperProps={{ sx: { borderRadius: 1 } }}
       >
         <DialogTitle
-          className="pov-dialog-title"
-          sx={{ background: "linear-gradient(120deg,#b3690a,#e0a24a)" }}
+          sx={{
+            color: "white",
+            background: "linear-gradient(120deg, #308aea 0%, #48cae4 100%)",
+            py: 1.5,
+          }}
         >
           Reopen Purchase Order
         </DialogTitle>
-        <DialogContent className="pov-dialog-content">
+        <DialogContent>
           <p>
             <strong>PO No: {data?.poNo}</strong>
           </p>
@@ -1129,7 +1224,7 @@ export default function PoVerificationScreen({ onNavigate }) {
             sx={{ mt: 1 }}
           />
         </DialogContent>
-        <DialogActions className="pov-dialog-actions">
+        <DialogActions sx={{ p: 3, pt: 0 }}>
           <Button onClick={() => setShowReopenDialog(false)} sx={dialogSecondaryActionSx}>
             Cancel
           </Button>
