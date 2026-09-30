@@ -102,7 +102,7 @@ input {
   font: inherit;
   color: inherit;
   border: none;
-  border-bottom: 1px solid var(--rule);
+  /* border-bottom: 1px solid var(--rule); */
   background: transparent;
   padding: 2px 3px;
   /* width: 100%; */
@@ -117,6 +117,37 @@ input:focus {
 
 input[type="number"] {
   text-align: right;
+}
+
+/* Auto-growing textarea (wraps long text onto new lines) */
+.gi-autotext {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  font: inherit;
+  color: inherit;
+  line-height: 1.15;
+  border: none;
+  background: transparent;
+  padding: 2px 3px;
+  margin: 0;
+  resize: none;
+  overflow: hidden;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  display: block;
+}
+
+.gi-autotext:focus {
+  outline: none;
+  border-bottom: 1.5px solid var(--accent);
+  background: #fafcff;
+}
+
+.gi-autotext:disabled {
+  color: inherit;
+  -webkit-text-fill-color: currentColor;
+  opacity: 1;
 }
 
 /* Header */
@@ -473,6 +504,33 @@ input[type="number"] {
 .gi-col-rate,
 .gi-col-total {
   width: 74px;
+}
+
+/* ---------------------------------------------------------------
+   FIX: table inputs must fill ONLY their own cell.
+   Without this, each <input> keeps the browser default width,
+   overflows its fixed-width column and pushes the value into the
+   next column (Qty showing under Rate, Rate showing under Total).
+   --------------------------------------------------------------- */
+.gi-table td input {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Numeric columns: right-align so values sit under their headers */
+.gi-table td.gi-col-qty input,
+.gi-table td.gi-col-rate input {
+  text-align: right;
+}
+
+/* Keep disabled (view-only) values fully readable, incl. print */
+.gi-table td input:disabled {
+  color: inherit;
+  -webkit-text-fill-color: currentColor;
+  opacity: 1;
 }
 
 .gi-empty-row {

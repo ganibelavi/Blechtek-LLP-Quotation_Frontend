@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from "react";
+import React, { useState, useMemo, useRef, useLayoutEffect, useEffect } from "react";
 import "./GSTInvoice.css";
 
 /**
@@ -74,6 +74,43 @@ function currency(n) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
+}
+
+/**
+ * Textarea that grows with its content so long text wraps onto new
+ * lines instead of being cut off (a plain <input> can't wrap).
+ */
+function AutoTextarea({ value, className = "", ...props }) {
+  const ref = useRef(null);
+
+  const resize = () => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  };
+
+  useLayoutEffect(resize, [value]);
+
+  // Re-fit when the width changes (window resize / print layout)
+  useEffect(() => {
+    window.addEventListener("resize", resize);
+    window.addEventListener("beforeprint", resize);
+    return () => {
+      window.removeEventListener("resize", resize);
+      window.removeEventListener("beforeprint", resize);
+    };
+  }, []);
+
+  return (
+    <textarea
+      ref={ref}
+      rows={1}
+      value={value}
+      className={`gi-autotext ${className}`}
+      {...props}
+    />
+  );
 }
 
 export default function GSTInvoice({ initialData, onBackToInvoiceList, onNavigate }) {
@@ -171,24 +208,6 @@ export default function GSTInvoice({ initialData, onBackToInvoiceList, onNavigat
   return (
     <div className="gi-page">
       <div className="gi-toolbar no-print">
-        {/* {onBackToInvoiceList && (
-          <button type="button" className="gi-btn gi-btn-secondary" onClick={onBackToInvoiceList} aria-label="Back to invoices list">
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M19 12H5M12 19l-7-7 7-7" />
-            </svg>
-            <span>Back</span>
-          </button>
-        )} */}
         <div className="gi-toolbar-spacer" />
         <button
           type="button"
@@ -197,9 +216,6 @@ export default function GSTInvoice({ initialData, onBackToInvoiceList, onNavigat
         >
           Print
         </button>
-        {/* <button type="button" className="gi-btn" onClick={addRow}>
-          + Add item row
-        </button> */}
         <button
           type="button"
           className="gi-btn gi-btn-secondary"
@@ -219,7 +235,6 @@ export default function GSTInvoice({ initialData, onBackToInvoiceList, onNavigat
           >
             <path d="M19 12H5M12 19l-7-7 7-7" />
           </svg>
-          {/* <span>Back</span> */}
         </button>
       </div>
 
@@ -230,7 +245,6 @@ export default function GSTInvoice({ initialData, onBackToInvoiceList, onNavigat
             <img src="/logo/logo.png" alt="BlechTek Software Solutions LLP logo" />
           </div>
           <div className="gi-company-name">BlechTek Software Solutions LLP</div>
-          <div className="gi-original-tag">{invoice.originalFor}</div>
         </div>
 
         {/* Invoice meta */}
@@ -464,7 +478,7 @@ export default function GSTInvoice({ initialData, onBackToInvoiceList, onNavigat
             </div>
             <div className="gi-field gi-field-stack">
               <span className="gi-label">Amount in Words:</span>
-              <input {...field("amountInWords")} />
+              <AutoTextarea {...field("amountInWords")} />
             </div>
             <p className="gi-declaration">
               I/We hereby certify that my/our registration certificate under the
