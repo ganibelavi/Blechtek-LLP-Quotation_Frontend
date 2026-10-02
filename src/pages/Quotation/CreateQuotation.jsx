@@ -40,14 +40,64 @@ const getImplementationDays = (value) => {
   const daysMatch = normalized.match(/^(\d+(?:\.\d+)?)\s*Days?$/i);
   if (daysMatch) return daysMatch[1];
 
-  return {
-    "1 Man Month": 30,
-    "0.5 Man Month": 15,
-    "2 Man Month": 60,
-    "1 Day": 1,
-    "2 Days": 2,
-    "1 Week": 7,
-  }[normalized] ?? "";
+  return (
+    {
+      "1 Man Month": 30,
+      "0.5 Man Month": 15,
+      "2 Man Month": 60,
+      "1 Day": 1,
+      "2 Days": 2,
+      "1 Week": 7,
+    }[normalized] ?? ""
+  );
+};
+
+// Time Estimate constants
+const TIME_ESTIMATE_STAGES = [
+  { key: "pre", label: "Pre-Implementation Visits" },
+  { key: "master", label: "Master Preparations" },
+  { key: "config", label: "Configuration & Set Up" },
+  { key: "train", label: "Trainings and Pilot run" },
+  { key: "data", label: "Data Preparation for Go-Live" },
+  { key: "golive", label: "Go-Live" },
+  { key: "support", label: "Go-Live Support" },
+];
+
+const TIME_ESTIMATE_DEFAULTS = {
+  pre: { startWeek: 1, endWeek: 1 },
+  master: { startWeek: 2, endWeek: 2 },
+  config: { startWeek: 3, endWeek: 4 },
+  train: { startWeek: 4, endWeek: 4 },
+  data: { startWeek: 5, endWeek: 5 },
+  golive: { startWeek: 6, endWeek: 6 },
+  support: { startWeek: 7, endWeek: 7 },
+};
+
+const WEEK_LABELS = [
+  "M1 - WK1",
+  "M1 - WK2",
+  "M1 - WK3",
+  "M1 - WK4",
+  "M2 - WK1",
+  "M2 - WK2",
+  "M2 - WK3",
+  "M2 - WK4",
+];
+
+const getDefaultTimeEstimate = (selectedModules = []) => {
+  return TIME_ESTIMATE_STAGES.map((stage) => {
+    const def = TIME_ESTIMATE_DEFAULTS[stage.key];
+    let label = stage.label;
+    if (stage.key === "config" && selectedModules.length > 0) {
+      label = `${selectedModules.join(", ")} Configuration & Set Up`;
+    }
+    return {
+      stageKey: stage.key,
+      label,
+      startWeek: def.startWeek,
+      endWeek: def.endWeek,
+    };
+  });
 };
 
 const initialValues = {
@@ -73,8 +123,7 @@ const normalizeQuotationValues = (candidate = {}) => ({
   additionalScopes: Array.isArray(candidate.additionalScopes)
     ? candidate.additionalScopes.map((scope) => ({
         requirement: scope.requirement ?? scope.Requirement ?? "",
-        module:
-          scope.module ?? scope.modules ?? scope.Modules ?? "",
+        module: scope.module ?? scope.modules ?? scope.Modules ?? "",
         manPower:
           scope.manPower ?? scope.noOfManpower ?? scope.NoOfManpower ?? "",
         days: scope.days ?? scope.noOfDays ?? scope.NoOfDays ?? "",
@@ -112,6 +161,9 @@ export default function CreateQuotation({
   const [references, setReferences] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [values, setValues] = useState(initialValues);
+  const [timeEstimate, setTimeEstimate] = useState(() =>
+    getDefaultTimeEstimate(),
+  );
   const [errors, setErrors] = useState({});
   const [validityPeriod, setValidityPeriod] = useState(30);
   const [submitting, setSubmitting] = useState(false);
@@ -222,35 +274,64 @@ export default function CreateQuotation({
               {},
             );
 
-            setValues((current) => normalizeQuotationValues({
-              ...current,
-              organizationName:
-                quotation.organizationName || current.organizationName,
-              referenceBy: quotation.referenceBy || current.referenceBy,
-              quotationNo: quotation.quotationNo || current.quotationNo,
-              date: quotation.date
-                ? quotation.date.slice(0, 10)
-                : current.date,
-              validationDate: quotation.validationDate
-                ? quotation.validationDate.slice(0, 10)
-                : current.validationDate,
-              selectedModules,
-              moduleRequirements,
-              additionalScopes:
-                quotation.additionalScopes ||
-                quotation.AdditionalScopes ||
-                current.additionalScopes,
-              quotationTo: {
-                name: quotation.quotationToName || current.quotationTo.name,
-                address:
-                  quotation.quotationToAddress || current.quotationTo.address,
-                contactNo:
-                  quotation.quotationToContactNo ||
-                  current.quotationTo.contactNo,
-                email: quotation.quotationToEmail || current.quotationTo.email,
-              },
-              discountPercentage: quotation.discountPercentage || 0,
-            }));
+            setValues((current) =>
+              normalizeQuotationValues({
+                ...current,
+                organizationName:
+                  quotation.organizationName || current.organizationName,
+                referenceBy: quotation.referenceBy || current.referenceBy,
+                quotationNo: quotation.quotationNo || current.quotationNo,
+                date: quotation.date
+                  ? quotation.date.slice(0, 10)
+                  : current.date,
+                validationDate: quotation.validationDate
+                  ? quotation.validationDate.slice(0, 10)
+                  : current.validationDate,
+                selectedModules,
+                moduleRequirements,
+                additionalScopes:
+                  quotation.additionalScopes ||
+                  quotation.AdditionalScopes ||
+                  current.additionalScopes,
+                quotationTo: {
+                  name: quotation.quotationToName || current.quotationTo.name,
+                  address:
+                    quotation.quotationToAddress || current.quotationTo.address,
+                  contactNo:
+                    quotation.quotationToContactNo ||
+                    current.quotationTo.contactNo,
+                  email:
+                    quotation.quotationToEmail || current.quotationTo.email,
+                },
+                discountPercentage: quotation.discountPercentage || 0,
+              }),
+            );
+
+            // Load timeEstimate from saved data or use defaults
+            const savedTimeEstimate =
+              quotation.timeEstimate || quotation.TimeEstimate;
+            if (
+              savedTimeEstimate &&
+              Array.isArray(savedTimeEstimate) &&
+              savedTimeEstimate.length > 0
+            ) {
+              setTimeEstimate(
+                savedTimeEstimate.map((s) => ({
+                  stageKey: s.stageKey || s.StageKey,
+                  label:
+                    s.label ||
+                    (s.stageKey === "config" && selectedModules.length > 0
+                      ? `${selectedModules.join(", ")} Configuration & Set Up`
+                      : TIME_ESTIMATE_STAGES.find(
+                          (st) => st.key === (s.stageKey || s.StageKey),
+                        )?.label || ""),
+                  startWeek: s.startWeek || s.StartWeek,
+                  endWeek: s.endWeek || s.EndWeek,
+                })),
+              );
+            } else {
+              setTimeEstimate(getDefaultTimeEstimate(selectedModules));
+            }
           })
           .catch((error) => {
             console.error("Failed to load saved quotation for viewing", error);
@@ -310,7 +391,6 @@ export default function CreateQuotation({
             sessionStorage.removeItem("revisionSourceQuotationId");
             sessionStorage.removeItem("revisionReason");
           }
-
         })
         .catch((error) => {
           console.error("Failed to load revision source quotation", error);
@@ -323,31 +403,33 @@ export default function CreateQuotation({
     if (renewalContextRaw) {
       try {
         const renewal = JSON.parse(renewalContextRaw);
-        setValues((current) => normalizeQuotationValues({
-          ...current,
-          organizationName: renewal.customerName || current.organizationName,
-          validationDate: renewal.periodStart || current.validationDate,
-          date: renewal.periodStart || current.date,
-          selectedModules: renewal.moduleName
-            ? [renewal.moduleName]
-            : current.selectedModules,
-          moduleRequirements: renewal.moduleName
-            ? {
-                ...current.moduleRequirements,
-                [renewal.moduleName]: {
-                  ...(current.moduleRequirements?.[renewal.moduleName] || {}),
-                  modulePriceOverride: renewal.amount,
-                },
-              }
-            : current.moduleRequirements,
-          quotationTo: {
-            name: renewal.customerName || current.quotationTo.name,
-            address: renewal.customerAddress || current.quotationTo.address,
-            contactNo:
-              renewal.customerContactNumber || current.quotationTo.contactNo,
-            email: renewal.customerEmail || current.quotationTo.email,
-          },
-        }));
+        setValues((current) =>
+          normalizeQuotationValues({
+            ...current,
+            organizationName: renewal.customerName || current.organizationName,
+            validationDate: renewal.periodStart || current.validationDate,
+            date: renewal.periodStart || current.date,
+            selectedModules: renewal.moduleName
+              ? [renewal.moduleName]
+              : current.selectedModules,
+            moduleRequirements: renewal.moduleName
+              ? {
+                  ...current.moduleRequirements,
+                  [renewal.moduleName]: {
+                    ...(current.moduleRequirements?.[renewal.moduleName] || {}),
+                    modulePriceOverride: renewal.amount,
+                  },
+                }
+              : current.moduleRequirements,
+            quotationTo: {
+              name: renewal.customerName || current.quotationTo.name,
+              address: renewal.customerAddress || current.quotationTo.address,
+              contactNo:
+                renewal.customerContactNumber || current.quotationTo.contactNo,
+              email: renewal.customerEmail || current.quotationTo.email,
+            },
+          }),
+        );
       } catch (error) {
         console.error("Failed to load renewal quotation context", error);
         sessionStorage.removeItem("renewalQuotationContext");
@@ -387,8 +469,9 @@ export default function CreateQuotation({
   const handleOrganizationChange = (organizationName) => {
     const selectedCustomer = customers.find(
       (customer) =>
-        String(customer.name ?? customer.Name ?? "").trim().toLowerCase() ===
-        organizationName.trim().toLowerCase(),
+        String(customer.name ?? customer.Name ?? "")
+          .trim()
+          .toLowerCase() === organizationName.trim().toLowerCase(),
     );
 
     setValues((current) => ({
@@ -475,7 +558,8 @@ export default function CreateQuotation({
         ...newReference,
         name,
       });
-      const savedName = createdReference?.name || createdReference?.Name || name;
+      const savedName =
+        createdReference?.name || createdReference?.Name || name;
       setReferences((current) =>
         [...new Set([...current, savedName])].sort((first, second) =>
           first.localeCompare(second),
@@ -516,14 +600,60 @@ export default function CreateQuotation({
         };
       }
 
+      const newSelectedModules = exists
+        ? v.selectedModules.filter((m) => m !== moduleName)
+        : [...v.selectedModules, moduleName];
+
+      // Update config stage label in timeEstimate
+      setTimeEstimate((current) =>
+        current.map((stage) => {
+          if (stage.stageKey === "config") {
+            return {
+              ...stage,
+              label:
+                newSelectedModules.length > 0
+                  ? `${newSelectedModules.join(", ")} Configuration & Set Up`
+                  : "Configuration & Set Up",
+            };
+          }
+          return stage;
+        }),
+      );
+
       return {
         ...v,
-        selectedModules: exists
-          ? v.selectedModules.filter((m) => m !== moduleName)
-          : [...v.selectedModules, moduleName],
+        selectedModules: newSelectedModules,
         moduleRequirements,
       };
     });
+  };
+
+  const updateStage = (stageKey, field, value) => {
+    setTimeEstimate((current) =>
+      current.map((stage) => {
+        if (stage.stageKey !== stageKey) return stage;
+
+        const newStartWeek = field === "startWeek" ? value : stage.startWeek;
+        const newEndWeek = field === "endWeek" ? value : stage.endWeek;
+
+        // Auto-correct: From > To => To = From
+        let finalStartWeek = newStartWeek;
+        let finalEndWeek = newEndWeek;
+        if (finalStartWeek > finalEndWeek) {
+          finalEndWeek = finalStartWeek;
+        }
+        // Auto-correct: To < From => From = To
+        if (finalEndWeek < finalStartWeek) {
+          finalStartWeek = finalEndWeek;
+        }
+
+        return {
+          ...stage,
+          startWeek: finalStartWeek,
+          endWeek: finalEndWeek,
+        };
+      }),
+    );
   };
 
   const handleModuleRequirementChange = (moduleName, field, value) => {
@@ -550,9 +680,8 @@ export default function CreateQuotation({
           const manPower = Number(updatedScope.manPower) || 0;
           const days = Number(updatedScope.days) || 0;
           const rate = Number(updatedScope.rate) || 0;
-          updatedScope.amount = manPower && days && rate
-            ? manPower * days * rate
-            : "";
+          updatedScope.amount =
+            manPower && days && rate ? manPower * days * rate : "";
         }
         return updatedScope;
       }),
@@ -630,8 +759,8 @@ export default function CreateQuotation({
               ? null
               : Number(values.moduleRequirements?.[moduleName]?.noOfSites),
           implementationEffortUnit:
-            values.moduleRequirements?.[moduleName]?.implementationEffortDays ===
-              ""
+            values.moduleRequirements?.[moduleName]
+              ?.implementationEffortDays === ""
               ? null
               : `${Number(values.moduleRequirements?.[moduleName]?.implementationEffortDays) || 0} Days`,
           discountPercentage:
@@ -662,15 +791,23 @@ export default function CreateQuotation({
           email: values.quotationTo.email,
         },
         discountPercentage: values.discountPercentage,
+        timeEstimate: timeEstimate.map((s) => ({
+          stageKey: s.stageKey,
+          startWeek: s.startWeek,
+          endWeek: s.endWeek,
+        })),
       };
       const quotationId = result?.quotationId || result?.QuotationId;
-      const data = editMode && quotationId
-        ? await updateQuotation(quotationId, {
-            validationDate: values.validationDate,
-            selectedModules: values.selectedModules,
-            moduleDetails: payload.moduleDetails,
-          })
-        : await generateQuotation(payload);
+      const data =
+        editMode && quotationId
+          ? await updateQuotation(quotationId, {
+              validationDate: values.validationDate,
+              selectedModules: values.selectedModules,
+              moduleDetails: payload.moduleDetails,
+              additionalScopes: payload.additionalScopes,
+              timeEstimate: payload.timeEstimate,
+            })
+          : await generateQuotation(payload);
       const renewalContextRaw = sessionStorage.getItem(
         "renewalQuotationContext",
       );
@@ -688,13 +825,15 @@ export default function CreateQuotation({
       onNavigate("quotation-detail");
       setSnackbar({
         open: true,
-        message: "Quotation created successfully!",
+        message: editMode
+          ? "Quotation updated successfully!"
+          : "Quotation created successfully!",
         severity: "success",
       });
     } catch (err) {
       const msg =
         err.response?.data?.error ||
-        "Something went wrong while generating the quotation.";
+        `Something went wrong while ${editMode ? "updating" : "generating"} the quotation.`;
       setApiError(msg);
       setSnackbar({ open: true, message: msg, severity: "error" });
     } finally {
@@ -712,9 +851,7 @@ export default function CreateQuotation({
     const path =
       result?.pdfDownloadUrl ||
       result?.PdfDownloadUrl ||
-      (quotationId
-        ? `/api/quotation/${quotationId}/download/pdf`
-        : "");
+      (quotationId ? `/api/quotation/${quotationId}/download/pdf` : "");
     const url = resolveDownloadUrl(path);
 
     if (!url) {
@@ -789,7 +926,11 @@ export default function CreateQuotation({
       <div className="create-quotation__header">
         <div className="create-quotation__title">
           <h2 className="page-heading page-heading__text">
-            {readOnly ? "View Quotation" : editMode ? "Edit Quotation" : "New Quotation"}
+            {readOnly
+              ? "View Quotation"
+              : editMode
+                ? "Edit Quotation"
+                : "New Quotation"}
           </h2>
           <p></p>
         </div>
@@ -801,7 +942,13 @@ export default function CreateQuotation({
               className="q-submit"
               disabled={submitting}
             >
-              {submitting ? "Generating quotation…" : "Generate quotation"}
+              {submitting
+                ? editMode
+                  ? "Updating quotation…"
+                  : "Generating quotation…"
+                : editMode
+                  ? "Update quotation"
+                  : "Generate quotation"}
             </button>
           )}
           {result && !editMode && (
@@ -853,86 +1000,91 @@ export default function CreateQuotation({
       <div className="create-quotation__layout">
         <div className="create-quotation__card create-quotation__details-preview-card">
           <div className="create-quotation__details-card">
-          <form
-            id="quotation-form"
-            className="q-form"
-            onSubmit={readOnly ? undefined : handleSubmit}
-            noValidate
-          >
-            <section className="q-form__section">
-              <h3 className="q-form__heading">Quotation details</h3>
-              <div className="q-form__row">
-                <div className="q-field">
-                  <SearchDropdown
-                    name="organizationName"
-                    label="Customer"
-                    value={values.organizationName}
-                    onChange={handleOrganizationChange}
-                    disabled={readOnly}
-                    options={[
-                      ...new Set(
-                        customers
-                          .map((customer) => customer.name ?? customer.Name ?? "")
-                          .map((name) => name.trim())
-                          .filter(Boolean),
-                      ),
-                    ]}
-                    placeholder="Search customer..."
-                    error={errors.organizationName}
-                    onAddNew={handleAddNewOrganization}
-                    addNewLabel="Add new customer"
-                    required
-                    allowFreeText
-                  />
+            <form
+              id="quotation-form"
+              className="q-form"
+              onSubmit={readOnly ? undefined : handleSubmit}
+              noValidate
+            >
+              <section className="q-form__section">
+                <h3 className="q-form__heading">Quotation details</h3>
+                <div className="q-form__row">
+                  <div className="q-field">
+                    <SearchDropdown
+                      name="organizationName"
+                      label="Customer"
+                      value={values.organizationName}
+                      onChange={handleOrganizationChange}
+                      disabled={readOnly}
+                      options={[
+                        ...new Set(
+                          customers
+                            .map(
+                              (customer) =>
+                                customer.name ?? customer.Name ?? "",
+                            )
+                            .map((name) => name.trim())
+                            .filter(Boolean),
+                        ),
+                      ]}
+                      placeholder="Search customer..."
+                      error={errors.organizationName}
+                      onAddNew={handleAddNewOrganization}
+                      addNewLabel="Add new customer"
+                      required
+                      allowFreeText
+                    />
+                  </div>
+                  <div className="q-field q-field--narrow">
+                    <label htmlFor="date">Date</label>
+                    <input
+                      id="date"
+                      type="date"
+                      value={values.date}
+                      onChange={(e) =>
+                        handleFieldChange("date", e.target.value)
+                      }
+                      disabled={readOnly}
+                      className={readOnly ? "q-field__input--readonly" : ""}
+                    />
+                    {errors.date && (
+                      <span className="q-field__error">{errors.date}</span>
+                    )}
+                  </div>
+                  <div className="q-field q-field--narrow">
+                    <label htmlFor="validityPeriod">Valid for (days)</label>
+                    <select
+                      id="validityPeriod"
+                      value={validityPeriod}
+                      onChange={handleValidityPeriodChange}
+                      disabled={readOnly}
+                      className={readOnly ? "q-field__input--readonly" : ""}
+                    >
+                      <option value={15}>15 Days</option>
+                      <option value={30}>30 Days</option>
+                      <option value={45}>45 Days</option>
+                      <option value={60}>60 Days</option>
+                    </select>
+                  </div>
                 </div>
-                <div className="q-field q-field--narrow">
-                  <label htmlFor="date">Date</label>
-                  <input
-                    id="date"
-                    type="date"
-                    value={values.date}
-                    onChange={(e) => handleFieldChange("date", e.target.value)}
-                    disabled={readOnly}
-                    className={readOnly ? "q-field__input--readonly" : ""}
-                  />
-                  {errors.date && (
-                    <span className="q-field__error">{errors.date}</span>
-                  )}
-                </div>
-                <div className="q-field q-field--narrow">
-                  <label htmlFor="validityPeriod">Valid for (days)</label>
-                  <select
-                    id="validityPeriod"
-                    value={validityPeriod}
-                    onChange={handleValidityPeriodChange}
-                    disabled={readOnly}
-                    className={readOnly ? "q-field__input--readonly" : ""}
-                  >
-                    <option value={15}>15 Days</option>
-                    <option value={30}>30 Days</option>
-                    <option value={45}>45 Days</option>
-                    <option value={60}>60 Days</option>
-                  </select>
-                </div>
-              </div>
-              <div className="q-form__row">
-                <div className="q-field">
-                  <SearchDropdown
-                    name="referenceBy"
-                    label="Reference By"
-                    value={values.referenceBy}
-                    onChange={(val) => handleFieldChange("referenceBy", val)}
-                    disabled={readOnly}
-                    className={readOnly ? "q-field__input--readonly" : ""}
-                    options={references}
-                    placeholder="e.g. John Smith / Internal"
-                    error={errors.referenceBy}
-                    onAddNew={handleAddNewReference}
-                    addNewLabel="Add new reference"
-                    allowFreeText
-                  />
-                </div>
-                {/* <div className="q-field q-field--narrow">
+                <div className="q-form__row">
+                  <div className="q-field">
+                    <SearchDropdown
+                      name="referenceBy"
+                      label="Reference By"
+                      value={values.referenceBy}
+                      onChange={(val) => handleFieldChange("referenceBy", val)}
+                      disabled={readOnly}
+                      className={readOnly ? "q-field__input--readonly" : ""}
+                      options={references}
+                      placeholder="e.g. John Smith / Internal"
+                      error={errors.referenceBy}
+                      onAddNew={handleAddNewReference}
+                      addNewLabel="Add new reference"
+                      allowFreeText
+                    />
+                  </div>
+                  {/* <div className="q-field q-field--narrow">
                   <label htmlFor="validationDate">Valid until</label>
                   <input
                     id="validationDate"
@@ -949,112 +1101,113 @@ export default function CreateQuotation({
                     </span>
                   )}
                 </div> */}
-              </div>
-              <div className="q-form__row">
-                <div className="q-field">
-                  <label htmlFor="quotationNo">Quotation No.</label>
-                  <input
-                    id="quotationNo"
-                    type="text"
-                    placeholder={
-                      loadingQuotationNo ? "Loading..." : "Auto-generated"
-                    }
-                    value={
-                      values.quotationNo ||
-                      (loadingQuotationNo ? "" : "Auto-generated")
-                    }
-                    readOnly
-                    className="q-field__input--readonly"
-                  />
-                  {loadingQuotationNo && (
-                    <span className="q-field__hint">
-                      Generating quotation number…
-                    </span>
-                  )}
-                  {errors.quotationNo && (
-                    <span className="q-field__error">{errors.quotationNo}</span>
-                  )}
                 </div>
-                
-                <div className="q-field q-field--narrow">
-                  <label htmlFor="validationDate">Valid until</label>
-                  <input
-                    id="validationDate"
-                    type="date"
-                    value={values.validationDate}
-                    onChange={(e) =>
-                      handleFieldChange("validationDate", e.target.value)
-                    }
-                    readOnly
-                    className="q-field__input--readonly"
-                  />
-                  {errors.validationDate && (
-                    <span className="q-field__error">
-                      {errors.validationDate}
-                    </span>
-                  )}
+                <div className="q-form__row">
+                  <div className="q-field">
+                    <label htmlFor="quotationNo">Quotation No.</label>
+                    <input
+                      id="quotationNo"
+                      type="text"
+                      placeholder={
+                        loadingQuotationNo ? "Loading..." : "Auto-generated"
+                      }
+                      value={
+                        values.quotationNo ||
+                        (loadingQuotationNo ? "" : "Auto-generated")
+                      }
+                      readOnly
+                      className="q-field__input--readonly"
+                    />
+                    {loadingQuotationNo && (
+                      <span className="q-field__hint">
+                        Generating quotation number…
+                      </span>
+                    )}
+                    {errors.quotationNo && (
+                      <span className="q-field__error">
+                        {errors.quotationNo}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="q-field q-field--narrow">
+                    <label htmlFor="validationDate">Valid until</label>
+                    <input
+                      id="validationDate"
+                      type="date"
+                      value={values.validationDate}
+                      onChange={(e) =>
+                        handleFieldChange("validationDate", e.target.value)
+                      }
+                      readOnly
+                      className="q-field__input--readonly"
+                    />
+                    {errors.validationDate && (
+                      <span className="q-field__error">
+                        {errors.validationDate}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </section>
-          </form>
+              </section>
+            </form>
           </div>
 
           <div className="q-preview create-quotation__preview-card">
-          <div className="q-ticket">
-            <div className="q-ticket__top">
-              <span className="q-ticket__brand">BlechTek</span>
-              <span className="q-ticket__type">Quotation</span>
-            </div>
-
-            <div className="q-ticket__body">
-              <p className="q-ticket__label">Prepared for</p>
-              <p className="q-ticket__value">
-                {values.organizationName || "Customer"}
-              </p>
-
-              <p className="q-ticket__label">Reference By</p>
-              <p className="q-ticket__value">{values.referenceBy || "—"}</p>
-
-              <p className="q-ticket__label">Attention</p>
-              <p className="q-ticket__value">
-                {values.quotationTo.name || "Contact name"}
-              </p>
-
-              <p className="q-ticket__label">Scope</p>
-              <div className="q-ticket__modules">
-                {values.selectedModules.length === 0 && (
-                  <span className="q-ticket__placeholder">
-                    No modules selected yet
-                  </span>
-                )}
-                {values.selectedModules.map((m) => (
-                  <span className="q-ticket__module" key={m}>
-                    {m}
-                  </span>
-                ))}
+            <div className="q-ticket">
+              <div className="q-ticket__top">
+                <span className="q-ticket__brand">BlechTek</span>
+                <span className="q-ticket__type">Quotation</span>
               </div>
-            </div>
 
-            <div className="q-ticket__perforation" aria-hidden="true" />
-
-            <div className="q-ticket__stub">
-              <div>
-                <p className="q-ticket__label">Valid until</p>
-                <p className="q-ticket__mono">
-                  {formatDate(values.validationDate)}
+              <div className="q-ticket__body">
+                <p className="q-ticket__label">Prepared for</p>
+                <p className="q-ticket__value">
+                  {values.organizationName || "Customer"}
                 </p>
-              </div>
-              <div>
-                <p className="q-ticket__label">Modules</p>
-                <p className="q-ticket__mono">
-                  {String(values.selectedModules.length).padStart(2, "0")}
+
+                <p className="q-ticket__label">Reference By</p>
+                <p className="q-ticket__value">{values.referenceBy || "—"}</p>
+
+                <p className="q-ticket__label">Attention</p>
+                <p className="q-ticket__value">
+                  {values.quotationTo.name || "Contact name"}
                 </p>
+
+                <p className="q-ticket__label">Scope</p>
+                <div className="q-ticket__modules">
+                  {values.selectedModules.length === 0 && (
+                    <span className="q-ticket__placeholder">
+                      No modules selected yet
+                    </span>
+                  )}
+                  {values.selectedModules.map((m) => (
+                    <span className="q-ticket__module" key={m}>
+                      {m}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="q-ticket__perforation" aria-hidden="true" />
+
+              <div className="q-ticket__stub">
+                <div>
+                  <p className="q-ticket__label">Valid until</p>
+                  <p className="q-ticket__mono">
+                    {formatDate(values.validationDate)}
+                  </p>
+                </div>
+                <div>
+                  <p className="q-ticket__label">Modules</p>
+                  <p className="q-ticket__mono">
+                    {String(values.selectedModules.length).padStart(2, "0")}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
 
-          {apiError && <div className="q-preview__error">{apiError}</div>}
-
+            {apiError && <div className="q-preview__error">{apiError}</div>}
           </div>
         </div>
 
@@ -1062,8 +1215,7 @@ export default function CreateQuotation({
           <form className="q-form" noValidate>
             <section className="q-form__section">
               <h3 className="q-form__heading">Scope & modules</h3>
-              <p className="q-form__hint">
-              </p>
+              <p className="q-form__hint"></p>
               <ModuleSelector
                 modules={modules}
                 selected={values.selectedModules}
@@ -1081,8 +1233,133 @@ export default function CreateQuotation({
                 />
               )}
             </section>
+          </form>
+        </div>
 
-            
+        <div className="create-quotation__card create-quotation__time-estimate-card">
+          <form className="q-form" noValidate>
+            <section className="q-form__section">
+              <h3 className="q-form__heading">Time Estimate (Gantt)</h3>
+              <p className="q-form__hint">
+                Select From/To week for each stage. Weeks 1-4 = Month 1, Weeks
+                5-8 = Month 2. Stages may overlap. Blue cells indicate selected
+                weeks.
+              </p>
+              <div className="time-estimate__table-wrap">
+                <table className="time-estimate__table">
+                  <thead>
+                    <tr>
+                      <th style={{ width: "280px" }}>Stage</th>
+                      {WEEK_LABELS.map((w, i) => (
+                        <th
+                          key={i}
+                          style={{ width: "60px", textAlign: "center" }}
+                        >
+                          {w}
+                        </th>
+                      ))}
+                      <th style={{ width: "140px", textAlign: "center" }}>
+                        Duration
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {timeEstimate.map((stage) => (
+                      <tr key={stage.stageKey}>
+                        <td className="time-estimate__stage-label">
+                          {stage.label}
+                        </td>
+                        {WEEK_LABELS.map((_, wIdx) => {
+                          const weekNum = wIdx + 1;
+                          const isShaded =
+                            weekNum >= stage.startWeek &&
+                            weekNum <= stage.endWeek;
+                          return (
+                            <td
+                              key={wIdx}
+                              className={`time-estimate__week-cell ${isShaded ? "time-estimate__week-cell--shaded" : ""}`}
+                              style={{
+                                textAlign: "center",
+                                backgroundColor: isShaded
+                                  ? "#4A90D9"
+                                  : "transparent",
+                                color: isShaded ? "#fff" : "inherit",
+                              }}
+                            >
+                              {isShaded ? "■" : ""}
+                            </td>
+                          );
+                        })}
+                        <td
+                          className="time-estimate__duration"
+                          style={{ textAlign: "center" }}
+                        >
+                          {stage.endWeek - stage.startWeek + 1} week
+                          {stage.endWeek - stage.startWeek > 0 ? "s" : ""}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="time-estimate__controls">
+                {timeEstimate.map((stage) => (
+                  <div
+                    key={stage.stageKey}
+                    className="time-estimate__stage-row"
+                  >
+                    <label className="time-estimate__stage-label-small">
+                      {stage.label}
+                    </label>
+                    <div className="time-estimate__dropdowns">
+                      <select
+                        value={stage.startWeek}
+                        onChange={(e) =>
+                          updateStage(
+                            stage.stageKey,
+                            "startWeek",
+                            Number(e.target.value),
+                          )
+                        }
+                        disabled={readOnly}
+                        className="time-estimate__select"
+                        aria-label={`From week for ${stage.label}`}
+                      >
+                        {WEEK_LABELS.map((w, i) => (
+                          <option key={i} value={i + 1}>
+                            {w}
+                          </option>
+                        ))}
+                      </select>
+                      <span className="time-estimate__to">to</span>
+                      <select
+                        value={stage.endWeek}
+                        onChange={(e) =>
+                          updateStage(
+                            stage.stageKey,
+                            "endWeek",
+                            Number(e.target.value),
+                          )
+                        }
+                        disabled={readOnly}
+                        className="time-estimate__select"
+                        aria-label={`To week for ${stage.label}`}
+                      >
+                        {WEEK_LABELS.map((w, i) => (
+                          <option key={i} value={i + 1}>
+                            {w}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="time-estimate__summary">
+                Estimated duration:{" "}
+                {Math.max(...timeEstimate.map((s) => s.endWeek))} weeks
+              </div>
+            </section>
           </form>
         </div>
 
@@ -1148,26 +1425,26 @@ export default function CreateQuotation({
                       </td>
                       <td>
                         <select
-                              value={scope.module}
-                              onChange={(event) =>
-                                handleAdditionalScopeChange(
-                                  index,
-                                  "module",
-                                  event.target.value,
-                                )
-                              }
-                              disabled={readOnly}
-                            >
-                              <option value="">Select module</option>
+                          value={scope.module}
+                          onChange={(event) =>
+                            handleAdditionalScopeChange(
+                              index,
+                              "module",
+                              event.target.value,
+                            )
+                          }
+                          disabled={readOnly}
+                        >
+                          <option value="">Select module</option>
 
-                              {values.selectedModules.map((moduleName) => (
-                                <option key={moduleName} value={moduleName}>
-                                  {moduleName}
-                                </option>
-                              ))}
+                          {values.selectedModules.map((moduleName) => (
+                            <option key={moduleName} value={moduleName}>
+                              {moduleName}
+                            </option>
+                          ))}
 
-                              <option value="Others">Others</option>
-                            </select>
+                          <option value="Others">Others</option>
+                        </select>
                       </td>
                       <td>
                         <input
@@ -1373,9 +1650,7 @@ export default function CreateQuotation({
             </div>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setCustomerDialogOpen(false)}>
-              Cancel
-            </Button>
+            <Button onClick={() => setCustomerDialogOpen(false)}>Cancel</Button>
             <Button
               variant="contained"
               onClick={handleCreateCustomer}
@@ -1557,7 +1832,7 @@ export default function CreateQuotation({
                 "&:hover": { bgcolor: "#757575" },
                 textTransform: "none",
                 borderRadius: 2,
-                lineHeight:"normal"
+                lineHeight: "normal",
                 // px: 2,
                 // py: 1,
               }}
@@ -1598,8 +1873,8 @@ export default function CreateQuotation({
                   setSendingEmail(false);
                 }
               }}
-               sx={{
-                lineHeight:"normal"
+              sx={{
+                lineHeight: "normal",
               }}
             >
               {sendingEmail ? "Sending…" : "Send"}
@@ -1641,9 +1916,10 @@ function ModuleSelector({ modules, selected, onToggle, error, disabled }) {
                     }`}
                   >
                     <div className="module-selector__text">
-                      <span className="module-selector__pillar-name">{pillar}</span>
+                      <span className="module-selector__pillar-name">
+                        {pillar}
+                      </span>
                       <span className="module-selector__name">{module}</span>
-                      
                     </div>
                     <input
                       type="checkbox"
@@ -1680,105 +1956,107 @@ function ModuleRequirements({
       <div className="module-requirements__content">
         <div className="module-requirements__list">
           {selectedModules.map((moduleName) => {
-          const values = requirements[moduleName] || {};
+            const values = requirements[moduleName] || {};
 
-          return (
-            <div className="module-requirements__card" key={moduleName}>
-              <h5 className="module-requirements__module">{moduleName}</h5>
-              <div className="q-form__row">
-                <div className="q-field">
-                  <label htmlFor={`${moduleName}-users`}>No. of Users</label>
-                  <input
-                    id={`${moduleName}-users`}
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={values.noOfUsers || ""}
-                    onChange={(event) =>
-                      onChange(moduleName, "noOfUsers", event.target.value)
-                    }
-                    disabled={disabled}
-                  />
-                </div>
-                <div className="q-field">
-                  <label htmlFor={`${moduleName}-installations`}>
-                    No. of Installations
-                  </label>
-                  <input
-                    id={`${moduleName}-installations`}
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={values.noOfInstallations || ""}
-                    onChange={(event) =>
-                      onChange(
-                        moduleName,
-                        "noOfInstallations",
-                        event.target.value,
-                      )
-                    }
-                    disabled={disabled}
-                  />
-                </div>
-                <div className="q-field">
-                  <label htmlFor={`${moduleName}-sites`}>No. of Sites</label>
-                  <input
-                    id={`${moduleName}-sites`}
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={values.noOfSites || ""}
-                    onChange={(event) =>
-                      onChange(moduleName, "noOfSites", event.target.value)
-                    }
-                    disabled={disabled}
-                  />
-                </div>
-                <div className="q-field">
-                  <label htmlFor={`${moduleName}-days`}>
-                    Implementation days
-                  </label>
-                  <input
-                    id={`${moduleName}-days`}
-                    type="number"
-                    min="0"
-                    step="0.5"
-                    value={values.implementationEffortDays ?? ""}
-                    onChange={(event) =>
-                      onChange(
-                        moduleName,
-                        "implementationEffortDays",
-                        event.target.value,
-                      )
-                    }
-                    disabled={disabled}
-                  />
-                </div>
-                {showDiscount && (
+            return (
+              <div className="module-requirements__card" key={moduleName}>
+                <h5 className="module-requirements__module">{moduleName}</h5>
+                <div className="q-form__row">
                   <div className="q-field">
-                    <label htmlFor={`${moduleName}-discount`}>Discount (%)</label>
+                    <label htmlFor={`${moduleName}-users`}>No. of Users</label>
                     <input
-                      id={`${moduleName}-discount`}
+                      id={`${moduleName}-users`}
                       type="number"
                       min="0"
-                      max="100"
-                      step="0.01"
-                      value={values.discountPercentage ?? ""}
+                      step="1"
+                      value={values.noOfUsers || ""}
+                      onChange={(event) =>
+                        onChange(moduleName, "noOfUsers", event.target.value)
+                      }
+                      disabled={disabled}
+                    />
+                  </div>
+                  <div className="q-field">
+                    <label htmlFor={`${moduleName}-installations`}>
+                      No. of Installations
+                    </label>
+                    <input
+                      id={`${moduleName}-installations`}
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={values.noOfInstallations || ""}
                       onChange={(event) =>
                         onChange(
                           moduleName,
-                          "discountPercentage",
+                          "noOfInstallations",
                           event.target.value,
                         )
                       }
                       disabled={disabled}
-                      placeholder="0"
                     />
                   </div>
-                )}
+                  <div className="q-field">
+                    <label htmlFor={`${moduleName}-sites`}>No. of Sites</label>
+                    <input
+                      id={`${moduleName}-sites`}
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={values.noOfSites || ""}
+                      onChange={(event) =>
+                        onChange(moduleName, "noOfSites", event.target.value)
+                      }
+                      disabled={disabled}
+                    />
+                  </div>
+                  <div className="q-field">
+                    <label htmlFor={`${moduleName}-days`}>
+                      Implementation days
+                    </label>
+                    <input
+                      id={`${moduleName}-days`}
+                      type="number"
+                      min="0"
+                      step="0.5"
+                      value={values.implementationEffortDays ?? ""}
+                      onChange={(event) =>
+                        onChange(
+                          moduleName,
+                          "implementationEffortDays",
+                          event.target.value,
+                        )
+                      }
+                      disabled={disabled}
+                    />
+                  </div>
+                  {showDiscount && (
+                    <div className="q-field">
+                      <label htmlFor={`${moduleName}-discount`}>
+                        Discount (%)
+                      </label>
+                      <input
+                        id={`${moduleName}-discount`}
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.01"
+                        value={values.discountPercentage ?? ""}
+                        onChange={(event) =>
+                          onChange(
+                            moduleName,
+                            "discountPercentage",
+                            event.target.value,
+                          )
+                        }
+                        disabled={disabled}
+                        placeholder="0"
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          );
+            );
           })}
         </div>
       </div>

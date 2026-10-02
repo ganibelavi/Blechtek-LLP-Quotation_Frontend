@@ -437,3 +437,160 @@
     grid-template-columns: 1fr;
   }
 }
+
+.create-quotation__time-estimate-card {
+  grid-column: 1;
+  grid-row: 3;
+}
+
+.create-quotation__additional-scope-card {
+  grid-column: 1;
+  grid-row: 4;
+}
+
+.time-estimate__table-wrap {
+  margin-top: 16px;
+  overflow-x: auto;
+}
+
+.time-estimate__table {
+  width: 100%;
+  min-width: 800px;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+  color: var(--text-700);
+  font-size: 12px;
+}
+
+.time-estimate__table th {
+  padding: 10px 8px;
+  border-bottom: 2px solid var(--border);
+  text-align: left;
+  white-space: nowrap;
+  background-color: var(--primary-blue);
+  color: #fff;
+  font-weight: 600;
+}
+
+.time-estimate__table th:first-child {
+  text-align: left;
+}
+
+.time-estimate__table th:last-child {
+  text-align: center;
+}
+
+.time-estimate__table td {
+  padding: 8px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  text-align: center;
+}
+
+.time-estimate__stage-label {
+  font-weight: 500;
+  text-align: left !important;
+  padding-left: 12px;
+}
+
+.time-estimate__week-cell {
+  width: 60px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 14px;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.time-estimate__week-cell--shaded {
+  background-color: #4A90D9 !important;
+  color: #fff !important;
+}
+
+.time-estimate__duration {
+  font-weight: 600;
+  color: var(--text-700);
+  text-align: center !important;
+}
+
+.time-estimate__controls {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.time-estimate__stage-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.time-estimate__stage-label-small {
+  min-width: 260px;
+  font-weight: 500;
+  color: var(--text-700);
+  font-size: 13px;
+}
+
+.time-estimate__dropdowns {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.time-estimate__select {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-700);
+  font: inherit;
+  font-size: 13px;
+  min-width: 140px;
+  cursor: pointer;
+}
+
+.time-estimate__select:focus {
+  border-color: var(--primary-blue);
+  box-shadow: 0 0 0 3px var(--blue-100);
+  outline: none;
+}
+
+.time-estimate__select:disabled {
+  background: var(--bg);
+  color: var(--text-400);
+}
+
+.time-estimate__to {
+  color: var(--text-400);
+  font-size: 13px;
+}
+
+.time-estimate__summary {
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: var(--surface-subtle, #fafafa);
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  color: var(--text-700);
+  font-size: 14px;
+}
+
+@media (max-width: 1024px) {
+  .create-quotation__time-estimate-card {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .create-quotation__additional-scope-card {
+    grid-column: 1;
+    grid-row: auto;
+  }
+}
