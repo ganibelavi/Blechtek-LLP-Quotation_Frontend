@@ -62,6 +62,9 @@ export default function PurchaseOrderPrint({ initialData, onBack }) {
       ? initialData.items.map((row, index) => ({ ...row, id: row.id ?? index + 1 }))
       : [],
   );
+  const [additionalScopes, setAdditionalScopes] = useState(
+    initialData?.additionalScopes || initialData?.po?.additionalScopes || [],
+  );
   const [loading, setLoading] = useState(true);
   const [hasAutoPrinted, setHasAutoPrinted] = useState(false);
 
@@ -81,6 +84,9 @@ export default function PurchaseOrderPrint({ initialData, onBack }) {
               ? normalized.items.map((row, index) => ({ ...row, id: row.id ?? index + 1 }))
               : [],
           );
+          setAdditionalScopes(
+            normalized.additionalScopes || normalized.po?.additionalScopes || [],
+          );
           setLoading(false);
           return;
         }
@@ -92,6 +98,9 @@ export default function PurchaseOrderPrint({ initialData, onBack }) {
           setPo({ ...emptyPO, ...(normalized.po || remote || {}) });
           setItems(
             (normalized.items || remote?.items || []).map((row, index) => ({ ...row, id: row.id ?? index + 1 })),
+          );
+          setAdditionalScopes(
+            normalized.additionalScopes || normalized.po?.additionalScopes || [],
           );
         }
       } catch (error) {
@@ -110,9 +119,18 @@ export default function PurchaseOrderPrint({ initialData, onBack }) {
       (sum, row) => sum + (Number(row.qty) || 0) * (Number(row.rate) || 0),
       0,
     );
+    const additionalScopeTotal = additionalScopes.reduce(
+      (sum, scope) => sum + (Number(scope.amount ?? scope.Amount) || 0),
+      0,
+    );
 
-    return { totalQty, totalPrice };
-  }, [items]);
+    return {
+      totalQty,
+      totalPrice,
+      additionalScopeTotal,
+      grandTotal: totalPrice + additionalScopeTotal,
+    };
+  }, [items, additionalScopes]);
 
   useEffect(() => {
     if (loading || hasAutoPrinted) {
@@ -238,6 +256,38 @@ export default function PurchaseOrderPrint({ initialData, onBack }) {
           </tbody>
         </table>
 
+        {additionalScopes.length > 0 && (
+          <section className="po-additional-scope-section">
+            <h3>Additional scope</h3>
+            <table className="po-table po-additional-scope-table">
+              <thead>
+                <tr>
+                  <th className="po-col-sl">Sl. No.</th>
+                  <th>Requirement</th>
+                  <th>Module</th>
+                  <th>Manpower</th>
+                  <th>Days</th>
+                  <th>Rate</th>
+                  <th>Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {additionalScopes.map((scope, index) => (
+                  <tr key={`additional-scope-${index}`}>
+                    <td className="po-col-sl">{index + 1}</td>
+                    <td>{scope.requirement ?? scope.Requirement ?? "-"}</td>
+                    <td>{scope.modules ?? scope.Modules ?? "-"}</td>
+                    <td>{scope.noOfManpower ?? scope.NoOfManpower ?? 0}</td>
+                    <td>{scope.noOfDays ?? scope.NoOfDays ?? 0}</td>
+                    <td>₹ {currency(Number(scope.rate ?? scope.Rate) || 0)}</td>
+                    <td>₹ {currency(Number(scope.amount ?? scope.Amount) || 0)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+        )}
+
         <div className="po-summary">
           <div className="po-summary-row">
             <span className="po-label">Total Quantity:</span>
@@ -245,7 +295,7 @@ export default function PurchaseOrderPrint({ initialData, onBack }) {
           </div>
           <div className="po-summary-row po-summary-row--total">
             <span className="po-label">Total Amount:</span>
-            <strong>₹ {currency(totals.totalPrice)}</strong>
+            <strong>₹ {currency(totals.grandTotal)}</strong>
           </div>
         </div>
 

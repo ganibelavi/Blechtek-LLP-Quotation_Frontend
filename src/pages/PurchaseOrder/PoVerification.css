@@ -239,6 +239,29 @@
   color: var(--ok);
 }
 
+.pov-additional-scope-row {
+  align-items: start;
+}
+
+.pov-scope-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.pov-scope-table th,
+.pov-scope-table td {
+  border: 1px solid var(--line);
+  padding: 6px;
+  text-align: left;
+}
+
+.pov-scope-total {
+  margin-top: 8px;
+  font-weight: 700;
+  text-align: right;
+}
+
 .pov-row input,
 .pov-row textarea {
   width: 100%;

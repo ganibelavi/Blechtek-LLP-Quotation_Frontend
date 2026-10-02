@@ -133,6 +133,11 @@ export default function GSTInvoice({ initialData, onBackToInvoiceList, onNavigat
     }
     return [newRow()];
   });
+  const [additionalScopes] = useState(() =>
+    Array.isArray(normalizedInitialData?.additionalScopes)
+      ? normalizedInitialData.additionalScopes
+      : [],
+  );
   const printRef = useRef(null);
 
   const field = (key) => ({
@@ -160,16 +165,22 @@ export default function GSTInvoice({ initialData, onBackToInvoiceList, onNavigat
       (s, r) => s + (Number(r.qty) || 0) * (Number(r.rate) || 0),
       0,
     );
-    const sgst = (totalPrice * (Number(invoice.sgstPct) || 0)) / 100;
-    const cgst = (totalPrice * (Number(invoice.cgstPct) || 0)) / 100;
-    const igst = (totalPrice * (Number(invoice.igstPct) || 0)) / 100;
-    const subtotal = totalPrice + sgst + cgst + igst;
+    const additionalScopeTotal = additionalScopes.reduce(
+      (sum, scope) => sum + (Number(scope.amount ?? scope.Amount) || 0),
+      0,
+    );
+    const taxableAmount = totalPrice + additionalScopeTotal;
+    const sgst = (taxableAmount * (Number(invoice.sgstPct) || 0)) / 100;
+    const cgst = (taxableAmount * (Number(invoice.cgstPct) || 0)) / 100;
+    const igst = (taxableAmount * (Number(invoice.igstPct) || 0)) / 100;
+    const subtotal = taxableAmount + sgst + cgst + igst;
     const tds = (subtotal * (Number(invoice.tdsPct) || 0)) / 100;
     const insurance = Number(invoice.insurance) || 0;
     const grandTotal = subtotal - tds + insurance;
     return {
       totalQty,
       totalPrice,
+      additionalScopeTotal,
       sgst,
       cgst,
       igst,
@@ -180,6 +191,7 @@ export default function GSTInvoice({ initialData, onBackToInvoiceList, onNavigat
     };
   }, [
     items,
+    additionalScopes,
     invoice.sgstPct,
     invoice.cgstPct,
     invoice.igstPct,
@@ -190,7 +202,7 @@ export default function GSTInvoice({ initialData, onBackToInvoiceList, onNavigat
   const handlePrint = () => {
     sessionStorage.setItem(
       "invoicePrintData",
-      JSON.stringify({ invoice, items, totals }),
+      JSON.stringify({ invoice, items, additionalScopes, totals }),
     );
     if (initialData?.id || initialData?.invoice?.id || invoice?.id) {
       sessionStorage.setItem(
@@ -460,6 +472,37 @@ export default function GSTInvoice({ initialData, onBackToInvoiceList, onNavigat
             </tr>
           </tfoot>
         </table>
+
+        {additionalScopes.length > 0 && (
+          <table className="gi-table gi-scope-table">
+            <thead>
+              <tr>
+                <th>Additional Scope / Requirement</th>
+                <th>Module</th>
+                <th>Manpower</th>
+                <th>Days</th>
+                <th>Rate (₹)</th>
+                <th>Amount (₹)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {additionalScopes.map((scope, index) => (
+                <tr key={`scope-${index}`}>
+                  <td>{scope.requirement ?? scope.Requirement ?? "-"}</td>
+                  <td>{scope.modules ?? scope.Modules ?? "-"}</td>
+                  <td>{scope.noOfManpower ?? scope.NoOfManpower ?? 0}</td>
+                  <td>{scope.noOfDays ?? scope.NoOfDays ?? 0}</td>
+                  <td className="gi-num">
+                    {currency(Number(scope.rate ?? scope.Rate) || 0)}
+                  </td>
+                  <td className="gi-num">
+                    {currency(Number(scope.amount ?? scope.Amount) || 0)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
 
         {/* Declarations + Totals */}
         <div className="gi-grid-2 gi-footer-grid">

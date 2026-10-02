@@ -59,6 +59,13 @@ const COMPARISON_FIELDS = [
     type: "text",
   },
   {
+    key: "additionalScopes",
+    label: "Additional scope",
+    quotationKey: "quotationAdditionalScopes",
+    clientKey: "clientPoAdditionalScopes",
+    type: "text",
+  },
+  {
     key: "terms",
     label: "Selected Modules",
     quotationKey: "quotationTerms",
@@ -116,6 +123,31 @@ const formatQuotationItems = (items) => {
   return String(items);
 };
 
+const formatAdditionalScopes = (scopes) =>
+  (Array.isArray(scopes) ? scopes : [])
+    .map((scope) =>
+      [
+        scope.requirement || "—",
+        scope.modules || "—",
+        `Manpower: ${scope.noOfManpower ?? 0}`,
+        `Days: ${scope.noOfDays ?? 0}`,
+        `Rate: ${Number(scope.rate) || 0}`,
+        `Amount: ${Number(scope.amount) || 0}`,
+      ].join(" | "),
+    )
+    .join("; ");
+
+const compareAdditionalScopes = (scopes, clientValue) => {
+  if (!Array.isArray(scopes) || scopes.length === 0) {
+    return {
+      match: !String(clientValue || "").trim(),
+      q: "",
+      c: normalizeText(clientValue),
+    };
+  }
+  return compareValues(formatAdditionalScopes(scopes), clientValue, "text");
+};
+
 export default function PoVerificationScreen({ onNavigate }) {
   const rawId = sessionStorage.getItem("purchaseOrderId");
   const poId = Number(rawId);
@@ -152,6 +184,7 @@ export default function PoVerificationScreen({ onNavigate }) {
     clientPoDate: "",
     clientPoAmount: "",
     clientPoItems: "",
+    clientPoAdditionalScopes: "",
     clientPoTerms: "",
   });
 
@@ -161,6 +194,7 @@ export default function PoVerificationScreen({ onNavigate }) {
     amount: "",
     items: "",
     terms: "",
+    additionalScopes: [],
   });
 
   const [comparisonResults, setComparisonResults] = useState({});
@@ -184,6 +218,11 @@ export default function PoVerificationScreen({ onNavigate }) {
         data.quotationTerms ||
         data.terms ||
         data.paymentTerms,
+      quotationAdditionalScopes: formatAdditionalScopes(
+        quotationDisplay.additionalScopes.length
+          ? quotationDisplay.additionalScopes
+          : data.additionalScopes,
+      ),
       quotationRefNo:
         quotationDisplay.refNo ||
         data.quotationRefNo ||
@@ -258,6 +297,11 @@ export default function PoVerificationScreen({ onNavigate }) {
           "clientPOItems",
           "clientPoItemsText",
         ),
+        clientPoAdditionalScopes: getField(
+          verification,
+          "clientPoAdditionalScopes",
+          "clientPOAdditionalScopes",
+        ),
         clientPoTerms: getField(verification, "clientPoTerms", "clientPOTerms"),
       });
 
@@ -294,6 +338,9 @@ export default function PoVerificationScreen({ onNavigate }) {
           "terms",
           "paymentTerms",
         ),
+        additionalScopes: Array.isArray(verification.additionalScopes)
+          ? verification.additionalScopes
+          : [],
       });
 
       // If items are missing, fetch full quotation details using quotationRefNo
@@ -353,11 +400,16 @@ export default function PoVerificationScreen({ onNavigate }) {
     const results = {};
     COMPARISON_FIELDS.forEach((field) => {
       results[field.key] = {
-        ...compareValues(
-          verification[field.quotationKey],
-          verification[field.clientKey],
-          field.type,
-        ),
+        ...(field.key === "additionalScopes"
+          ? compareAdditionalScopes(
+              verification.additionalScopes,
+              verification[field.clientKey],
+            )
+          : compareValues(
+              verification[field.quotationKey],
+              verification[field.clientKey],
+              field.type,
+            )),
         field,
       };
     });
@@ -372,14 +424,14 @@ export default function PoVerificationScreen({ onNavigate }) {
     if (!data) return;
     const results = {};
     COMPARISON_FIELDS.forEach((field) => {
-      const clientVal =
-        field.key === "amount"
-          ? clientDetails.clientPoAmount
-          : field.key === "items"
-            ? clientDetails.clientPoItems
-            : clientDetails.clientPoTerms;
+      const clientVal = clientDetails[field.clientKey];
       results[field.key] = {
-        ...compareValues(data[field.quotationKey], clientVal, field.type),
+        ...(field.key === "additionalScopes"
+          ? compareAdditionalScopes(
+              data.additionalScopes,
+              clientDetails.clientPoAdditionalScopes,
+            )
+          : compareValues(data[field.quotationKey], clientVal, field.type)),
         field,
       };
     });
@@ -397,6 +449,7 @@ export default function PoVerificationScreen({ onNavigate }) {
       ? Number(clientDetails.clientPoAmount)
       : null,
     ClientPoItems: clientDetails.clientPoItems,
+    ClientPoAdditionalScopes: clientDetails.clientPoAdditionalScopes,
     ClientPoTerms: clientDetails.clientPoTerms,
   });
 
@@ -405,6 +458,12 @@ export default function PoVerificationScreen({ onNavigate }) {
     if (!clientDetails.clientPoDate) return false;
     if (!clientDetails.clientPoAmount?.trim()) return false;
     if (!clientDetails.clientPoItems?.trim()) return false;
+    if (
+      quotationDisplay.additionalScopes.length > 0 &&
+      !clientDetails.clientPoAdditionalScopes?.trim()
+    ) {
+      return false;
+    }
     if (!clientDetails.clientPoTerms?.trim()) return false;
     return true;
   };
@@ -770,6 +829,46 @@ export default function PoVerificationScreen({ onNavigate }) {
                   "—"}
               </div>
             </div>
+            {quotationDisplay.additionalScopes.length > 0 && (
+              <div className="pov-row pov-additional-scope-row">
+                  <label>Additional scope</label>
+                  <div className="pov-ro">
+                    <table className="pov-scope-table">
+                      <thead>
+                        <tr>
+                          <th>Requirement</th>
+                          <th>Module</th>
+                          <th>Manpower</th>
+                          <th>Days</th>
+                          <th>Rate</th>
+                          <th>Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {quotationDisplay.additionalScopes.map((scope, index) => (
+                          <tr key={`verification-scope-${index}`}>
+                            <td>{scope.requirement || "—"}</td>
+                            <td>{scope.modules || "—"}</td>
+                            <td>{scope.noOfManpower ?? 0}</td>
+                            <td>{scope.noOfDays ?? 0}</td>
+                            <td>{money(scope.rate)}</td>
+                            <td>{money(scope.amount)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <div className="pov-scope-total">
+                      Additional scope total:{" "}
+                      {money(
+                        quotationDisplay.additionalScopes.reduce(
+                          (sum, scope) => sum + (Number(scope.amount) || 0),
+                          0,
+                        ),
+                      )}
+                    </div>
+                  </div>
+              </div>
+            )}
           </div>
 
           {/* Card 2: Client PO Details */}
@@ -839,6 +938,26 @@ export default function PoVerificationScreen({ onNavigate }) {
                 <MatchIcon result={comparisonResults.items} />
               </div>
             </div>
+
+            {quotationDisplay.additionalScopes.length > 0 && (
+              <div className="pov-row pov-row-textarea">
+                <label>Additional scope</label>
+                <div className="pov-input-wrap">
+                  <textarea
+                    rows={4}
+                    value={clientDetails.clientPoAdditionalScopes}
+                    onChange={(e) =>
+                      handleClientDetailChange(
+                        "clientPoAdditionalScopes",
+                        e.target.value,
+                      )
+                    }
+                    placeholder="Enter the additional-scope details as shown in the uploaded client PO."
+                  />
+                  <MatchIcon result={comparisonResults.additionalScopes} />
+                </div>
+              </div>
+            )}
 
             <div className="pov-row pov-row-textarea">
               <label>Selected Modules</label>

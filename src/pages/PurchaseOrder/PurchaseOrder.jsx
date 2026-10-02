@@ -2,6 +2,7 @@ import React, { useState, useMemo } from "react";
 import "./PurchaseOrder.css";
 
 let rowId = 1;
+const EMPTY_ADDITIONAL_SCOPES = [];
 const newRow = () => ({
   id: rowId++,
   description: "",
@@ -73,6 +74,10 @@ export default function PurchaseOrder({
       ? normalizedInitialData.items.map((r) => ({ ...r, id: rowId++ }))
       : [newRow()],
   );
+  const additionalScopes =
+    normalizedInitialData?.additionalScopes ||
+    normalizedInitialData?.po?.additionalScopes ||
+    EMPTY_ADDITIONAL_SCOPES;
 
   const field = (key) => ({
     value: po[key],
@@ -98,13 +103,27 @@ export default function PurchaseOrder({
       (s, r) => s + (Number(r.qty) || 0) * (Number(r.rate) || 0),
       0,
     );
-    return { totalQty, totalPrice };
-  }, [items]);
+    const additionalScopeTotal = additionalScopes.reduce(
+      (sum, scope) => sum + (Number(scope.amount ?? scope.Amount) || 0),
+      0,
+    );
+    return {
+      totalQty,
+      totalPrice,
+      additionalScopeTotal,
+      grandTotal: totalPrice + additionalScopeTotal,
+    };
+  }, [items, additionalScopes]);
 
   const handlePrint = () => {
     sessionStorage.setItem(
       "purchaseOrderPrintData",
-      JSON.stringify({ po, items, totals }),
+      JSON.stringify({
+        po,
+        items,
+        totals,
+        additionalScopes,
+      }),
     );
     if (initialData?.id || initialData?.po?.id || po?.id) {
       sessionStorage.setItem(
@@ -345,11 +364,41 @@ title={
               <td></td>
               <td></td>
               <td className="po-col-total po-num">
-                ₹ {currency(totals.totalPrice)}
+                ₹ {currency(totals.grandTotal)}
               </td>
             </tr>
           </tfoot>
         </table>
+
+        {additionalScopes.length > 0 && (
+          <section className="po-additional-scope-section">
+            <h3>Additional scope</h3>
+            <table className="po-table po-additional-scope-table">
+              <thead>
+                <tr>
+                  <th>Requirement</th>
+                  <th>Module</th>
+                  <th>Manpower</th>
+                  <th>Days</th>
+                  <th>Rate</th>
+                  <th>Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {additionalScopes.map((scope, index) => (
+                  <tr key={`additional-scope-${index}`}>
+                    <td>{scope.requirement ?? scope.Requirement ?? "-"}</td>
+                    <td>{scope.modules ?? scope.Modules ?? "-"}</td>
+                    <td>{scope.noOfManpower ?? scope.NoOfManpower ?? 0}</td>
+                    <td>{scope.noOfDays ?? scope.NoOfDays ?? 0}</td>
+                    <td>₹ {currency(Number(scope.rate ?? scope.Rate) || 0)}</td>
+                    <td>₹ {currency(Number(scope.amount ?? scope.Amount) || 0)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+        )}
 
         {/* Terms */}
         <div className="po-grid-2 po-terms-grid">

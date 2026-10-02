@@ -300,6 +300,92 @@
   white-space: nowrap;
 }
 
+.invoice-scope-heading,
+.invoice-scope-heading>div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.invoice-scope-heading {
+  justify-content: space-between;
+}
+
+.invoice-scope-remove {
+  border: 0;
+  border-radius: 6px;
+  padding: 7px 11px;
+  color: #fff;
+  background: var(--blue-700);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+}
+
+.invoice-scope-remove {
+  background: #a53535;
+}
+
+.invoice-scope-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.invoice-scope-table th,
+.invoice-scope-table td {
+  border: 1px solid var(--border-color);
+  padding: 8px;
+  vertical-align: middle;
+}
+
+.invoice-scope-table th {
+  color: #fff;
+  background: #65aadb;
+  text-align: left;
+}
+
+.invoice-scope-table th:nth-child(1) {
+  width: 26%;
+}
+
+.invoice-scope-table th:nth-child(2) {
+  width: 16%;
+}
+
+.invoice-scope-table th:nth-child(n + 3) {
+  width: 11%;
+}
+
+.invoice-scope-table input,
+.invoice-scope-table textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 6px;
+  font: inherit;
+}
+
+.invoice-scope-table textarea {
+  resize: vertical;
+}
+
+.invoice-scope-table input:read-only,
+.invoice-scope-table textarea:read-only {
+  background: var(--gray-100);
+  color: var(--ash-gray);
+}
+
+.invoice-scope-table input[type="number"] {
+  text-align: right;
+}
+
+.invoice-scope-empty {
+  text-align: center;
+  color: var(--ash-gray);
+}
+
 .invoice-entry-table input {
   width: 100%;
   border: 0;

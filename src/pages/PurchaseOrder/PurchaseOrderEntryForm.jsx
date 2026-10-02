@@ -750,7 +750,7 @@ export default function PurchaseOrderEntryForm({
       ref: form.poNo || "New purchase order",
       company: form.companyName || "Select a company",
       date: form.poDate || "—",
-      amount: totals.totalPrice,
+      amount: totals.grandTotal,
       source: null,
       current: true,
       verificationStatus: form.verificationStatus || "Draft",
@@ -775,7 +775,7 @@ export default function PurchaseOrderEntryForm({
     form.companyName,
     form.poDate,
     form.verificationStatus,
-    totals.totalPrice,
+    totals.grandTotal,
   ]);
 
   const [queueSearch, setQueueSearch] = useState("");

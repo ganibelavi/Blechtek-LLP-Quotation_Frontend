@@ -46,12 +46,28 @@ const toTableQuotation = (row) => ({
 // annually from the second renewal year onward.
 // This mirrors: basePrice * (renewalPct/100) * (1 + escalationPct/100)^(year-2)
 const calculateRenewalAmount = (basePrice, renewalPct, escalationPct, year) => {
-  if (!basePrice || !year || year < 2) return null;
-  const renewed = basePrice * ((renewalPct || 0) / 100);
-  const yearsOfEscalation = year - 2;
+  if (basePrice === null || basePrice === undefined || basePrice === "") {
+    return null;
+  }
+
+  const price = Number(basePrice);
+  const renewalYear = Number(year);
+  const renewalPercentage = Number(renewalPct ?? 0);
+  const escalationPercentage = Number(escalationPct ?? 0);
+  if (
+    !Number.isFinite(price) ||
+    !Number.isFinite(renewalYear) ||
+    renewalYear < 2 ||
+    !Number.isFinite(renewalPercentage) ||
+    !Number.isFinite(escalationPercentage)
+  ) {
+    return null;
+  }
+
+  const renewed = price * (renewalPercentage / 100);
   const escalated =
-    renewed * Math.pow(1 + (escalationPct || 0) / 100, yearsOfEscalation);
-  return Math.round(escalated * 100) / 100;
+    renewed * Math.pow(1 + escalationPercentage / 100, renewalYear - 2);
+  return Number.isFinite(escalated) ? Math.round(escalated * 100) / 100 : null;
 };
 
 export default function RenewalQuotationPage({ onNavigate }) {
@@ -223,8 +239,7 @@ export default function RenewalQuotationPage({ onNavigate }) {
       });
     } catch (error) {
       const msg =
-        error.response?.data?.error ??
-        "Could not prepare the renewal invoice.";
+        error.response?.data?.error ?? "Could not prepare the renewal invoice.";
       setApiError(msg);
       setSnackbar({ open: true, message: msg, severity: "error" });
     }
@@ -287,8 +302,7 @@ export default function RenewalQuotationPage({ onNavigate }) {
       onNavigate("invoice-entry");
     } catch (error) {
       const message =
-        error.response?.data?.error ??
-        "Could not prepare the renewal invoice.";
+        error.response?.data?.error ?? "Could not prepare the renewal invoice.";
       setSnackbar({ open: true, message, severity: "error" });
     }
   };
@@ -386,9 +400,7 @@ export default function RenewalQuotationPage({ onNavigate }) {
                 : `Create invoice for ${row.CustomerName}`
             }
             onClick={() =>
-              row.InvoiceId
-                ? openLinkedInvoice(row)
-                : createInvoiceForRow(row)
+              row.InvoiceId ? openLinkedInvoice(row) : createInvoiceForRow(row)
             }
           >
             <VisibilityIcon fontSize="small" />
@@ -511,7 +523,13 @@ export default function RenewalQuotationPage({ onNavigate }) {
                 </Typography>
               )}
               <Typography variant="h6" sx={{ mt: 1 }}>
-                Renewal Amount: {computedAmount != null ? computedAmount : "-"}
+                Year {form.year} renewal amount:{" "}
+                {computedAmount != null
+                  ? `₹${computedAmount.toLocaleString("en-IN", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}`
+                  : "-"}
               </Typography>
             </Paper>
           )}

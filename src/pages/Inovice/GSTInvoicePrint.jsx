@@ -56,6 +56,9 @@ function normalizePrintData(source) {
     ...normalized,
     invoice: { ...emptyInvoice, ...(normalized.invoice || {}) },
     items: Array.isArray(normalized.items) ? normalized.items : [],
+    additionalScopes: Array.isArray(normalized.additionalScopes)
+      ? normalized.additionalScopes
+      : [],
   };
 }
 
@@ -100,6 +103,9 @@ export default function GSTInvoicePrint({ initialData, onBack }) {
         }))
       : [],
   );
+  const [additionalScopes, setAdditionalScopes] = useState(
+    initialPrintData?.additionalScopes || [],
+  );
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -114,9 +120,13 @@ export default function GSTInvoicePrint({ initialData, onBack }) {
           setInvoice(normalized.invoice);
           setItems(
             normalized.items?.length
-              ? normalized.items.map((row, index) => ({ ...row, id: row.id ?? index + 1 }))
+              ? normalized.items.map((row, index) => ({
+                  ...row,
+                  id: row.id ?? index + 1,
+                }))
               : [],
           );
+          setAdditionalScopes(normalized.additionalScopes || []);
           setLoading(false);
           return;
         }
@@ -132,6 +142,7 @@ export default function GSTInvoicePrint({ initialData, onBack }) {
               id: row.id ?? index + 1,
             })),
           );
+          setAdditionalScopes(normalized?.additionalScopes || []);
         }
       } catch (error) {
         console.error("Failed to load invoice print data", error);
@@ -144,8 +155,19 @@ export default function GSTInvoicePrint({ initialData, onBack }) {
   }, [initialData]);
 
   const totals = useMemo(() => {
-    const totalQty = items.reduce((sum, row) => sum + (Number(row.qty) || 0), 0);
-    const totalPrice = items.reduce((sum, row) => sum + getLineAmount(row), 0);
+    const totalQty = items.reduce(
+      (sum, row) => sum + (Number(row.qty) || 0),
+      0,
+    );
+    const lineItemsTotal = items.reduce(
+      (sum, row) => sum + getLineAmount(row),
+      0,
+    );
+    const additionalScopeTotal = additionalScopes.reduce(
+      (sum, scope) => sum + (Number(scope.amount ?? scope.Amount) || 0),
+      0,
+    );
+    const totalPrice = lineItemsTotal + additionalScopeTotal;
     const sgst = (totalPrice * (Number(invoice.sgstPct) || 0)) / 100;
     const cgst = (totalPrice * (Number(invoice.cgstPct) || 0)) / 100;
     const igst = (totalPrice * (Number(invoice.igstPct) || 0)) / 100;
@@ -154,8 +176,26 @@ export default function GSTInvoicePrint({ initialData, onBack }) {
     const insurance = Number(invoice.insurance) || 0;
     const grandTotal = subtotal - tds + insurance;
 
-    return { totalQty, totalPrice, sgst, cgst, igst, subtotal, tds, insurance, grandTotal };
-  }, [items, invoice.sgstPct, invoice.cgstPct, invoice.igstPct, invoice.tdsPct, invoice.insurance]);
+    return {
+      totalQty,
+      totalPrice,
+      sgst,
+      cgst,
+      igst,
+      subtotal,
+      tds,
+      insurance,
+      grandTotal,
+    };
+  }, [
+    items,
+    additionalScopes,
+    invoice.sgstPct,
+    invoice.cgstPct,
+    invoice.igstPct,
+    invoice.tdsPct,
+    invoice.insurance,
+  ]);
 
   if (loading) {
     return (
@@ -171,7 +211,11 @@ export default function GSTInvoicePrint({ initialData, onBack }) {
     <div className="gi-page">
       <div className="gi-toolbar no-print">
         <div className="gi-toolbar-spacer" />
-        <button type="button" className="gi-btn gi-btn-primary" onClick={() => window.print()}>
+        <button
+          type="button"
+          className="gi-btn gi-btn-primary"
+          onClick={() => window.print()}
+        >
           Print / Save as PDF
         </button>
         {onBack && (
@@ -190,7 +234,10 @@ export default function GSTInvoicePrint({ initialData, onBack }) {
       <div className="gi-sheet">
         <div className="gi-header">
           <div className="gi-logo">
-            <img src="/logo/logo.png" alt="BlechTek Software Solutions LLP logo" />
+            <img
+              src="/logo/logo.png"
+              alt="BlechTek Software Solutions LLP logo"
+            />
           </div>
           <div className="gi-company-name">BlechTek Software Solutions LLP</div>
           {/* <div className="gi-original-tag">{invoice.originalFor || "ORIGINAL FOR RECIPIENT"}</div> */}
@@ -219,39 +266,99 @@ export default function GSTInvoicePrint({ initialData, onBack }) {
 
         <div className="gi-grid-2">
           <div className="gi-block">
-            <div className="gi-field"><span className="gi-label">Name:</span><span>{invoice.supplierName || "-"}</span></div>
-            <div className="gi-field"><span className="gi-label">Address:</span><span>{invoice.supplierAddress || "-"}</span></div>
-            <div className="gi-field"><span className="gi-label">State:</span><span>{invoice.supplierState || "-"}</span></div>
-            <div className="gi-field"><span className="gi-label">State Code:</span><span>{invoice.supplierStateCode || "-"}</span></div>
-            <div className="gi-field"><span className="gi-label">GSTN No.:</span><span>{invoice.supplierGSTN || "-"}</span></div>
+            <div className="gi-field">
+              <span className="gi-label">Name:</span>
+              <span>{invoice.supplierName || "-"}</span>
+            </div>
+            <div className="gi-field">
+              <span className="gi-label">Address:</span>
+              <span>{invoice.supplierAddress || "-"}</span>
+            </div>
+            <div className="gi-field">
+              <span className="gi-label">State:</span>
+              <span>{invoice.supplierState || "-"}</span>
+            </div>
+            <div className="gi-field">
+              <span className="gi-label">State Code:</span>
+              <span>{invoice.supplierStateCode || "-"}</span>
+            </div>
+            <div className="gi-field">
+              <span className="gi-label">GSTN No.:</span>
+              <span>{invoice.supplierGSTN || "-"}</span>
+            </div>
           </div>
 
           <div className="gi-block">
-            <div className="gi-field"><span className="gi-label">Bank Name:</span><span>{invoice.bankName || "-"}</span></div>
-            <div className="gi-field"><span className="gi-label">Account No.:</span><span>{invoice.accountNo || "-"}</span></div>
-            <div className="gi-field"><span className="gi-label">Account Type:</span><span>{invoice.accountType || "Current"}</span></div>
-            <div className="gi-field"><span className="gi-label">IFSC:</span><span>{invoice.ifsc || "-"}</span></div>
-            <div className="gi-field"><span className="gi-label">MSME No.:</span><span>{invoice.msmeNo || "-"}</span></div>
+            <div className="gi-field">
+              <span className="gi-label">Bank Name:</span>
+              <span>{invoice.bankName || "-"}</span>
+            </div>
+            <div className="gi-field">
+              <span className="gi-label">Account No.:</span>
+              <span>{invoice.accountNo || "-"}</span>
+            </div>
+            <div className="gi-field">
+              <span className="gi-label">Account Type:</span>
+              <span>{invoice.accountType || "Current"}</span>
+            </div>
+            <div className="gi-field">
+              <span className="gi-label">IFSC:</span>
+              <span>{invoice.ifsc || "-"}</span>
+            </div>
+            <div className="gi-field">
+              <span className="gi-label">MSME No.:</span>
+              <span>{invoice.msmeNo || "-"}</span>
+            </div>
           </div>
         </div>
 
         <div className="gi-grid-2">
           <div className="gi-block">
             <div className="gi-block-title">Billed To</div>
-            <div className="gi-field"><span className="gi-label">Name:</span><span>{invoice.receiverName || "-"}</span></div>
-            <div className="gi-field"><span className="gi-label">Address:</span><span>{invoice.receiverAddress || "-"}</span></div>
-            <div className="gi-field"><span className="gi-label">State:</span><span>{invoice.receiverState || "-"}</span></div>
-            <div className="gi-field"><span className="gi-label">State Code:</span><span>{invoice.receiverStateCode || "-"}</span></div>
-            <div className="gi-field"><span className="gi-label">GSTN No.:</span><span>{invoice.receiverGSTN || "-"}</span></div>
+            <div className="gi-field">
+              <span className="gi-label">Name:</span>
+              <span>{invoice.receiverName || "-"}</span>
+            </div>
+            <div className="gi-field">
+              <span className="gi-label">Address:</span>
+              <span>{invoice.receiverAddress || "-"}</span>
+            </div>
+            <div className="gi-field">
+              <span className="gi-label">State:</span>
+              <span>{invoice.receiverState || "-"}</span>
+            </div>
+            <div className="gi-field">
+              <span className="gi-label">State Code:</span>
+              <span>{invoice.receiverStateCode || "-"}</span>
+            </div>
+            <div className="gi-field">
+              <span className="gi-label">GSTN No.:</span>
+              <span>{invoice.receiverGSTN || "-"}</span>
+            </div>
           </div>
 
           <div className="gi-block">
             <div className="gi-block-title">Shipped To</div>
-            <div className="gi-field"><span className="gi-label">Name:</span><span>{invoice.consigneeName || "-"}</span></div>
-            <div className="gi-field"><span className="gi-label">Address:</span><span>{invoice.consigneeAddress || "-"}</span></div>
-            <div className="gi-field"><span className="gi-label">State:</span><span>{invoice.consigneeState || "-"}</span></div>
-            <div className="gi-field"><span className="gi-label">State Code:</span><span>{invoice.consigneeStateCode || "-"}</span></div>
-            <div className="gi-field"><span className="gi-label">GSTN No.:</span><span>{invoice.consigneeGSTN || "-"}</span></div>
+            <div className="gi-field">
+              <span className="gi-label">Name:</span>
+              <span>{invoice.consigneeName || "-"}</span>
+            </div>
+            <div className="gi-field">
+              <span className="gi-label">Address:</span>
+              <span>{invoice.consigneeAddress || "-"}</span>
+            </div>
+            <div className="gi-field">
+              <span className="gi-label">State:</span>
+              <span>{invoice.consigneeState || "-"}</span>
+            </div>
+            <div className="gi-field">
+              <span className="gi-label">State Code:</span>
+              <span>{invoice.consigneeStateCode || "-"}</span>
+            </div>
+            <div className="gi-field">
+              <span className="gi-label">GSTN No.:</span>
+              <span>{invoice.consigneeGSTN || "-"}</span>
+            </div>
           </div>
         </div>
 
@@ -288,27 +395,70 @@ export default function GSTInvoicePrint({ initialData, onBack }) {
                   <td>{row.description || "-"}</td>
                   <td className="gi-col-qty">{Number(row.qty) || 0}</td>
                   <td className="gi-col-uom">{row.uom || "Nos."}</td>
-                  <td className="gi-col-total">₹ {currency(getLineAmount(row))}</td>
+                  <td className="gi-col-total">
+                    ₹ {currency(getLineAmount(row))}
+                  </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan="5" className="gi-empty-row">No items found</td>
+                <td colSpan="5" className="gi-empty-row">
+                  No items found
+                </td>
               </tr>
             )}
           </tbody>
         </table>
 
+        {additionalScopes.length > 0 && (
+          <table className="gi-table gi-scope-table">
+            <thead>
+              <tr>
+                <th>Additional Scope / Requirement</th>
+                <th>Module</th>
+                <th>Manpower</th>
+                <th>Days</th>
+                <th>Rate (₹)</th>
+                <th>Amount (₹)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {additionalScopes.map((scope, index) => (
+                <tr key={`scope-${index}`}>
+                  <td>{scope.requirement ?? scope.Requirement ?? "-"}</td>
+                  <td>{scope.modules ?? scope.Modules ?? "-"}</td>
+                  <td>{scope.noOfManpower ?? scope.NoOfManpower ?? 0}</td>
+                  <td>{scope.noOfDays ?? scope.NoOfDays ?? 0}</td>
+                  <td className="gi-num">
+                    {currency(Number(scope.rate ?? scope.Rate) || 0)}
+                  </td>
+                  <td className="gi-num">
+                    {currency(Number(scope.amount ?? scope.Amount) || 0)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+
         <div className="gi-footer-grid">
           <div className="gi-footer-block">
             <p className="gi-declaration">
               Certified that the particulars given above are true and correct
-              and the amount indicated represents the price actually charged
-              and that there is no flow of additional consideration directly or
+              and the amount indicated represents the price actually charged and
+              that there is no flow of additional consideration directly or
               indirectly from the buyer.
             </p>
-            <div className="gi-field"><span className="gi-label">Tax Payable on Reverse Charge (Yes/No):</span><span>{invoice.reverseCharge || "No"}</span></div>
-            <div className="gi-field"><span className="gi-label">Amount in Words:</span><span>{invoice.amountInWords || "-"}</span></div>
+            <div className="gi-field">
+              <span className="gi-label">
+                Tax Payable on Reverse Charge (Yes/No):
+              </span>
+              <span>{invoice.reverseCharge || "No"}</span>
+            </div>
+            <div className="gi-field">
+              <span className="gi-label">Amount in Words:</span>
+              <span>{invoice.amountInWords || "-"}</span>
+            </div>
             <p className="gi-declaration gi-return-note">
               I/We hereby certify that my/our registration certificate under the
               GST Act, 2017 is in force on the date on which the sale of goods
@@ -353,7 +503,10 @@ export default function GSTInvoicePrint({ initialData, onBack }) {
                 <strong>₹ {currency(totals.grandTotal)}</strong>
               </div>
             </div>
-            <div className="gi-field"><span className="gi-label">Terms of Sale:</span><span>{invoice.termsOfSale || "-"}</span></div>
+            <div className="gi-field">
+              <span className="gi-label">Terms of Sale:</span>
+              <span>{invoice.termsOfSale || "-"}</span>
+            </div>
           </div>
           <div className="gi-system-generated">
             This is a System Generated Invoice. No signature is required.

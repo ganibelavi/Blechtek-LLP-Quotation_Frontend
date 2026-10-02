@@ -115,6 +115,20 @@ const emptyItem = (
   isSourceData,
 });
 
+const normalizeAdditionalScopes = (scopes) => {
+  if (!Array.isArray(scopes)) return [];
+  return scopes.map((scope) => ({
+    requirement: scope.requirement ?? scope.Requirement ?? "",
+    modules:
+      scope.modules ?? scope.Modules ?? scope.module ?? scope.Module ?? "",
+    noOfManpower:
+      scope.noOfManpower ?? scope.NoOfManpower ?? scope.manPower ?? 0,
+    noOfDays: scope.noOfDays ?? scope.NoOfDays ?? scope.days ?? 0,
+    rate: scope.rate ?? scope.Rate ?? 0,
+    amount: scope.amount ?? scope.Amount ?? scope.price ?? scope.Price ?? 0,
+  }));
+};
+
 const getModuleName = (module) => {
   if (!module) return "";
   if (typeof module === "string") return module.trim();
@@ -405,6 +419,14 @@ const defaultForm = () => {
   const po = readStoredPurchaseOrder();
   const quotation = readStoredQuotation();
   const poDetails = po?.po || {};
+  const sourceQuotationId = normalizeQuotationId(
+    quotation?.quotationId ||
+      po?.quotationId ||
+      poDetails.quotationId ||
+      null,
+  );
+  const quotationScopes =
+    quotation?.additionalScopes ?? quotation?.AdditionalScopes;
   const itemRows =
     Array.isArray(po?.items) && po.items.length
       ? po.items.map((item) => ({
@@ -424,9 +446,7 @@ const defaultForm = () => {
   return {
     sourceInvoiceId: null,
     sourcePoId: normalizeId(poDetails.id || po?.id || null),
-    sourceQuotationId: normalizeQuotationId(
-      quotation?.quotationId || po?.quotationId || null,
-    ),
+    sourceQuotationId,
     quotationNo: quotation?.quotationNo || po?.quotationNo || "",
     originalFor: "ORIGINAL FOR RECIPIENT",
     companyName: poDetails.companyName || "",
@@ -468,6 +488,12 @@ const defaultForm = () => {
     tdsPct: 0,
     insurance: 0,
     items: itemRows,
+    additionalScopes:
+      quotationScopes === undefined
+        ? sourceQuotationId
+          ? null
+          : []
+        : normalizeAdditionalScopes(quotationScopes),
   };
 };
 
@@ -516,10 +542,21 @@ export default function InvoiceEntryForm({
                 isSourceData: true,
               },
             ]
-        : baseForm.items;
+          : baseForm.items;
+    const sourceScopes =
+      sourceData?.additionalScopes !== undefined
+        ? sourceData.additionalScopes
+        : sourceData?.invoice?.additionalScopes;
     return {
       ...baseForm,
       ...(sourceData?.invoice || {}),
+      additionalScopes: renewalInvoiceContext?.renewalId
+        ? []
+        : sourceScopes === undefined
+          ? baseForm.additionalScopes
+          : sourceScopes === null
+            ? null
+            : normalizeAdditionalScopes(sourceScopes),
       companyName:
         sourceData?.invoice?.organizationName ||
         sourceData?.organizationName ||
@@ -689,6 +726,40 @@ export default function InvoiceEntryForm({
 
   useEffect(() => {
     if (
+      !form.sourceQuotationId ||
+      renewalInvoiceContext?.renewalId ||
+      form.additionalScopes !== null
+    ) {
+      return;
+    }
+
+    let active = true;
+    fetchQuotationById(form.sourceQuotationId)
+      .then((quotation) => {
+        if (active && quotation) {
+          setForm((previous) =>
+            previous.additionalScopes === null
+              ? {
+                  ...previous,
+                  additionalScopes: normalizeAdditionalScopes(
+                    quotation.additionalScopes ?? quotation.AdditionalScopes,
+                  ),
+                }
+              : previous,
+          );
+        }
+      })
+      .catch((error) =>
+        console.error("Failed to load quotation additional scopes", error),
+      );
+
+    return () => {
+      active = false;
+    };
+  }, [form.sourceQuotationId, form.additionalScopes, renewalInvoiceContext]);
+
+  useEffect(() => {
+    if (
       !renewalInvoiceContext?.renewalId ||
       !customers.length ||
       !companyProfiles.length ||
@@ -706,12 +777,15 @@ export default function InvoiceEntryForm({
       ) ||
       customers.find(
         (record) =>
-          String(record.name ?? record.Name ?? "").trim().toLowerCase() ===
-          String(renewalInvoiceContext.customerName ?? "").trim().toLowerCase(),
+          String(record.name ?? record.Name ?? "")
+            .trim()
+            .toLowerCase() ===
+          String(renewalInvoiceContext.customerName ?? "")
+            .trim()
+            .toLowerCase(),
       );
     const profile =
-      companyProfiles.find((record) => record.isActive) ||
-      companyProfiles[0];
+      companyProfiles.find((record) => record.isActive) || companyProfiles[0];
     const bank =
       bankAccounts.find((record) => record.isDefault) ||
       bankAccounts.find((record) => record.isActive) ||
@@ -738,7 +812,9 @@ export default function InvoiceEntryForm({
         )
           .trim()
           .toLowerCase() ===
-        String(renewalInvoiceContext.moduleName ?? "").trim().toLowerCase(),
+        String(renewalInvoiceContext.moduleName ?? "")
+          .trim()
+          .toLowerCase(),
     );
     const moduleTaxDetails = getModuleTaxDetails(module, moduleCatalog);
 
@@ -755,24 +831,20 @@ export default function InvoiceEntryForm({
       accountType: bank?.accountType || prev.accountType || "Current",
       ifsc: bank?.ifsc || prev.ifsc,
       msmeNo: bank?.msmeNo || prev.msmeNo,
-      receiverName:
-        customer?.name ?? customer?.Name ?? prev.receiverName,
+      receiverName: customer?.name ?? customer?.Name ?? prev.receiverName,
       receiverAddress:
         customer?.address ?? customer?.Address ?? prev.receiverAddress,
       receiverState: customer?.state ?? customer?.State ?? prev.receiverState,
       receiverStateCode:
         customer?.stateCode ?? customer?.StateCode ?? prev.receiverStateCode,
       receiverGSTN: customer?.gstn ?? customer?.Gstn ?? prev.receiverGSTN,
-      consigneeName:
-        customer?.name ?? customer?.Name ?? prev.consigneeName,
+      consigneeName: customer?.name ?? customer?.Name ?? prev.consigneeName,
       consigneeAddress:
         customer?.address ?? customer?.Address ?? prev.consigneeAddress,
-      consigneeState:
-        customer?.state ?? customer?.State ?? prev.consigneeState,
+      consigneeState: customer?.state ?? customer?.State ?? prev.consigneeState,
       consigneeStateCode:
         customer?.stateCode ?? customer?.StateCode ?? prev.consigneeStateCode,
-      consigneeGSTN:
-        customer?.gstn ?? customer?.Gstn ?? prev.consigneeGSTN,
+      consigneeGSTN: customer?.gstn ?? customer?.Gstn ?? prev.consigneeGSTN,
       hsnCode: moduleTaxDetails.hsnCode || prev.hsnCode,
       sacCode: moduleTaxDetails.sacCode || prev.sacCode,
       reverseCharge: moduleTaxDetails.reverseCharge || prev.reverseCharge,
@@ -806,8 +878,12 @@ export default function InvoiceEntryForm({
       const renewalItemIndex = prev.items.findIndex(
         (item) =>
           item.isSourceData ||
-          String(item.description || "").trim().toLowerCase() ===
-            String(renewalInvoiceContext.moduleName || "").trim().toLowerCase(),
+          String(item.description || "")
+            .trim()
+            .toLowerCase() ===
+            String(renewalInvoiceContext.moduleName || "")
+              .trim()
+              .toLowerCase(),
       );
       if (renewalItemIndex < 0) return prev;
       const renewalItem = prev.items[renewalItemIndex];
@@ -834,17 +910,15 @@ export default function InvoiceEntryForm({
     () =>
       new Set(
         purchaseOrders
-          .filter(
-            (po) => {
-              const vStatus = String(
-                po.verificationStatus ??
-                  po.VerificationStatus ??
-                  po.po?.verificationStatus ??
-                  "",
-              );
-              return vStatus === "Approved" || vStatus === "ApprovedWithMismatch";
-            }
-          )
+          .filter((po) => {
+            const vStatus = String(
+              po.verificationStatus ??
+                po.VerificationStatus ??
+                po.po?.verificationStatus ??
+                "",
+            );
+            return vStatus === "Approved" || vStatus === "ApprovedWithMismatch";
+          })
           .map((po) => po.quotationId ?? po.quotation?.quotationId)
           .filter(Boolean)
           .map(String),
@@ -889,7 +963,9 @@ export default function InvoiceEntryForm({
               purchaseOrder.supplierName ||
               "",
           ).trim();
-          const poNo = String(purchaseOrder.poNo || purchaseOrder.po?.poNo || "").trim();
+          const poNo = String(
+            purchaseOrder.poNo || purchaseOrder.po?.poNo || "",
+          ).trim();
           return organizationName && poNo
             ? `${organizationName} - ${poNo}`
             : organizationName;
@@ -900,9 +976,9 @@ export default function InvoiceEntryForm({
 
   const organizationOptions = useMemo(
     () =>
-      Array.from(new Set([...purchaseOrderOptions, form.companyName].filter(Boolean))).sort(
-        (first, second) => first.localeCompare(second),
-      ),
+      Array.from(
+        new Set([...purchaseOrderOptions, form.companyName].filter(Boolean)),
+      ).sort((first, second) => first.localeCompare(second)),
     [purchaseOrderOptions, form.companyName],
   );
 
@@ -921,8 +997,12 @@ export default function InvoiceEntryForm({
       const profile =
         companyProfiles.find(
           (record) =>
-            String(record.name || "").trim().toLowerCase() ===
-            String(source.organizationName || "").trim().toLowerCase(),
+            String(record.name || "")
+              .trim()
+              .toLowerCase() ===
+            String(source.organizationName || "")
+              .trim()
+              .toLowerCase(),
         ) || companyProfiles.find((record) => record.isActive);
       const bank =
         bankAccounts.find((record) => record.isDefault) ||
@@ -940,8 +1020,12 @@ export default function InvoiceEntryForm({
         );
       const customer = customers.find(
         (record) =>
-          String(record.name ?? record.Name ?? "").trim().toLowerCase() ===
-          String(source.quotationToName || "").trim().toLowerCase(),
+          String(record.name ?? record.Name ?? "")
+            .trim()
+            .toLowerCase() ===
+          String(source.quotationToName || "")
+            .trim()
+            .toLowerCase(),
       );
 
       setForm((prev) => ({
@@ -997,6 +1081,10 @@ export default function InvoiceEntryForm({
           ? `Quotation No. ${source.quotationNo}`
           : prev.poNoDate || "",
         items: renewalItems,
+        additionalScopes:
+          normalizeAdditionalScopes(
+            source.additionalScopes ?? source.AdditionalScopes,
+          ) || [],
       }));
       setShowQuotationModal(false);
       return;
@@ -1112,6 +1200,10 @@ export default function InvoiceEntryForm({
           ? `Quotation No. ${source.quotationNo}`
           : prev.poNoDate,
       items: selectedItems,
+      additionalScopes:
+        normalizeAdditionalScopes(
+          source.additionalScopes ?? source.AdditionalScopes,
+        ) || [],
     }));
     setShowQuotationModal(false);
   };
@@ -1271,7 +1363,7 @@ export default function InvoiceEntryForm({
     const hydrateSourceData = async () => {
       const purchaseOrder = rawPo?.po || rawPo;
       const sourcePoId = normalizeId(purchaseOrder?.id || rawPo?.id || null);
-      const sourceQuotationId = normalizeQuotationId(
+      let sourceQuotationId = normalizeQuotationId(
         rawQuotation?.quotationId ||
           purchaseOrder?.quotationId ||
           rawPo?.quotationId ||
@@ -1284,6 +1376,9 @@ export default function InvoiceEntryForm({
           const remotePurchaseOrder = await fetchPurchaseOrderById(sourcePoId);
           if (remotePurchaseOrder) {
             const poPayload = remotePurchaseOrder.po || remotePurchaseOrder;
+            sourceQuotationId = normalizeQuotationId(
+              poPayload.quotationId || remotePurchaseOrder.quotationId || sourceQuotationId,
+            );
             const itemRows = Array.isArray(
               remotePurchaseOrder.items || poPayload.items,
             )
@@ -1305,6 +1400,7 @@ export default function InvoiceEntryForm({
               sourcePoId: normalizeId(
                 remotePurchaseOrder.id || prev.sourcePoId || null,
               ),
+              sourceQuotationId: sourceQuotationId || prev.sourceQuotationId,
               companyName: poPayload.companyName || prev.companyName || "",
               supplierName: poPayload.supplierName || prev.supplierName || "",
               supplierAddress:
@@ -1333,6 +1429,14 @@ export default function InvoiceEntryForm({
                 : prev.poNoDate || "",
               quotationNo: poPayload.quotationNo || prev.quotationNo || "",
               items: itemRows,
+              additionalScopes:
+                renewalInvoiceContext?.renewalId
+                  ? []
+                  : Array.isArray(remotePurchaseOrder.additionalScopes)
+                    ? normalizeAdditionalScopes({
+                        additionalScopes: remotePurchaseOrder.additionalScopes,
+                      })
+                    : prev.additionalScopes,
             }));
           }
         }
@@ -1371,6 +1475,9 @@ export default function InvoiceEntryForm({
               items: prev.items.some((item) => item.isSourceData)
                 ? applyQuotationPricing(prev.items, remoteQuotation)
                 : buildQuotationItems(remoteQuotation, moduleCatalog),
+              additionalScopes: renewalInvoiceContext?.renewalId
+                ? []
+                : normalizeAdditionalScopes(remoteQuotation),
             }));
           }
         }
@@ -1380,7 +1487,7 @@ export default function InvoiceEntryForm({
     };
 
     hydrateSourceData();
-  }, [moduleCatalog, viewOnly]);
+  }, [moduleCatalog, renewalInvoiceContext, viewOnly]);
 
   useEffect(() => {
     if (!viewOnly || !form.sourceInvoiceId) return;
@@ -1407,7 +1514,10 @@ export default function InvoiceEntryForm({
         (quotation) =>
           String(quotation.quotationNo || "")
             .trim()
-            .toLowerCase() === String(form.quotationNo || "").trim().toLowerCase(),
+            .toLowerCase() ===
+          String(form.quotationNo || "")
+            .trim()
+            .toLowerCase(),
       );
       return normalizeQuotationId(match?.quotationId ?? match?.id);
     };
@@ -1440,7 +1550,15 @@ export default function InvoiceEntryForm({
     return () => {
       cancelled = true;
     };
-  }, [viewOnly, form.sourceInvoiceId, form.quotationNo, form.sourceQuotationId, form.items, moduleCatalog, quotationRecords]);
+  }, [
+    viewOnly,
+    form.sourceInvoiceId,
+    form.quotationNo,
+    form.sourceQuotationId,
+    form.items,
+    moduleCatalog,
+    quotationRecords,
+  ]);
 
   useEffect(() => {
     viewOnlyEnrichmentDoneRef.current = false;
@@ -1475,7 +1593,9 @@ export default function InvoiceEntryForm({
         const profile =
           companyProfiles.find(
             (record) =>
-              String(record.name || "").trim().toLowerCase() ===
+              String(record.name || "")
+                .trim()
+                .toLowerCase() ===
               String(activeQuotation.organizationName || "")
                 .trim()
                 .toLowerCase(),
@@ -1484,8 +1604,7 @@ export default function InvoiceEntryForm({
           bankAccounts.find((record) => record.isDefault) ||
           bankAccounts.find((record) => record.isActive) ||
           bankAccounts[0];
-        const rate =
-          gstRates.find((record) => record.isActive) || gstRates[0];
+        const rate = gstRates.find((record) => record.isActive) || gstRates[0];
         const saleTerms =
           termsTemplates.find(
             (record) =>
@@ -1506,7 +1625,9 @@ export default function InvoiceEntryForm({
           ),
           companyName: activeQuotation.organizationName || prev.companyName,
           supplierName:
-            profile?.name || activeQuotation.organizationName || prev.supplierName,
+            profile?.name ||
+            activeQuotation.organizationName ||
+            prev.supplierName,
           supplierAddress: profile?.address || prev.supplierAddress,
           supplierState: profile?.state || prev.supplierState,
           supplierStateCode: profile?.stateCode || prev.supplierStateCode,
@@ -1592,14 +1713,18 @@ export default function InvoiceEntryForm({
       0,
     );
     const totalPrice = form.items.reduce(
-      (sum, item) =>
-        sum + (Number(item.qty) || 0) * (Number(item.rate) || 0),
+      (sum, item) => sum + (Number(item.qty) || 0) * (Number(item.rate) || 0),
       0,
     );
-    const sgst = (totalPrice * (Number(form.sgstPct) || 0)) / 100;
-    const cgst = (totalPrice * (Number(form.cgstPct) || 0)) / 100;
-    const igst = (totalPrice * (Number(form.igstPct) || 0)) / 100;
-    const subtotal = totalPrice + sgst + cgst + igst;
+    const additionalScopeTotal = (form.additionalScopes || []).reduce(
+      (sum, scope) => sum + (Number(scope.amount) || 0),
+      0,
+    );
+    const taxableAmount = totalPrice + additionalScopeTotal;
+    const sgst = (taxableAmount * (Number(form.sgstPct) || 0)) / 100;
+    const cgst = (taxableAmount * (Number(form.cgstPct) || 0)) / 100;
+    const igst = (taxableAmount * (Number(form.igstPct) || 0)) / 100;
+    const subtotal = taxableAmount + sgst + cgst + igst;
     const tds = (subtotal * (Number(form.tdsPct) || 0)) / 100;
     const insurance = Number(form.insurance) || 0;
     const grandTotal = subtotal - tds + insurance;
@@ -1607,6 +1732,8 @@ export default function InvoiceEntryForm({
     return {
       totalQty,
       totalPrice,
+      additionalScopeTotal,
+      taxableAmount,
       sgst,
       cgst,
       igst,
@@ -1626,23 +1753,27 @@ export default function InvoiceEntryForm({
   };
 
   const handleOrganizationChange = (organizationName) => {
-    const selectedPurchaseOrder = purchaseOrders
-      .find((purchaseOrder) => {
-        const organization = String(
-          purchaseOrder.organizationName ||
-            purchaseOrder.companyName ||
-            purchaseOrder.buyerName ||
-            purchaseOrder.supplierName ||
-            "",
-        ).trim();
-        const poNo = String(purchaseOrder.poNo || purchaseOrder.po?.poNo || "").trim();
-        return (
-          `${organization} - ${poNo}` === organizationName ||
-          organization === organizationName
-        );
-      });
+    const selectedPurchaseOrder = purchaseOrders.find((purchaseOrder) => {
+      const organization = String(
+        purchaseOrder.organizationName ||
+          purchaseOrder.companyName ||
+          purchaseOrder.buyerName ||
+          purchaseOrder.supplierName ||
+          "",
+      ).trim();
+      const poNo = String(
+        purchaseOrder.poNo || purchaseOrder.po?.poNo || "",
+      ).trim();
+      return (
+        `${organization} - ${poNo}` === organizationName ||
+        organization === organizationName
+      );
+    });
 
     if (selectedPurchaseOrder) {
+      const selectedPo = selectedPurchaseOrder.po || selectedPurchaseOrder;
+      const selectedQuotationId =
+        selectedPurchaseOrder.quotationId ?? selectedPo.quotationId;
       const organizationNameFromPo = String(
         selectedPurchaseOrder.organizationName ||
           selectedPurchaseOrder.companyName ||
@@ -1666,9 +1797,9 @@ export default function InvoiceEntryForm({
       setForm((prev) => ({
         ...prev,
         companyName: organizationNameFromPo,
-        sourcePoId: normalizeId(selectedPurchaseOrder.id),
+        sourcePoId: normalizeId(selectedPurchaseOrder.id ?? selectedPo.id),
         sourceQuotationId: normalizeQuotationId(
-          selectedPurchaseOrder.quotationId,
+          selectedQuotationId,
         ),
         quotationNo:
           selectedPurchaseOrder.quotationRefNo || prev.quotationNo || "",
@@ -1691,21 +1822,18 @@ export default function InvoiceEntryForm({
         receiverState:
           selectedPurchaseOrder.buyerState || prev.receiverState || "",
         receiverStateCode:
-          selectedPurchaseOrder.buyerStateCode ||
-          prev.receiverStateCode ||
-          "",
+          selectedPurchaseOrder.buyerStateCode || prev.receiverStateCode || "",
         receiverGSTN:
           selectedPurchaseOrder.buyerGSTN || prev.receiverGSTN || "",
         consigneeName:
           selectedPurchaseOrder.buyerName || prev.consigneeName || "",
         consigneeAddress:
-          selectedPurchaseOrder.buyerAddress ||
-          prev.consigneeAddress ||
-          "",
+          selectedPurchaseOrder.buyerAddress || prev.consigneeAddress || "",
         poNoDate: selectedPurchaseOrder.poNo
           ? `PO No. ${selectedPurchaseOrder.poNo} / ${selectedPurchaseOrder.poDate || ""}`
           : prev.poNoDate || "",
         items: items?.length ? items : prev.items,
+        additionalScopes: selectedQuotationId ? null : [],
       }));
       return;
     }
@@ -1717,6 +1845,7 @@ export default function InvoiceEntryForm({
       sourceQuotationId: null,
       quotationNo: "",
       poNoDate: "",
+      additionalScopes: [],
     }));
   };
 
@@ -1743,8 +1872,46 @@ export default function InvoiceEntryForm({
     }));
   };
 
+  const updateAdditionalScope = (index, field, value) => {
+    setForm((previous) => ({
+      ...previous,
+      additionalScopes: (previous.additionalScopes || []).map(
+        (scope, scopeIndex) => {
+          if (scopeIndex !== index) return scope;
+          const updated = { ...scope, [field]: value };
+          if (["noOfManpower", "noOfDays", "rate"].includes(field)) {
+            const manpower = Number(updated.noOfManpower) || 0;
+            const days = Number(updated.noOfDays) || 0;
+            const rate = Number(updated.rate) || 0;
+            updated.amount =
+              manpower && days && rate ? manpower * days * rate : 0;
+          }
+          return updated;
+        },
+      ),
+    }));
+  };
+
+  const removeAdditionalScope = (index) => {
+    setForm((previous) => ({
+      ...previous,
+      additionalScopes: (previous.additionalScopes || []).filter(
+        (_, scopeIndex) => scopeIndex !== index,
+      ),
+    }));
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
+    if (form.sourceQuotationId && form.additionalScopes === null) {
+      setSnackbar({
+        open: true,
+        message: "Additional scope details are still loading from the quotation.",
+        severity: "warning",
+      });
+      return;
+    }
+
     const requiredFields = [
       ["Company name", form.companyName],
       ["Date of issue", form.dateOfIssue],
@@ -1816,16 +1983,29 @@ export default function InvoiceEntryForm({
       tdsPct: Number(form.tdsPct) || 0,
       insurance: Number(form.insurance) || 0,
       totalAmount: totals.grandTotal,
+      additionalScopes: (form.additionalScopes || []).map((scope) => ({
+        requirement: scope.requirement,
+        modules: scope.modules,
+        noOfManpower: Number(scope.noOfManpower) || 0,
+        noOfDays: Number(scope.noOfDays) || 0,
+        rate: Number(scope.rate) || 0,
+        amount: Number(scope.amount) || 0,
+      })),
       items: form.items.map((item) => ({
         description: item.description,
         qty: Number(item.qty) || 1,
         uom: item.uom || "Nos.",
-        rate: isRenewalInvoice &&
+        rate:
+          isRenewalInvoice &&
           (item.isSourceData ||
-            String(item.description || "").trim().toLowerCase() ===
-              String(renewalInvoiceContext.moduleName || "").trim().toLowerCase())
-          ? Number(renewalInvoiceContext.amount) || 0
-          : Number(item.rate) || 0,
+            String(item.description || "")
+              .trim()
+              .toLowerCase() ===
+              String(renewalInvoiceContext.moduleName || "")
+                .trim()
+                .toLowerCase())
+            ? Number(renewalInvoiceContext.amount) || 0
+            : Number(item.rate) || 0,
         modulePrice: Number(item.modulePrice) || 0,
         implementationPrice: Number(item.implementationPrice) || 0,
         discountPercentage: Number(item.discountPercentage) || 0,
@@ -1890,6 +2070,7 @@ export default function InvoiceEntryForm({
     const generatedInvoiceData = {
       invoice: { ...form, amountInWords },
       items: form.items,
+      additionalScopes: form.additionalScopes || [],
       totals,
       id: form.sourceInvoiceId,
     };
@@ -1926,7 +2107,8 @@ export default function InvoiceEntryForm({
               (() => {
                 sessionStorage.removeItem("invoiceEditOnly");
                 onNavigate(
-                  sessionStorage.getItem("invoiceBackView") || defaultReturnView,
+                  sessionStorage.getItem("invoiceBackView") ||
+                    defaultReturnView,
                 );
               })()
             }
@@ -2385,20 +2567,20 @@ export default function InvoiceEntryForm({
                 </h3>
               </div>
               <div className="po-table-wrap">
-                    <table className="invoice-entry-table">
-                      <thead>
-                        <tr>
-                          <th>Description</th>
-                          <th>Qty</th>
-                          <th>UOM</th>
-                          <th>Module price</th>
-                          <th>Implementation</th>
-                          <th>Discount %</th>
-                          <th>Discount amount</th>
-                          <th>Net price</th>
-                          <th>Amount</th>
-                        </tr>
-                      </thead>
+                <table className="invoice-entry-table">
+                  <thead>
+                    <tr>
+                      <th>Description</th>
+                      <th>Qty</th>
+                      <th>UOM</th>
+                      <th>Module price</th>
+                      <th>Implementation</th>
+                      <th>Discount %</th>
+                      <th>Discount amount</th>
+                      <th>Net price</th>
+                      <th>Amount</th>
+                    </tr>
+                  </thead>
                   <tbody>
                     {form.items.map((item) => (
                       <tr key={item.id}>
@@ -2453,76 +2635,76 @@ export default function InvoiceEntryForm({
                             readOnly={isItemLocked(item)}
                           />
                         </td>
-                         <td>
-                           <input
-                             type="number"
-                             min="0"
-                             step="0.01"
-                             value={item.implementationPrice ?? 0}
-                             onChange={(e) =>
-                               updateItem(
-                                 item.id,
-                                 "implementationPrice",
-                                 Number(e.target.value) || 0,
-                               )
-                             }
-                             readOnly={isItemLocked(item)}
-                           />
-                         </td>
-                         <td>
-                           <input
-                             type="number"
-                             min="0"
-                             step="0.01"
-                             value={item.discountPercentage ?? 0}
-                             onChange={(e) =>
-                               updateItem(
-                                 item.id,
-                                 "discountPercentage",
-                                 Number(e.target.value) || 0,
-                               )
-                             }
-                             readOnly={isItemLocked(item)}
-                           />
-                         </td>
-                         <td className="invoice-entry-amount">
-                           ₹
-                           {(
-                             Number(item.discountAmount) ||
-                             ((Number(item.modulePrice) || 0) +
-                               (Number(item.implementationPrice) || 0)) *
-                               (Number(item.discountPercentage) || 0) /
-                               100
-                           ).toLocaleString("en-IN", {
-                             minimumFractionDigits: 2,
-                             maximumFractionDigits: 2,
-                           })}
-                         </td>
-                         <td>
-                           <input
-                             type="number"
-                             min="0"
-                             step="0.01"
-                             value={item.rate}
-                             onChange={(e) =>
-                               updateItem(
-                                 item.id,
-                                 "rate",
-                                 Number(e.target.value) || 0,
-                               )
-                             }
-                             readOnly={isItemLocked(item)}
-                           />
-                         </td>
-                         <td className="invoice-entry-amount">
-                           ₹
-                           {(
-                             (Number(item.qty) || 0) * (Number(item.rate) || 0)
-                           ).toLocaleString("en-IN", {
-                             minimumFractionDigits: 2,
-                             maximumFractionDigits: 2,
-                           })}
-                         </td>
+                        <td>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={item.implementationPrice ?? 0}
+                            onChange={(e) =>
+                              updateItem(
+                                item.id,
+                                "implementationPrice",
+                                Number(e.target.value) || 0,
+                              )
+                            }
+                            readOnly={isItemLocked(item)}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={item.discountPercentage ?? 0}
+                            onChange={(e) =>
+                              updateItem(
+                                item.id,
+                                "discountPercentage",
+                                Number(e.target.value) || 0,
+                              )
+                            }
+                            readOnly={isItemLocked(item)}
+                          />
+                        </td>
+                        <td className="invoice-entry-amount">
+                          ₹
+                          {(
+                            Number(item.discountAmount) ||
+                            (((Number(item.modulePrice) || 0) +
+                              (Number(item.implementationPrice) || 0)) *
+                              (Number(item.discountPercentage) || 0)) /
+                              100
+                          ).toLocaleString("en-IN", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={item.rate}
+                            onChange={(e) =>
+                              updateItem(
+                                item.id,
+                                "rate",
+                                Number(e.target.value) || 0,
+                              )
+                            }
+                            readOnly={isItemLocked(item)}
+                          />
+                        </td>
+                        <td className="invoice-entry-amount">
+                          ₹
+                          {(
+                            (Number(item.qty) || 0) * (Number(item.rate) || 0)
+                          ).toLocaleString("en-IN", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -2533,7 +2715,7 @@ export default function InvoiceEntryForm({
                   Total quantity <b>{totals.totalQty}</b>
                 </span>
                 <span>
-                  Total amount{" "}
+                  Line items{" "}
                   <b>
                     ₹
                     {totals.totalPrice.toLocaleString("en-IN", {
@@ -2545,9 +2727,179 @@ export default function InvoiceEntryForm({
               </div>
             </section>
 
+            <section className="po-card invoice-source-section">
+              <div className="po-card-title invoice-scope-heading">
+                <div>
+                  <span>05</span>
+                  <h3>
+                    Additional scope{" "}
+                    <em>{(form.additionalScopes || []).length} items</em>
+                  </h3>
+                </div>
+              </div>
+              <div className="po-table-wrap">
+                <table className="invoice-scope-table">
+                  <thead>
+                    <tr>
+                      <th>Requirement</th>
+                      <th>Module</th>
+                      <th>Manpower</th>
+                      <th>Days</th>
+                      <th>Rate</th>
+                      <th>Amount</th>
+                      {!viewOnly && <th aria-label="Actions" />}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(form.additionalScopes || []).length ? (
+                      form.additionalScopes.map((scope, index) => (
+                        <tr key={`invoice-scope-${index}`}>
+                          <td>
+                            <textarea
+                              rows="2"
+                              value={scope.requirement}
+                              onChange={(event) =>
+                                updateAdditionalScope(
+                                  index,
+                                  "requirement",
+                                  event.target.value,
+                                )
+                              }
+                              readOnly={viewOnly}
+                              aria-label={`Requirement ${index + 1}`}
+                            />
+                          </td>
+                          <td>
+                            <input
+                              value={scope.modules}
+                              onChange={(event) =>
+                                updateAdditionalScope(
+                                  index,
+                                  "modules",
+                                  event.target.value,
+                                )
+                              }
+                              readOnly={viewOnly}
+                              aria-label={`Module ${index + 1}`}
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="number"
+                              min="0"
+                              step="1"
+                              value={scope.noOfManpower}
+                              onChange={(event) =>
+                                updateAdditionalScope(
+                                  index,
+                                  "noOfManpower",
+                                  Number(event.target.value) || 0,
+                                )
+                              }
+                              readOnly={viewOnly}
+                              aria-label={`Manpower ${index + 1}`}
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="number"
+                              min="0"
+                              step="1"
+                              value={scope.noOfDays}
+                              onChange={(event) =>
+                                updateAdditionalScope(
+                                  index,
+                                  "noOfDays",
+                                  Number(event.target.value) || 0,
+                                )
+                              }
+                              readOnly={viewOnly}
+                              aria-label={`Days ${index + 1}`}
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={scope.rate}
+                              onChange={(event) =>
+                                updateAdditionalScope(
+                                  index,
+                                  "rate",
+                                  Number(event.target.value) || 0,
+                                )
+                              }
+                              readOnly={viewOnly}
+                              aria-label={`Rate ${index + 1}`}
+                            />
+                          </td>
+                          <td className="invoice-entry-amount">
+                            ₹
+                            {(Number(scope.amount) || 0).toLocaleString(
+                              "en-IN",
+                              {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              },
+                            )}
+                          </td>
+                          {!viewOnly && (
+                            <td>
+                              <button
+                                type="button"
+                                className="invoice-scope-remove"
+                                onClick={() => removeAdditionalScope(index)}
+                                aria-label={`Remove additional scope ${index + 1}`}
+                              >
+                                Remove
+                              </button>
+                            </td>
+                          )}
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan={viewOnly ? 6 : 7}
+                          className="invoice-scope-empty"
+                        >
+                          {form.additionalScopes === null
+                            ? "Loading additional scope from quotation..."
+                            : "No additional scope added."}
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              <div className="po-total-row">
+                <span>
+                  Additional scope total{" "}
+                  <b>
+                    ₹
+                    {totals.additionalScopeTotal.toLocaleString("en-IN", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </b>
+                </span>
+                <span>
+                  Items + additional scope{" "}
+                  <b>
+                    ₹
+                    {totals.taxableAmount.toLocaleString("en-IN", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </b>
+                </span>
+              </div>
+            </section>
+
             <section className="po-card">
               <div className="po-card-title">
-                <span>05</span>
+                <span>06</span>
                 <h3>Tax details</h3>
               </div>
               <div className="po-fields po-fields-3">
@@ -2643,7 +2995,7 @@ export default function InvoiceEntryForm({
 
             <section className="po-card invoice-source-section">
               <div className="po-card-title">
-                <span>06</span>
+                <span>07</span>
                 <h3>Terms & amounts</h3>
               </div>
               <div className="po-fields po-fields-3">
