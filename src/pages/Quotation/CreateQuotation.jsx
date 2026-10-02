@@ -1318,10 +1318,10 @@ export default function CreateQuotation({
                                       backgroundColor: shaded
                                         ? "#4A90D9"
                                         : "transparent",
-                                      color: shaded ? "#fff" : "inherit",
+                                      color: shaded ? "" : "inherit",
                                     }}
                                   >
-                                    {shaded ? "■" : ""}
+                                    {shaded ? "" : ""}
                                   </td>
                                 );
                               })}

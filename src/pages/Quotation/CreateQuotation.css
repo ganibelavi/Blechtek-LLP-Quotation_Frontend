@@ -457,14 +457,16 @@
   width: 100%;
   min-width: 1220px;
   table-layout: fixed;
-  border-collapse: separate;
+  border-collapse: collapse;
   border-spacing: 0;
   color: var(--text-700);
   font-size: 12px;
+  border: 1px solid var(--border);
 }
 
 .time-estimate__table th {
   padding: 10px 8px;
+  border: 1px solid var(--border);
   border-bottom: 2px solid var(--border);
   text-align: left;
   white-space: nowrap;
@@ -492,9 +494,22 @@
 
 .time-estimate__table td {
   padding: 8px;
+  border-right: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
   vertical-align: middle;
   text-align: center;
+}
+
+.time-estimate__table th:not(:first-child),
+.time-estimate__table td:not(:first-child) {
+  border-left: 1px solid var(--border);
+}
+
+.time-estimate__table th:nth-child(2),
+.time-estimate__table td:nth-child(2),
+.time-estimate__table th:nth-child(6),
+.time-estimate__table td:nth-child(6) {
+  border-left-width: 2px;
 }
 
 .time-estimate__stage-label {
