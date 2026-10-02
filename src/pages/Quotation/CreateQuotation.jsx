@@ -1298,12 +1298,23 @@ export default function CreateQuotation({
                         </tr>
                       </thead>
                       <tbody>
-                        {timeEstimate.map((stage) => {
-                          return (
-                            <tr key={`${stage.moduleName}-${stage.stageKey}`}>
-                              <td className="time-estimate__stage-label">
-                                {stage.moduleName} - {stage.label}
+                        {values.selectedModules.map((moduleName) => (
+                          <React.Fragment key={moduleName}>
+                            <tr className="time-estimate__module-heading-row">
+                              <td
+                                className="time-estimate__stage-label"
+                                colSpan={12}
+                              >
+                                {moduleName}
                               </td>
+                            </tr>
+                            {timeEstimate
+                              .filter((stage) => stage.moduleName === moduleName)
+                              .map((stage) => (
+                              <tr key={`${stage.moduleName}-${stage.stageKey}`}>
+                                <td className="time-estimate__stage-label">
+                                  {stage.label}
+                                </td>
                               {WEEK_LABELS.map((weekLabel, weekIndex) => {
                                 const weekNum = weekIndex + 1;
                                 const shaded =
@@ -1376,9 +1387,10 @@ export default function CreateQuotation({
                                 {stage.endWeek - stage.startWeek + 1} week
                                 {stage.endWeek > stage.startWeek ? "s" : ""}
                               </td>
-                            </tr>
-                          );
-                        })}
+                              </tr>
+                            ))}
+                          </React.Fragment>
+                        ))}
                       </tbody>
                     </table>
                   </div>
