@@ -455,7 +455,7 @@
 
 .time-estimate__table {
   width: 100%;
-  min-width: 800px;
+  min-width: 1220px;
   table-layout: fixed;
   border-collapse: separate;
   border-spacing: 0;
@@ -481,6 +481,15 @@
   text-align: center;
 }
 
+.time-estimate__month-heading {
+  text-align: center !important;
+}
+
+.time-estimate__week-heading {
+  width: 60px;
+  text-align: center !important;
+}
+
 .time-estimate__table td {
   padding: 8px;
   border-bottom: 1px solid var(--border);
@@ -497,9 +506,6 @@
 .time-estimate__week-cell {
   width: 60px;
   height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   font-weight: 600;
   font-size: 14px;
   transition: background-color 0.2s, color 0.2s;
@@ -514,46 +520,24 @@
   font-weight: 600;
   color: var(--text-700);
   text-align: center !important;
+  white-space: nowrap;
 }
 
-.time-estimate__controls {
-  margin-top: 20px;
-  padding-top: 16px;
-  border-top: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.time-estimate__stage-row {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.time-estimate__stage-label-small {
-  min-width: 260px;
-  font-weight: 500;
-  color: var(--text-700);
-  font-size: 13px;
-}
-
-.time-estimate__dropdowns {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.time-estimate__select-cell {
+  padding: 4px !important;
 }
 
 .time-estimate__select {
-  padding: 8px 12px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 6px 4px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface);
   color: var(--text-700);
   font: inherit;
-  font-size: 13px;
-  min-width: 140px;
+  font-size: 11px;
   cursor: pointer;
 }
 

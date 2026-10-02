@@ -84,19 +84,54 @@ const WEEK_LABELS = [
   "M2 - WK4",
 ];
 
-const getDefaultTimeEstimate = (selectedModules = []) => {
+const getDefaultTimeEstimate = (moduleName) => {
   return TIME_ESTIMATE_STAGES.map((stage) => {
     const def = TIME_ESTIMATE_DEFAULTS[stage.key];
-    let label = stage.label;
-    if (stage.key === "config" && selectedModules.length > 0) {
-      label = `${selectedModules.join(", ")} Configuration & Set Up`;
-    }
     return {
+      moduleName,
       stageKey: stage.key,
-      label,
+      label: stage.label,
       startWeek: def.startWeek,
       endWeek: def.endWeek,
     };
+  });
+};
+
+const normalizeTimeEstimates = (savedEstimates, selectedModules = []) => {
+  if (!selectedModules.length) return [];
+
+  const estimates = Array.isArray(savedEstimates) ? savedEstimates : [];
+  const legacySchedule =
+    estimates.length > 0 &&
+    estimates.every((stage) => !(stage.moduleName || stage.ModuleName));
+
+  return selectedModules.flatMap((moduleName) => {
+    const moduleEstimates = legacySchedule
+      ? estimates
+      : estimates.filter(
+          (stage) =>
+            (stage.moduleName || stage.ModuleName || "").toLowerCase() ===
+            moduleName.toLowerCase(),
+        );
+    const defaults = getDefaultTimeEstimate(moduleName);
+
+    return TIME_ESTIMATE_STAGES.map((stage) => {
+      const savedStage = moduleEstimates.find(
+        (item) =>
+          (item.stageKey || item.StageKey || "").toLowerCase() === stage.key,
+      );
+      const defaultStage = defaults.find((item) => item.stageKey === stage.key);
+
+      return {
+        ...defaultStage,
+        startWeek:
+          savedStage?.startWeek ??
+          savedStage?.StartWeek ??
+          defaultStage.startWeek,
+        endWeek:
+          savedStage?.endWeek ?? savedStage?.EndWeek ?? defaultStage.endWeek,
+      };
+    });
   });
 };
 
@@ -161,9 +196,7 @@ export default function CreateQuotation({
   const [references, setReferences] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [values, setValues] = useState(initialValues);
-  const [timeEstimate, setTimeEstimate] = useState(() =>
-    getDefaultTimeEstimate(),
-  );
+  const [timeEstimate, setTimeEstimate] = useState([]);
   const [errors, setErrors] = useState({});
   const [validityPeriod, setValidityPeriod] = useState(30);
   const [submitting, setSubmitting] = useState(false);
@@ -201,6 +234,12 @@ export default function CreateQuotation({
     address: "",
   });
   const [savingReference, setSavingReference] = useState(false);
+
+  useEffect(() => {
+    setTimeEstimate((current) =>
+      normalizeTimeEstimates(current, values.selectedModules),
+    );
+  }, [values.selectedModules]);
 
   useEffect(() => {
     if (readOnly || editMode) {
@@ -307,31 +346,12 @@ export default function CreateQuotation({
               }),
             );
 
-            // Load timeEstimate from saved data or use defaults
+            // Load each module's saved schedule, falling back to defaults as needed.
             const savedTimeEstimate =
               quotation.timeEstimate || quotation.TimeEstimate;
-            if (
-              savedTimeEstimate &&
-              Array.isArray(savedTimeEstimate) &&
-              savedTimeEstimate.length > 0
-            ) {
-              setTimeEstimate(
-                savedTimeEstimate.map((s) => ({
-                  stageKey: s.stageKey || s.StageKey,
-                  label:
-                    s.label ||
-                    (s.stageKey === "config" && selectedModules.length > 0
-                      ? `${selectedModules.join(", ")} Configuration & Set Up`
-                      : TIME_ESTIMATE_STAGES.find(
-                          (st) => st.key === (s.stageKey || s.StageKey),
-                        )?.label || ""),
-                  startWeek: s.startWeek || s.StartWeek,
-                  endWeek: s.endWeek || s.EndWeek,
-                })),
-              );
-            } else {
-              setTimeEstimate(getDefaultTimeEstimate(selectedModules));
-            }
+            setTimeEstimate(
+              normalizeTimeEstimates(savedTimeEstimate, selectedModules),
+            );
           })
           .catch((error) => {
             console.error("Failed to load saved quotation for viewing", error);
@@ -383,6 +403,12 @@ export default function CreateQuotation({
               discountPercentage: quotation.discountPercentage || 0,
             };
             setValues(revisionValues);
+            setTimeEstimate(
+              normalizeTimeEstimates(
+                quotation.timeEstimate || quotation.TimeEstimate,
+                revisionValues.selectedModules,
+              ),
+            );
             setSnackbar({
               open: true,
               message: `Loaded quotation ${quotation.quotationNo} as revision base. Reason: ${sessionStorage.getItem("revisionReason") || "Revision"}`,
@@ -604,22 +630,6 @@ export default function CreateQuotation({
         ? v.selectedModules.filter((m) => m !== moduleName)
         : [...v.selectedModules, moduleName];
 
-      // Update config stage label in timeEstimate
-      setTimeEstimate((current) =>
-        current.map((stage) => {
-          if (stage.stageKey === "config") {
-            return {
-              ...stage,
-              label:
-                newSelectedModules.length > 0
-                  ? `${newSelectedModules.join(", ")} Configuration & Set Up`
-                  : "Configuration & Set Up",
-            };
-          }
-          return stage;
-        }),
-      );
-
       return {
         ...v,
         selectedModules: newSelectedModules,
@@ -628,10 +638,11 @@ export default function CreateQuotation({
     });
   };
 
-  const updateStage = (stageKey, field, value) => {
+  const updateStage = (moduleName, stageKey, field, value) => {
     setTimeEstimate((current) =>
       current.map((stage) => {
-        if (stage.stageKey !== stageKey) return stage;
+        if (stage.moduleName !== moduleName || stage.stageKey !== stageKey)
+          return stage;
 
         const newStartWeek = field === "startWeek" ? value : stage.startWeek;
         const newEndWeek = field === "endWeek" ? value : stage.endWeek;
@@ -792,6 +803,7 @@ export default function CreateQuotation({
         },
         discountPercentage: values.discountPercentage,
         timeEstimate: timeEstimate.map((s) => ({
+          moduleName: s.moduleName,
           stageKey: s.stageKey,
           startWeek: s.startWeek,
           endWeek: s.endWeek,
@@ -1241,124 +1253,137 @@ export default function CreateQuotation({
             <section className="q-form__section">
               <h3 className="q-form__heading">Time Estimate (Gantt)</h3>
               <p className="q-form__hint">
-                Select From/To week for each stage. Weeks 1-4 = Month 1, Weeks
-                5-8 = Month 2. Stages may overlap. Blue cells indicate selected
-                weeks.
+                Set a separate From/To week for each stage of every selected
+                module. Weeks 1-4 = Month 1, Weeks 5-8 = Month 2. Stages may
+                overlap. Blue cells indicate selected weeks.
               </p>
-              <div className="time-estimate__table-wrap">
-                <table className="time-estimate__table">
-                  <thead>
-                    <tr>
-                      <th style={{ width: "280px" }}>Stage</th>
-                      {WEEK_LABELS.map((w, i) => (
-                        <th
-                          key={i}
-                          style={{ width: "60px", textAlign: "center" }}
-                        >
-                          {w}
-                        </th>
-                      ))}
-                      <th style={{ width: "140px", textAlign: "center" }}>
-                        Duration
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {timeEstimate.map((stage) => (
-                      <tr key={stage.stageKey}>
-                        <td className="time-estimate__stage-label">
-                          {stage.label}
-                        </td>
-                        {WEEK_LABELS.map((_, wIdx) => {
-                          const weekNum = wIdx + 1;
-                          const isShaded =
-                            weekNum >= stage.startWeek &&
-                            weekNum <= stage.endWeek;
-                          return (
-                            <td
-                              key={wIdx}
-                              className={`time-estimate__week-cell ${isShaded ? "time-estimate__week-cell--shaded" : ""}`}
-                              style={{
-                                textAlign: "center",
-                                backgroundColor: isShaded
-                                  ? "#4A90D9"
-                                  : "transparent",
-                                color: isShaded ? "#fff" : "inherit",
-                              }}
+              {values.selectedModules.length === 0 ? (
+                <p className="q-form__hint">
+                  Select at least one module to configure its time estimate.
+                </p>
+              ) : (
+                <>
+                  <div className="time-estimate__table-wrap">
+                    <table className="time-estimate__table">
+                      <thead>
+                        <tr>
+                          <th rowSpan={2} style={{ width: "280px" }}>
+                            Main Stages
+                          </th>
+                          <th colSpan={4} className="time-estimate__month-heading">
+                            Month 1
+                          </th>
+                          <th colSpan={4} className="time-estimate__month-heading">
+                            Month 2
+                          </th>
+                          <th rowSpan={2} style={{ width: "110px" }}>
+                            From
+                          </th>
+                          <th rowSpan={2} style={{ width: "110px" }}>
+                            To
+                          </th>
+                          <th rowSpan={2} style={{ width: "100px" }}>
+                            Duration
+                          </th>
+                        </tr>
+                        <tr>
+                          {WEEK_LABELS.map((weekLabel) => (
+                            <th
+                              key={weekLabel}
+                              className="time-estimate__week-heading"
                             >
-                              {isShaded ? "■" : ""}
-                            </td>
+                              {weekLabel.slice(-3)}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {timeEstimate.map((stage) => {
+                          return (
+                            <tr key={`${stage.moduleName}-${stage.stageKey}`}>
+                              <td className="time-estimate__stage-label">
+                                {stage.moduleName} - {stage.label}
+                              </td>
+                              {WEEK_LABELS.map((weekLabel, weekIndex) => {
+                                const weekNum = weekIndex + 1;
+                                const shaded =
+                                  weekNum >= stage.startWeek &&
+                                  weekNum <= stage.endWeek;
+                                return (
+                                  <td
+                                    key={weekLabel}
+                                    className={`time-estimate__week-cell ${shaded ? "time-estimate__week-cell--shaded" : ""}`}
+                                    style={{
+                                      textAlign: "center",
+                                      backgroundColor: shaded
+                                        ? "#4A90D9"
+                                        : "transparent",
+                                      color: shaded ? "#fff" : "inherit",
+                                    }}
+                                  >
+                                    {shaded ? "■" : ""}
+                                  </td>
+                                );
+                              })}
+                              <td className="time-estimate__select-cell">
+                                <select
+                                  value={stage.startWeek}
+                                  onChange={(e) =>
+                                    updateStage(
+                                      stage.moduleName,
+                                      stage.stageKey,
+                                      "startWeek",
+                                      Number(e.target.value),
+                                    )
+                                  }
+                                  disabled={readOnly}
+                                  className="time-estimate__select"
+                                  aria-label={`From week for ${stage.moduleName} ${stage.label}`}
+                                >
+                                  {WEEK_LABELS.map((weekLabel, index) => (
+                                    <option key={weekLabel} value={index + 1}>
+                                      {weekLabel}
+                                    </option>
+                                  ))}
+                                </select>
+                              </td>
+                              <td className="time-estimate__select-cell">
+                                <select
+                                  value={stage.endWeek}
+                                  onChange={(e) =>
+                                    updateStage(
+                                      stage.moduleName,
+                                      stage.stageKey,
+                                      "endWeek",
+                                      Number(e.target.value),
+                                    )
+                                  }
+                                  disabled={readOnly}
+                                  className="time-estimate__select"
+                                  aria-label={`To week for ${stage.moduleName} ${stage.label}`}
+                                >
+                                  {WEEK_LABELS.map((weekLabel, index) => (
+                                    <option key={weekLabel} value={index + 1}>
+                                      {weekLabel}
+                                    </option>
+                                  ))}
+                                </select>
+                              </td>
+                              <td
+                                className="time-estimate__duration"
+                                style={{ textAlign: "center" }}
+                              >
+                                {stage.endWeek - stage.startWeek + 1} week
+                                {stage.endWeek > stage.startWeek ? "s" : ""}
+                              </td>
+                            </tr>
                           );
                         })}
-                        <td
-                          className="time-estimate__duration"
-                          style={{ textAlign: "center" }}
-                        >
-                          {stage.endWeek - stage.startWeek + 1} week
-                          {stage.endWeek - stage.startWeek > 0 ? "s" : ""}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <div className="time-estimate__controls">
-                {timeEstimate.map((stage) => (
-                  <div
-                    key={stage.stageKey}
-                    className="time-estimate__stage-row"
-                  >
-                    <label className="time-estimate__stage-label-small">
-                      {stage.label}
-                    </label>
-                    <div className="time-estimate__dropdowns">
-                      <select
-                        value={stage.startWeek}
-                        onChange={(e) =>
-                          updateStage(
-                            stage.stageKey,
-                            "startWeek",
-                            Number(e.target.value),
-                          )
-                        }
-                        disabled={readOnly}
-                        className="time-estimate__select"
-                        aria-label={`From week for ${stage.label}`}
-                      >
-                        {WEEK_LABELS.map((w, i) => (
-                          <option key={i} value={i + 1}>
-                            {w}
-                          </option>
-                        ))}
-                      </select>
-                      <span className="time-estimate__to">to</span>
-                      <select
-                        value={stage.endWeek}
-                        onChange={(e) =>
-                          updateStage(
-                            stage.stageKey,
-                            "endWeek",
-                            Number(e.target.value),
-                          )
-                        }
-                        disabled={readOnly}
-                        className="time-estimate__select"
-                        aria-label={`To week for ${stage.label}`}
-                      >
-                        {WEEK_LABELS.map((w, i) => (
-                          <option key={i} value={i + 1}>
-                            {w}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                      </tbody>
+                    </table>
                   </div>
-                ))}
-              </div>
-              <div className="time-estimate__summary">
-                Estimated duration:{" "}
-                {Math.max(...timeEstimate.map((s) => s.endWeek))} weeks
-              </div>
+                </>
+              )}
             </section>
           </form>
         </div>
