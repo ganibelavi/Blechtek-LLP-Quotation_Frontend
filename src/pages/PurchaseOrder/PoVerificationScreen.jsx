@@ -49,6 +49,7 @@ const COMPARISON_FIELDS = [
     label: "Amount",
     quotationKey: "quotationAmount",
     clientKey: "clientPoAmount",
+    matchKey: "amountMatches",
     type: "number",
   },
   {
@@ -56,20 +57,23 @@ const COMPARISON_FIELDS = [
     label: "Items / Qty",
     quotationKey: "quotationItems",
     clientKey: "clientPoItems",
+    matchKey: "itemsMatch",
     type: "text",
   },
   {
     key: "additionalScopes",
-    label: "Additional scope",
+    label: "Additional scope amount",
     quotationKey: "quotationAdditionalScopes",
     clientKey: "clientPoAdditionalScopes",
-    type: "text",
+    matchKey: "additionalScopesMatch",
+    type: "number",
   },
   {
     key: "terms",
     label: "Selected Modules",
     quotationKey: "quotationTerms",
     clientKey: "clientPoTerms",
+    matchKey: "termsMatch",
     type: "text",
   },
 ];
@@ -123,19 +127,34 @@ const formatQuotationItems = (items) => {
   return String(items);
 };
 
-const formatAdditionalScopes = (scopes) =>
-  (Array.isArray(scopes) ? scopes : [])
-    .map((scope) =>
-      [
-        scope.requirement || "—",
-        scope.modules || "—",
-        `Manpower: ${scope.noOfManpower ?? 0}`,
-        `Days: ${scope.noOfDays ?? 0}`,
-        `Rate: ${Number(scope.rate) || 0}`,
-        `Amount: ${Number(scope.amount) || 0}`,
-      ].join(" | "),
-    )
-    .join("; ");
+const getAdditionalScopeTotal = (scopes) =>
+  (Array.isArray(scopes) ? scopes : []).reduce(
+    (total, scope) => total + (Number(scope.amount) || 0),
+    0,
+  );
+
+const parseAmount = (value) => {
+  const text = String(value ?? "").trim();
+  if (!text) return null;
+
+  const currencyValue = text
+    .replace(/(?:INR|Rs\.?|₹)/gi, "")
+    .replace(/[,\s]/g, "");
+  if (/^[+-]?(?:\d+\.?\d*|\.\d+)$/.test(currencyValue)) {
+    const amount = Number(currencyValue);
+    return Number.isFinite(amount) ? amount : null;
+  }
+
+  const legacyAmounts = [
+    ...text.matchAll(
+      /Amount:\s*(?:(?:INR|Rs\.?|₹)\s*)?([\d,]+(?:\.\d+)?)/gi,
+    ),
+  ].map((match) => Number(match[1].replace(/,/g, "")));
+  return legacyAmounts.length &&
+    legacyAmounts.every((amount) => Number.isFinite(amount))
+    ? legacyAmounts.reduce((total, amount) => total + amount, 0)
+    : null;
+};
 
 const compareAdditionalScopes = (scopes, clientValue) => {
   if (!Array.isArray(scopes) || scopes.length === 0) {
@@ -145,7 +164,44 @@ const compareAdditionalScopes = (scopes, clientValue) => {
       c: normalizeText(clientValue),
     };
   }
-  return compareValues(formatAdditionalScopes(scopes), clientValue, "text");
+  if (String(clientValue ?? "").trim() === "") {
+    return { match: false, reason: "Client value missing" };
+  }
+  const quotationTotal = getAdditionalScopeTotal(scopes);
+  const clientAmount = parseAmount(clientValue);
+  return {
+    match:
+      clientAmount !== null &&
+      Math.abs(quotationTotal - clientAmount) < 0.01,
+    q: quotationTotal,
+    c: clientAmount,
+  };
+};
+
+const normalizeAdditionalScopeAmount = (value) => {
+  const text = String(value ?? "").trim();
+  if (!text) return "";
+
+  const amount = parseAmount(text);
+  return amount === null ? "" : String(amount);
+};
+
+const clientValueUnchanged = (field, clientValue, savedValue) => {
+  if (field.type === "number") {
+    const current = parseAmount(clientValue);
+    const saved = parseAmount(savedValue);
+    const currentText = String(clientValue ?? "").trim();
+    const savedText = String(savedValue ?? "").trim();
+    if (currentText === "" || savedText === "") {
+      return currentText === savedText;
+    }
+    return (
+      current !== null &&
+      saved !== null &&
+      Math.abs(current - saved) < 0.01
+    );
+  }
+  return normalizeText(clientValue) === normalizeText(savedValue);
 };
 
 export default function PoVerificationScreen({ onNavigate }) {
@@ -218,7 +274,7 @@ export default function PoVerificationScreen({ onNavigate }) {
         data.quotationTerms ||
         data.terms ||
         data.paymentTerms,
-      quotationAdditionalScopes: formatAdditionalScopes(
+      quotationAdditionalScopes: getAdditionalScopeTotal(
         quotationDisplay.additionalScopes.length
           ? quotationDisplay.additionalScopes
           : data.additionalScopes,
@@ -301,7 +357,15 @@ export default function PoVerificationScreen({ onNavigate }) {
           verification,
           "clientPoAdditionalScopes",
           "clientPOAdditionalScopes",
-        ),
+        )
+          ? normalizeAdditionalScopeAmount(
+              getField(
+                verification,
+                "clientPoAdditionalScopes",
+                "clientPOAdditionalScopes",
+              ),
+            )
+          : "",
         clientPoTerms: getField(verification, "clientPoTerms", "clientPOTerms"),
       });
 
@@ -425,13 +489,20 @@ export default function PoVerificationScreen({ onNavigate }) {
     const results = {};
     COMPARISON_FIELDS.forEach((field) => {
       const clientVal = clientDetails[field.clientKey];
-      results[field.key] = {
-        ...(field.key === "additionalScopes"
+      const localResult =
+        field.key === "additionalScopes"
           ? compareAdditionalScopes(
               data.additionalScopes,
               clientDetails.clientPoAdditionalScopes,
             )
-          : compareValues(data[field.quotationKey], clientVal, field.type)),
+          : compareValues(data[field.quotationKey], clientVal, field.type);
+      const savedMatch = data[field.matchKey];
+      results[field.key] = {
+        ...localResult,
+        ...(typeof savedMatch === "boolean" &&
+        clientValueUnchanged(field, clientVal, data[field.clientKey])
+          ? { match: savedMatch }
+          : {}),
         field,
       };
     });
@@ -449,7 +520,9 @@ export default function PoVerificationScreen({ onNavigate }) {
       ? Number(clientDetails.clientPoAmount)
       : null,
     ClientPoItems: clientDetails.clientPoItems,
-    ClientPoAdditionalScopes: clientDetails.clientPoAdditionalScopes,
+    ClientPoAdditionalScopes: normalizeAdditionalScopeAmount(
+      clientDetails.clientPoAdditionalScopes,
+    ),
     ClientPoTerms: clientDetails.clientPoTerms,
   });
 
@@ -460,7 +533,7 @@ export default function PoVerificationScreen({ onNavigate }) {
     if (!clientDetails.clientPoItems?.trim()) return false;
     if (
       quotationDisplay.additionalScopes.length > 0 &&
-      !clientDetails.clientPoAdditionalScopes?.trim()
+      parseAmount(clientDetails.clientPoAdditionalScopes) === null
     ) {
       return false;
     }
@@ -520,14 +593,21 @@ export default function PoVerificationScreen({ onNavigate }) {
     }
     setApproving(true);
     try {
-      await approvePo(poId, { Notes: approvalNotes });
+      const approvalResult = await approvePo(poId, { Notes: approvalNotes });
       await loadData();
       setApprovalNotes("");
       setVerificationConfirmed(false);
+      const mismatchFields = approvalResult.mismatchFields || [];
       setSnackbar({
         open: true,
-        message: `PO ${mismatchCount > 0 ? "approved with mismatch" : "approved"} successfully.`,
-        severity: "success",
+        message:
+          approvalResult.verificationStatus === "ApprovedWithMismatch"
+            ? `PO approved with mismatch${mismatchFields.length ? ` in: ${mismatchFields.join(", ")}` : ""}.`
+            : "PO approved successfully.",
+        severity:
+          approvalResult.verificationStatus === "ApprovedWithMismatch"
+            ? "warning"
+            : "success",
       });
     } catch (err) {
       setSnackbar({
@@ -664,24 +744,13 @@ export default function PoVerificationScreen({ onNavigate }) {
     (r) => !r.match,
   ).length;
 
-  const normalizeStatus = (status) => {
-    if (!status) return "Draft";
-    return status.replace(/\s+/g, "").toLowerCase();
-  };
-
+  const normalizeStatus = (status) =>
+    String(status || "Draft").replace(/\s+/g, "").toLowerCase();
   const normalizedStatus = normalizeStatus(data?.verificationStatus);
-  const statusConfig =
-    STATUS_CONFIG[
-      normalizedStatus.charAt(0).toUpperCase() + normalizedStatus.slice(1)
-    ] || STATUS_CONFIG.Draft;
-
-  // Debug: log status for debugging
-  console.log(
-    "PO Verification Status:",
-    data?.verificationStatus,
-    "Normalized:",
-    normalizedStatus,
+  const statusKey = Object.keys(STATUS_CONFIG).find(
+    (key) => normalizeStatus(key) === normalizedStatus,
   );
+  const statusConfig = STATUS_CONFIG[statusKey] || STATUS_CONFIG.Draft;
 
   const isFinalStatus =
     data &&
@@ -710,13 +779,6 @@ export default function PoVerificationScreen({ onNavigate }) {
       normalizedStatus === "pendingreview" ||
       normalizedStatus === "underreview" ||
       normalizedStatus === "submitted");
-
-  // Debug: log all relevant values
-  console.log("Debug - data:", data);
-  console.log("Debug - verificationStatus:", data?.verificationStatus);
-  console.log("Debug - normalizedStatus:", normalizedStatus);
-  console.log("Debug - isFinalStatus:", isFinalStatus);
-  console.log("Debug - canEditClientDetails:", canEditClientDetails);
 
   if (loading) {
     return (
@@ -830,43 +892,11 @@ export default function PoVerificationScreen({ onNavigate }) {
               </div>
             </div>
             {quotationDisplay.additionalScopes.length > 0 && (
-              <div className="pov-row pov-additional-scope-row">
-                  <label>Additional scope</label>
-                  <div className="pov-ro">
-                    <table className="pov-scope-table">
-                      <thead>
-                        <tr>
-                          <th>Requirement</th>
-                          <th>Module</th>
-                          <th>Manpower</th>
-                          <th>Days</th>
-                          <th>Rate</th>
-                          <th>Amount</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {quotationDisplay.additionalScopes.map((scope, index) => (
-                          <tr key={`verification-scope-${index}`}>
-                            <td>{scope.requirement || "—"}</td>
-                            <td>{scope.modules || "—"}</td>
-                            <td>{scope.noOfManpower ?? 0}</td>
-                            <td>{scope.noOfDays ?? 0}</td>
-                            <td>{money(scope.rate)}</td>
-                            <td>{money(scope.amount)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                    <div className="pov-scope-total">
-                      Additional scope total:{" "}
-                      {money(
-                        quotationDisplay.additionalScopes.reduce(
-                          (sum, scope) => sum + (Number(scope.amount) || 0),
-                          0,
-                        ),
-                      )}
-                    </div>
-                  </div>
+              <div className="pov-row">
+                <label>Additional scope amount</label>
+                <div className="pov-ro pov-ro-amount">
+                  {money(getAdditionalScopeTotal(quotationDisplay.additionalScopes))}
+                </div>
               </div>
             )}
           </div>
@@ -940,21 +970,37 @@ export default function PoVerificationScreen({ onNavigate }) {
             </div>
 
             {quotationDisplay.additionalScopes.length > 0 && (
-              <div className="pov-row pov-row-textarea">
-                <label>Additional scope</label>
-                <div className="pov-input-wrap">
-                  <textarea
-                    rows={4}
-                    value={clientDetails.clientPoAdditionalScopes}
-                    onChange={(e) =>
-                      handleClientDetailChange(
-                        "clientPoAdditionalScopes",
-                        e.target.value,
-                      )
-                    }
-                    placeholder="Enter the additional-scope details as shown in the uploaded client PO."
-                  />
-                  <MatchIcon result={comparisonResults.additionalScopes} />
+              <div className="pov-row">
+                <label>Additional scope amount (₹)</label>
+                <div>
+                  <div className="pov-input-wrap">
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={clientDetails.clientPoAdditionalScopes}
+                      onChange={(e) =>
+                        handleClientDetailChange(
+                          "clientPoAdditionalScopes",
+                          e.target.value,
+                        )
+                      }
+                      placeholder="Enter or paste the total amount"
+                    />
+                    <MatchIcon result={comparisonResults.additionalScopes} />
+                  </div>
+                  <div className="pov-hint" style={{ margin: "6px 0 0" }}>
+                    Quotation scope total:{" "}
+                    {money(
+                      getAdditionalScopeTotal(
+                        quotationDisplay.additionalScopes,
+                      ),
+                    )}
+                    {comparisonResults.additionalScopes?.match
+                      ? " — Matches"
+                      : comparisonResults.additionalScopes?.match === false
+                        ? " — Amount differs"
+                        : ""}
+                  </div>
                 </div>
               </div>
             )}
@@ -1008,10 +1054,13 @@ export default function PoVerificationScreen({ onNavigate }) {
                     field.type === "number"
                       ? money(getQuotationField(field.quotationKey))
                       : getQuotationField(field.quotationKey) || "—";
+                  const clientValue = clientDetails[field.clientKey];
                   const cVal =
                     field.type === "number"
-                      ? money(clientDetails[field.clientKey])
-                      : clientDetails[field.clientKey] || "—";
+                      ? parseAmount(clientValue) !== null
+                        ? money(parseAmount(clientValue))
+                        : "—"
+                      : clientValue || "—";
                   return (
                     <tr key={field.key}>
                       <td>{field.label}</td>
