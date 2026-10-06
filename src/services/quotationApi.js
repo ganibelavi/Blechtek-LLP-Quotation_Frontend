@@ -299,8 +299,12 @@ export async function fetchNextInvoiceNo() {
   return data.invoiceNo;
 }
 
-export async function fetchInvoices() {
-  const { data } = await client.get("/api/invoice");
+export async function fetchInvoices(options = {}) {
+  const { data } = await client.get("/api/invoice", {
+    params: options.excludeRenewalSubscriptionInvoices
+      ? { excludeRenewalSubscriptionInvoices: true }
+      : undefined,
+  });
   return data;
 }
 

@@ -53,16 +53,25 @@ function StatusText({ status }) {
   );
 }
 
-export default function EntityTable({ title, columns, rows }) {
+export default function EntityTable({
+  title,
+  columns,
+  rows,
+  serverPagination,
+  searchValue,
+  onSearchChange,
+  loading = false,
+}) {
   const [orderBy, setOrderBy] = useState(null);
   const [order, setOrder] = useState("asc");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [search, setSearch] = useState("");
+  const activeSearch = searchValue ?? search;
 
   const filtered = useMemo(() => {
     const searchableKeys = columns.map((c) => c.key);
-    const q = search.trim().toLowerCase();
+    const q = activeSearch.trim().toLowerCase();
     let list = rows || [];
     if (q) {
       list = list.filter((r) =>
@@ -84,13 +93,36 @@ export default function EntityTable({ title, columns, rows }) {
       });
     }
     return list;
-  }, [rows, search, orderBy, order]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [rows, activeSearch, orderBy, order]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const pageCount = Math.max(1, Math.ceil(filtered.length / rowsPerPage));
-  const display = filtered.slice(
-    page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage,
-  );
+  const pageCount = serverPagination
+    ? Math.max(serverPagination.totalPages || 1, 1)
+    : Math.max(1, Math.ceil(filtered.length / rowsPerPage));
+  const display = serverPagination
+    ? filtered
+    : filtered.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+  const activePage = serverPagination ? serverPagination.page - 1 : page;
+  const activeRowsPerPage = serverPagination
+    ? serverPagination.pageSize
+    : rowsPerPage;
+  const totalCount = serverPagination ? serverPagination.totalCount : filtered.length;
+
+  const handlePageChange = (nextPage) => {
+    if (serverPagination) {
+      serverPagination.onPageChange(nextPage + 1);
+    } else {
+      setPage(nextPage);
+    }
+  };
+
+  const handlePageSizeChange = (nextPageSize) => {
+    if (serverPagination) {
+      serverPagination.onPageSizeChange(nextPageSize);
+    } else {
+      setRowsPerPage(nextPageSize);
+      setPage(0);
+    }
+  };
 
   const handleSort = (key, sortable) => {
     if (!sortable) return;
@@ -125,10 +157,9 @@ export default function EntityTable({ title, columns, rows }) {
           </Typography>
           <Select
             size="small"
-            value={rowsPerPage}
+            value={activeRowsPerPage}
             onChange={(e) => {
-              setRowsPerPage(Number(e.target.value));
-              setPage(0);
+              handlePageSizeChange(Number(e.target.value));
             }}
             sx={{
               minWidth: 70,
@@ -165,10 +196,14 @@ export default function EntityTable({ title, columns, rows }) {
             <TextField
               size="small"
               placeholder="Search"
-              value={search}
+              value={activeSearch}
               onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(0);
+                if (onSearchChange) {
+                  onSearchChange(e.target.value);
+                } else {
+                  setSearch(e.target.value);
+                  setPage(0);
+                }
               }}
               variant="standard"
               InputProps={{
@@ -209,7 +244,13 @@ export default function EntityTable({ title, columns, rows }) {
           </TableHead>
 
           <TableBody>
-            {display.map((row, idx) => (
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={columns.length} sx={{ textAlign: "center", p: "0.75rem" }}>
+                  Loading...
+                </TableCell>
+              </TableRow>
+            ) : display.map((row, idx) => (
               <TableRow key={`${row.id ?? ""}-${idx}`}>
                 {columns.map((col) => (
                   <TableCell
@@ -226,8 +267,8 @@ export default function EntityTable({ title, columns, rows }) {
                       ? col.render({
                           row,
                           index: idx,
-                          page,
-                          rowsPerPage,
+                          page: activePage,
+                          rowsPerPage: activeRowsPerPage,
                           filteredLength: filtered.length,
                         })
                       : defaultGetValue(row, col.key)}
@@ -235,7 +276,7 @@ export default function EntityTable({ title, columns, rows }) {
                 ))}
               </TableRow>
             ))}
-            {display.length === 0 && (
+            {!loading && display.length === 0 && (
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
@@ -259,12 +300,12 @@ export default function EntityTable({ title, columns, rows }) {
       >
         <Typography
           sx={{ fontSize: 13 }}
-        >{`Showing ${filtered.length} item(s)`}</Typography>
+        >{`Showing ${totalCount} item(s)`}</Typography>
         <Stack direction="row" spacing={1} alignItems="center">
           <IconButton
             size="small"
-            onClick={() => setPage((p) => Math.max(0, p - 1))}
-            disabled={page === 0}
+            onClick={() => handlePageChange(Math.max(0, activePage - 1))}
+            disabled={activePage === 0}
           >
             <img
               src="/logo/uparrow.svg"
@@ -274,11 +315,11 @@ export default function EntityTable({ title, columns, rows }) {
           </IconButton>
           <Typography
             sx={{ fontSize: 13 }}
-          >{`${page + 1} / ${pageCount}`}</Typography>
+          >{`${activePage + 1} / ${pageCount}`}</Typography>
           <IconButton
             size="small"
-            onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
-            disabled={page >= pageCount - 1}
+            onClick={() => handlePageChange(Math.min(pageCount - 1, activePage + 1))}
+            disabled={activePage >= pageCount - 1}
           >
             <img
               src="/logo/uparrow.svg"
@@ -296,6 +337,17 @@ EntityTable.propTypes = {
   title: PropTypes.string,
   columns: PropTypes.array.isRequired,
   rows: PropTypes.array.isRequired,
+  serverPagination: PropTypes.shape({
+    page: PropTypes.number.isRequired,
+    pageSize: PropTypes.number.isRequired,
+    totalCount: PropTypes.number.isRequired,
+    totalPages: PropTypes.number.isRequired,
+    onPageChange: PropTypes.func.isRequired,
+    onPageSizeChange: PropTypes.func.isRequired,
+  }),
+  searchValue: PropTypes.string,
+  onSearchChange: PropTypes.func,
+  loading: PropTypes.bool,
 };
 
 export { StatusText };

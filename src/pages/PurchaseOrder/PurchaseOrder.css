@@ -354,7 +354,7 @@
 .po-party-block label {
     display: block;
     color: var(--po-muted);
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600
 }
 
@@ -575,7 +575,7 @@
 }
 
 .po-total-row b {
-    font-size: 12px;
+    font-size: 13px;
     margin-left: 5px
 }
 

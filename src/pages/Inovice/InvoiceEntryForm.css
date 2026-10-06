@@ -154,7 +154,7 @@
 .po-party-block label {
   display: block;
   color: var(--ash-gray);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
 }
 
@@ -214,7 +214,7 @@
   text-transform: uppercase;
   color: #526579;
   margin: 0 0 2px;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .po-table-wrap {
@@ -225,7 +225,7 @@
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
-  font-size: 12px;
+  font-size: 13px;
   font-family: var(--font-body);
 }
 

@@ -627,6 +627,7 @@ export default function InvoiceEntryForm({
   const [renewalQuotation, setRenewalQuotation] = useState(null);
   const isRenewalInvoice = Boolean(renewalInvoiceContext?.renewalId);
   const isPreloadedSource = Boolean(form.sourcePoId || form.sourceQuotationId);
+  const canRemoveAdditionalScopes = !viewOnly && !form.sourceInvoiceId;
 
   // Fields that are populated from PO/Quotation source data and should be disabled during edit
   const sourceFields = new Set([
@@ -2747,7 +2748,7 @@ export default function InvoiceEntryForm({
                       <th>Days</th>
                       <th>Rate</th>
                       <th>Amount</th>
-                      {!viewOnly && <th aria-label="Actions" />}
+                      {canRemoveAdditionalScopes && <th aria-label="Actions" />}
                     </tr>
                   </thead>
                   <tbody>
@@ -2844,7 +2845,7 @@ export default function InvoiceEntryForm({
                               },
                             )}
                           </td>
-                          {!viewOnly && (
+                          {canRemoveAdditionalScopes && (
                             <td>
                               <button
                                 type="button"
@@ -2861,7 +2862,7 @@ export default function InvoiceEntryForm({
                     ) : (
                       <tr>
                         <td
-                          colSpan={viewOnly ? 6 : 7}
+                          colSpan={canRemoveAdditionalScopes ? 7 : 6}
                           className="invoice-scope-empty"
                         >
                           {form.additionalScopes === null

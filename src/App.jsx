@@ -31,6 +31,9 @@ import RenewalQuotationPage from "./pages/Renewal_and_Subscriptions/RenewalQuota
 import SubscriptionPricingHistoryPage from "./pages/Renewal_and_Subscriptions/SubscriptionPricingHistoryPage";
 import SubscriptionDetailsPage from "./pages/Renewal_and_Subscriptions/SubscriptionDetailsPage";
 import GuidelinesPage from "./pages/GuidelinesPage";
+import SalesOrderList from "./pages/SalesOrder/SalesOrderList";
+import CreateFromPO from "./pages/SalesOrder/CreateFromPO";
+import SalesOrderForm from "./pages/SalesOrder/SalesOrderForm";
 import AppHeader from "./components/AppHeader";
 import AppSidebar from "./components/AppSidebar";
 import { useAuth } from "./context/AuthContext";
@@ -140,6 +143,7 @@ export default function App() {
       "purchase-order-entry": "Purchase Order Entry",
       "po-verification": "PO Verification",
       "created-purchase-orders": "Purchase Orders",
+      "sales-orders": "Sales Orders",
       "created-invoices": "Invoices",
       users: "Users",
       modules: "Modules",
@@ -182,9 +186,12 @@ export default function App() {
             settingsInitialTab={settingsInitialTab}
             onSettingsTabChange={setSettingsInitialTab}
           />
-          <main
-            className={`app-main ${view === "purchase-order-entry" ? "app-main--po" : view === "invoice-entry" ? "app-main--invoice" : view === "po-verification" ? "app-main--none" : ""}`}
-          >
+          {view === "sales-orders" ? (
+            <SalesOrderList onNavigate={navigate} />
+          ) : (
+            <main
+              className={`app-main ${view === "purchase-order-entry" ? "app-main--po" : view === "invoice-entry" ? "app-main--invoice" : view === "po-verification" || view.startsWith("sales-orders/") ? "app-main--none" : ""}`}
+            >
             {![
               "create",
               "created-quotations",
@@ -201,6 +208,7 @@ export default function App() {
               "purchase-order-entry",
               "po-verification",
               "created-purchase-orders",
+              "sales-orders",
               "created-invoices",
               "invoice",
               "invoice-print",
@@ -210,13 +218,27 @@ export default function App() {
               "pricing-history",
               "subscription-details",
               "guidelines",
-            ].includes(view) && (
+            ].includes(view) && !view.startsWith("sales-orders/") ? (
               <div className="app-section-title">
-                <h1>{pageTitle}</h1>
+                <h1>{view.startsWith("sales-orders/") ? (view === "sales-orders/new" ? "Create Sales Order" : "Sales Order") : pageTitle}</h1>
                 <span aria-hidden="true" />
               </div>
-            )}
+            ) : null}
             {(() => {
+              if (view === "sales-orders/new") {
+                return (
+                  <CreateFromPO
+                    onNavigate={navigate}
+                    poId={new URLSearchParams(location.search).get("poId") || ""}
+                  />
+                );
+              }
+              if (view.startsWith("sales-orders/")) {
+                const orderId = view.split("/")[1];
+                if (/^\d+$/.test(orderId)) {
+                  return <SalesOrderForm salesOrderId={orderId} onNavigate={navigate} />;
+                }
+              }
               switch (view) {
                 case "dashboard":
                   return <DashboardPage onNavigate={navigate} />;
@@ -371,7 +393,8 @@ export default function App() {
                   return <CreateQuotation onNavigate={navigate} />;
               }
             })()}
-          </main>
+            </main>
+          )}
         </div>
       )}
     </div>

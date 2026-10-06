@@ -90,7 +90,7 @@
 .pov-badge {
   margin-left: auto;
   font-weight: 600;
-  font-size: 12px;
+  font-size: 13px;
   padding: 4px 10px;
   border-radius: 5px;
 }
@@ -182,7 +182,7 @@
 
 .pov-hint {
   color: var(--soft);
-  font-size: 12px;
+  font-size: 13px;
   margin-bottom: 12px;
 }
 
@@ -246,7 +246,7 @@
 .pov-scope-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .pov-scope-table th,
@@ -326,7 +326,7 @@
   color: #fff;
   background: #65aadb;
   font-weight: 600;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .pov-cmp tr:last-child td {

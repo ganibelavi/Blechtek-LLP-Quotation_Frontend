@@ -12,6 +12,7 @@ const menuItems = [
     icon: "clipboard.png",
     view: "created-purchase-orders",
   },
+  // { label: "Sales Orders", icon: "clipboard.png", view: "sales-orders" },
   { label: "Invoices", icon: "calculator.png", view: "created-invoices" },
   { label: "Revision History", icon: "audit.png", view: "all-revisions" },
   { label: "Subscriptions", icon: "audit.png", view: "subscriptions" },
@@ -32,6 +33,7 @@ const masterItems = [
 const createViews = [
   "created-quotations",
   "created-purchase-orders",
+  "sales-orders",
   "created-invoices",
 ];
 
@@ -60,6 +62,11 @@ export default function AppSidebar({
         "created-purchase-orders",
       );
       navigate("purchase-order-entry");
+      return;
+    }
+
+    if (itemView === "sales-orders") {
+      navigate("sales-orders/new");
       return;
     }
 
@@ -98,6 +105,9 @@ export default function AppSidebar({
         "purchase-order-print",
         "po-verification",
       ].includes(view);
+    }
+    if (itemView === "sales-orders") {
+      return view === "sales-orders" || view.startsWith("sales-orders/");
     }
     if (itemView === "created-invoices") {
       return [

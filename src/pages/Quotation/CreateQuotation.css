@@ -178,7 +178,7 @@
   background: linear-gradient(120deg, #308aea, #48cae4);
   color: #fff;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
 }
@@ -460,7 +460,7 @@
   border-collapse: collapse;
   border-spacing: 0;
   color: var(--text-700);
-  font-size: 12px;
+  font-size: 13px;
   border: 1px solid var(--border);
 }
 

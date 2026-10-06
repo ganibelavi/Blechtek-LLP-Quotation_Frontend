@@ -53,7 +53,9 @@ export default function CreatedInvoices({ onNavigate }) {
   const loadInvoices = async () => {
     try {
       setLoading(true);
-      const rows = await fetchInvoices();
+      const rows = await fetchInvoices({
+        excludeRenewalSubscriptionInvoices: true,
+      });
       setInvoices(Array.isArray(rows) ? rows : []);
       setError(null);
     } catch (err) {
@@ -184,7 +186,12 @@ export default function CreatedInvoices({ onNavigate }) {
       minWidth: 150,
     },
     { key: "poNoDate", label: "PO Ref.", sortable: true, minWidth: 180 },
-    { key: "quotationNo", label: "Quotation No.", sortable: true, minWidth: 180 },
+    {
+      key: "quotationNo",
+      label: "Quotation No.",
+      sortable: true,
+      minWidth: 180,
+    },
     {
       key: "status",
       label: "Status",
@@ -354,7 +361,6 @@ export default function CreatedInvoices({ onNavigate }) {
           </Button>
         </DialogActions>
       </Dialog>
-
     </Box>
   );
 }

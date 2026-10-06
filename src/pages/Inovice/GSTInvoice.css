@@ -235,7 +235,7 @@ input[type="number"] {
 
 .gi-block-title {
   font-weight: 700;
-  font-size: 12px;
+  font-size: 13px;
   margin-bottom: 8px;
   color: var(--accent);
 }
@@ -261,7 +261,7 @@ input[type="number"] {
   width: 100%;
   border-collapse: collapse;
   margin-top: 14px;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .gi-table th,
@@ -380,7 +380,7 @@ input[type="number"] {
 .gi-signatory {
   margin-top: 40px;
   text-align: right;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .gi-signatory-space {
