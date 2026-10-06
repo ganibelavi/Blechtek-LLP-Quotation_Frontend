@@ -618,9 +618,10 @@ export default function GSTInvoice({ initialData, onBackToInvoiceList, onNavigat
           <div className="gi-signatory-line">
             For BlechTek Software Solutions LLP
           </div>
-          <div className="gi-signatory-space">
-            <img src="/logo/Authority_Seal.png" alt="Authority seal" />
-          </div>
+          <div
+            className="gi-signatory-space"
+            aria-label="Space reserved for company seal"
+          />
           <div className="gi-signatory-line">Authorised Signatory</div>
         </div>
       </div>

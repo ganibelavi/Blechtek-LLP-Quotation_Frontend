@@ -391,12 +391,6 @@ input[type="number"] {
   align-items: flex-end;
 }
 
-.gi-signatory-space img {
-  width: 92px;
-  height: 92px;
-  object-fit: contain;
-}
-
 .gi-signatory-line {
   font-weight: 600;
 }
@@ -608,17 +602,23 @@ input[type="number"] {
 .gi-signatory {
   grid-column: 1 / -1;
   margin: 0;
-  padding: 8px 10px;
-  min-height: 108px;
+  padding: 4px 10px 0;
+  min-height: 130px;
+  border: 1px solid var(--rule);
+  text-align: center;
 }
 
 .gi-signatory-space {
-  height: 68px;
+  height: 92px;
 }
 
-.gi-signatory-space img {
-  width: 62px;
-  height: 62px;
+.gi-signatory-line:first-child {
+  text-align: left;
+}
+
+.gi-signatory-caption {
+  border-top: 1px solid var(--rule);
+  padding-top: 3px;
 }
 
 .gi-signatory-line {

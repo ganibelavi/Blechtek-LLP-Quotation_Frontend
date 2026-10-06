@@ -461,11 +461,12 @@ export default function GSTInvoicePrint({ initialData, onBack }) {
             </div>
             <p className="gi-declaration gi-return-note">
               I/We hereby certify that my/our registration certificate under the
-              GST Act, 2017 is in force on the date on which the sale of goods
-              specified in this tax invoice is made by me/us and that the
+              GST Act, 2017 is in force on the date on which the sale of the
+              goods specified in the tax invoice is made by me/us and that the
               transaction of sale covered by this tax invoice has been effected
-              by me/us and is not liable to be accounted for in the turnover of
-              this tax invoice.
+              by me/us and it shall be accounted for in the turnover of sales
+              while filing of return and the due tax, if any payable on this
+              sale has been paid or shall be paid.
             </p>
           </div>
           <div className="gi-footer-block">
@@ -508,8 +509,21 @@ export default function GSTInvoicePrint({ initialData, onBack }) {
               <span>{invoice.termsOfSale || "-"}</span>
             </div>
           </div>
+          <div className="gi-signatory">
+            <div className="gi-signatory-line">
+              For BlechTek Software Solutions LLP
+            </div>
+            <div
+              className="gi-signatory-space"
+              aria-label="Space reserved for company seal"
+            />
+            <div className="gi-signatory-line gi-signatory-caption">
+              Authorised Signatory
+            </div>
+          </div>
           <div className="gi-system-generated">
-            This is a System Generated Invoice. No signature is required.
+            This is a System Generated Invoice. Authorised signature and seal
+            may be affixed above.
           </div>
         </div>
       </div>
