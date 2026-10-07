@@ -74,6 +74,8 @@ export async function fetchModules() {
       module.noOfUsersForSingleInstallation ??
       module.NoOfUsersForSingleInstallation ??
       null,
+    timelineWeeks: module.timelineWeeks ?? module.TimelineWeeks ?? null,
+    deliveryDays: module.deliveryDays ?? module.DeliveryDays ?? null,
   }));
 }
 

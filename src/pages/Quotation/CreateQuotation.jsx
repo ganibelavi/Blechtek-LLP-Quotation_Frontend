@@ -24,6 +24,7 @@ import {
   DialogActions,
   TextField,
   Button,
+  Typography,
 } from "@mui/material";
 import { sendQuotationEmail } from "../../services/quotationApi";
 
@@ -139,6 +140,7 @@ const initialValues = {
   referenceBy: "",
   organizationName: "",
   validationDate: thirtyDaysLater,
+  expectedStartDate: "",
   quotationNo: "",
   date: today,
   selectedModules: [],
@@ -307,6 +309,11 @@ export default function CreateQuotation({
                       detail.discountPercentage ??
                       detail.DiscountPercentage ??
                       "",
+                    timelineWeeks:
+                      detail.timelineWeeks ?? detail.TimelineWeeks ?? null,
+                    deliveryDays:
+                      detail.deliveryDays ?? detail.DeliveryDays ?? null,
+                    hasSavedTimelineSnapshot: true,
                   },
                 };
               },
@@ -326,6 +333,9 @@ export default function CreateQuotation({
                 validationDate: quotation.validationDate
                   ? quotation.validationDate.slice(0, 10)
                   : current.validationDate,
+                expectedStartDate: quotation.expectedStartDate
+                  ? quotation.expectedStartDate.slice(0, 10)
+                  : "",
                 selectedModules,
                 moduleRequirements,
                 additionalScopes:
@@ -389,6 +399,9 @@ export default function CreateQuotation({
               referenceBy: quotation.referenceBy || "",
               organizationName: quotation.organizationName || "",
               validationDate: quotation.validationDate || "",
+              expectedStartDate: quotation.expectedStartDate
+                ? quotation.expectedStartDate.slice(0, 10)
+                : "",
               date: quotation.date || new Date().toISOString().slice(0, 10),
               selectedModules: Array.isArray(quotation.modules)
                 ? quotation.modules
@@ -623,6 +636,7 @@ export default function CreateQuotation({
             selectedModule?.implementationEffortManDays || 1,
           implementationEffortUnit: "1 Day",
           discountPercentage: "",
+          hasSavedTimelineSnapshot: false,
         };
       }
 
@@ -725,11 +739,33 @@ export default function CreateQuotation({
     }));
   };
 
+  const missingTimelineDeliveryModules = values.selectedModules.filter(
+    (moduleName) => {
+      const savedSnapshot = values.moduleRequirements?.[moduleName];
+      if (editMode && savedSnapshot?.hasSavedTimelineSnapshot) {
+        return (
+          savedSnapshot.timelineWeeks == null ||
+          savedSnapshot.deliveryDays == null
+        );
+      }
+
+      const module = modules.find(
+        (item) => item.module?.toLowerCase() === moduleName.toLowerCase(),
+      );
+      return module?.timelineWeeks == null || module?.deliveryDays == null;
+    },
+  );
+  const blockingTimelineDeliveryModules = missingTimelineDeliveryModules.filter(
+    (moduleName) =>
+      !(editMode && values.moduleRequirements?.[moduleName]?.hasSavedTimelineSnapshot),
+  );
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const validationErrors = validate(values);
     setErrors(validationErrors);
     if (Object.keys(validationErrors).length > 0) return;
+    if (blockingTimelineDeliveryModules.length > 0) return;
 
     setSubmitting(true);
     setApiError("");
@@ -752,6 +788,7 @@ export default function CreateQuotation({
         createdByUser: loggedInUser,
         quotationNo: "", // Auto-generated on backend
         date: values.date,
+        expectedStartDate: values.expectedStartDate || null,
         selectedModules: values.selectedModules,
         moduleDetails: values.selectedModules.map((moduleName) => ({
           moduleName,
@@ -814,6 +851,7 @@ export default function CreateQuotation({
         editMode && quotationId
           ? await updateQuotation(quotationId, {
               validationDate: values.validationDate,
+              expectedStartDate: values.expectedStartDate || null,
               selectedModules: values.selectedModules,
               moduleDetails: payload.moduleDetails,
               additionalScopes: payload.additionalScopes,
@@ -843,8 +881,14 @@ export default function CreateQuotation({
         severity: "success",
       });
     } catch (err) {
+      const validationMessage = Object.values(
+        err.response?.data?.errors ?? {},
+      )
+        .flat()
+        .find(Boolean);
       const msg =
         err.response?.data?.error ||
+        validationMessage ||
         `Something went wrong while ${editMode ? "updating" : "generating"} the quotation.`;
       setApiError(msg);
       setSnackbar({ open: true, message: msg, severity: "error" });
@@ -952,7 +996,9 @@ export default function CreateQuotation({
               type="submit"
               form="quotation-form"
               className="q-submit"
-              disabled={submitting}
+              disabled={
+                submitting || blockingTimelineDeliveryModules.length > 0
+              }
             >
               {submitting
                 ? editMode
@@ -1096,6 +1142,21 @@ export default function CreateQuotation({
                       allowFreeText
                     />
                   </div>
+                  <div className="q-field q-field--narrow">
+                    <label htmlFor="expectedStartDate">
+                      Expected start date
+                    </label>
+                    <input
+                      id="expectedStartDate"
+                      type="date"
+                      value={values.expectedStartDate}
+                      onChange={(event) =>
+                        handleFieldChange("expectedStartDate", event.target.value)
+                      }
+                      disabled={readOnly}
+                      className={readOnly ? "q-field__input--readonly" : ""}
+                    />
+                  </div>
                   {/* <div className="q-field q-field--narrow">
                   <label htmlFor="validationDate">Valid until</label>
                   <input
@@ -1235,6 +1296,17 @@ export default function CreateQuotation({
                 error={errors.selectedModules}
                 disabled={readOnly}
               />
+              {missingTimelineDeliveryModules.map((moduleName) => (
+                <Typography
+                  key={`timeline-warning-${moduleName}`}
+                  role="alert"
+                  color="warning.main"
+                  sx={{ mt: 1, fontSize: "0.875rem" }}
+                >
+                  Timeline and delivery not set for {moduleName}. Set them on
+                  the Modules page.
+                </Typography>
+              ))}
               {values.selectedModules.length > 0 && (
                 <ModuleRequirements
                   selectedModules={values.selectedModules}

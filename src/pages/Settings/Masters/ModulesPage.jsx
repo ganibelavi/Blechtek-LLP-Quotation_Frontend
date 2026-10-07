@@ -30,6 +30,8 @@ const emptyModule = {
   implementationEffortCost: "",
   implementationEffortManDays: "",
   noOfUsersForSingleInstallation: "",
+  timelineWeeks: "",
+  deliveryDays: "",
 };
 
 const toTableModule = (module) => ({
@@ -47,9 +49,7 @@ const toTableModule = (module) => ({
   ReverseChargeDefault:
     module.reverseChargeDefault ?? module.ReverseChargeDefault ?? false,
   ImplementationEffortCost:
-    module.implementationEffortCost ??
-    module.ImplementationEffortCost ??
-    null,
+    module.implementationEffortCost ?? module.ImplementationEffortCost ?? null,
   ImplementationEffortManDays:
     module.implementationEffortManDays ??
     module.ImplementationEffortManDays ??
@@ -58,6 +58,8 @@ const toTableModule = (module) => ({
     module.noOfUsersForSingleInstallation ??
     module.NoOfUsersForSingleInstallation ??
     null,
+  TimelineWeeks: module.timelineWeeks ?? module.TimelineWeeks ?? null,
+  DeliveryDays: module.deliveryDays ?? module.DeliveryDays ?? null,
 });
 
 export default function ModulesPage() {
@@ -103,10 +105,11 @@ export default function ModulesPage() {
       sacCode: module.SacCode ?? module.sacCode ?? "",
       reverseChargeDefault: module.ReverseChargeDefault ?? false,
       implementationEffortCost: module.ImplementationEffortCost ?? "",
-      implementationEffortManDays:
-        module.ImplementationEffortManDays ?? "",
+      implementationEffortManDays: module.ImplementationEffortManDays ?? "",
       noOfUsersForSingleInstallation:
         module.NoOfUsersForSingleInstallation ?? "",
+      timelineWeeks: module.TimelineWeeks ?? "",
+      deliveryDays: module.DeliveryDays ?? "",
     });
     setIsDialogOpen(true);
   };
@@ -146,6 +149,9 @@ export default function ModulesPage() {
         form.noOfUsersForSingleInstallation === ""
           ? null
           : Number(form.noOfUsersForSingleInstallation),
+      timelineWeeks:
+        form.timelineWeeks === "" ? null : Number(form.timelineWeeks),
+      deliveryDays: form.deliveryDays === "" ? null : Number(form.deliveryDays),
     };
 
     if (editingModuleId === null) {
@@ -161,6 +167,9 @@ export default function ModulesPage() {
       } catch (error) {
         const msg =
           error.response?.data?.error ??
+          Object.values(error.response?.data?.errors ?? {})
+            .flat()
+            .find(Boolean) ??
           "Could not create the module in the database.";
         setApiError(msg);
         setSnackbar({ open: true, message: msg, severity: "error" });
@@ -188,6 +197,9 @@ export default function ModulesPage() {
       } catch (error) {
         const msg =
           error.response?.data?.error ??
+          Object.values(error.response?.data?.errors ?? {})
+            .flat()
+            .find(Boolean) ??
           "Could not update the module in the database.";
         setApiError(msg);
         setSnackbar({ open: true, message: msg, severity: "error" });
@@ -272,6 +284,30 @@ export default function ModulesPage() {
       label: "No. of users for single Installation",
       sortable: true,
       minWidth: 180,
+    },
+    {
+      key: "TimelineWeeks",
+      label: "Timeline (weeks)",
+      sortable: true,
+      minWidth: 140,
+      render: ({ row }) =>
+        row.TimelineWeeks ?? (
+          <Typography component="span" variant="body2" color="text.secondary">
+            Not set
+          </Typography>
+        ),
+    },
+    {
+      key: "DeliveryDays",
+      label: "Delivery (days from start)",
+      sortable: true,
+      minWidth: 190,
+      render: ({ row }) =>
+        row.DeliveryDays ?? (
+          <Typography component="span" variant="body2" color="text.secondary">
+            Not set
+          </Typography>
+        ),
     },
     {
       key: "actions",
@@ -402,7 +438,7 @@ export default function ModulesPage() {
               value={form.sacCode}
               onChange={updateField}
             />
-           
+
             <TextField
               label=" Implementation Rate Per ManDay "
               name="implementationEffortCost"
@@ -427,7 +463,25 @@ export default function ModulesPage() {
               onChange={updateField}
               inputProps={{ min: 0, step: "1" }}
             />
-             <label style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+            <TextField
+              label="Timeline (weeks)"
+              name="timelineWeeks"
+              type="number"
+              value={form.timelineWeeks}
+              onChange={updateField}
+              inputProps={{ min: 1, max: 52, step: 1 }}
+            />
+            <TextField
+              label="Delivery (days from start)"
+              name="deliveryDays"
+              type="number"
+              value={form.deliveryDays}
+              onChange={updateField}
+              inputProps={{ min: 1, max: 365, step: 1 }}
+            />
+            <label
+              style={{ display: "flex", alignItems: "center", gap: "4px" }}
+            >
               <input
                 type="checkbox"
                 name="reverseChargeDefault"
@@ -478,7 +532,7 @@ export default function ModulesPage() {
           Confirm Delete Module
         </DialogTitle>
         <DialogContent>
-          <Typography variant="body1" sx={{ mt: 1, fontSize:'14px'}}>
+          <Typography variant="body1" sx={{ mt: 1, fontSize: "14px" }}>
             Are you sure you want to delete the module{" "}
             <strong>{moduleToDelete?.ModuleName}</strong>? This action cannot be
             undone.
