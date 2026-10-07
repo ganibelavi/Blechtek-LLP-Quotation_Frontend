@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+// src/pages/Dashboard/RenewalsPage.jsx
+import React from "react";
 import {
   BarChart,
   Bar,
@@ -11,209 +12,222 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
   Label,
+  LabelList,
 } from "recharts";
 import {
   fetchCustomerSubscriptions,
   fetchRenewals,
 } from "../../services/quotationApi";
-import DataCard from "../../components/DataCard";
+import {
+  cove,
+  gridStroke,
+  axisTick,
+  inr,
+  inrShort,
+  finiteNumber,
+  pct,
+  plural,
+  lower,
+  fmtDate,
+  daysUntil,
+  groupMonthly,
+  monthlyTrend,
+  groupBy,
+  withColors,
+  topWithOther,
+  TruncatedAxisTick,
+  statusColor,
+  useDashboardData,
+  DASHBOARD_TARGETS,
+  LoadingState,
+  ErrorState,
+  PageIntro,
+  MetricGrid,
+  ChartGrid,
+  ChartCard,
+  TableCard,
+  Chip,
+  TargetsCard,
+  DefinitionsCard,
+} from "./dashboardShared";
 
-const cove = {
-  blue: "#2a78d6",
-  orange: "#eb6834",
-  aqua: "#1baf7a",
-  yellow: "#eda100",
-  green: "#008300",
+const loadAll = async () => {
+  const [subscriptions, renewals, expired] = await Promise.all([
+    fetchCustomerSubscriptions(),
+    fetchRenewals(),
+    fetchRenewals("expired"),
+  ]);
+  return {
+    subscriptions: subscriptions || [],
+    renewals: renewals || [],
+    expired: expired || [],
+  };
 };
-const gridStroke = "rgba(137,135,129,0.2)";
-const axisTick = { fill: "var(--text-muted)", fontSize: 11 };
 
-function MetricGrid({ cards }) {
-  return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-        gap: 24,
-        marginBottom: 32,
-      }}
-    >
-      {cards.map((card, index) => (
-        <DataCard key={index} {...card} borderRadius={2} />
-      ))}
-    </div>
-  );
-}
-
-function Legend({ items }) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        flexWrap: "wrap",
-        gap: 14,
-        marginBottom: 6,
-        fontSize: 12,
-        color: "var(--text-secondary)",
-      }}
-    >
-      {items.map((it, i) => (
-        <span key={i} style={{ display: "flex", alignItems: "center", gap: 5 }}>
-          <span
-            style={{
-              width: 9,
-              height: 9,
-              borderRadius: 2,
-              background: it.color,
-              display: "inline-block",
-            }}
-          />
-          {it.label}
-        </span>
-      ))}
-    </div>
-  );
-}
-
-function ChartCard({ ariaLabel, legendItems, height = 240, children }) {
-  return (
-    <div className="dashboard-chart-card">
-      <Legend items={legendItems} />
-      <div
-        style={{ position: "relative", height }}
-        role="img"
-        aria-label={ariaLabel}
-      >
-        <ResponsiveContainer width="100%" height="100%">
-          {children}
-        </ResponsiveContainer>
-      </div>
-    </div>
-  );
-}
-
-function ChartGrid({ children }) {
-  return (
-    <div
-      className="dashboard-chart-grid"
-      style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}
-    >
-      {children}
-    </div>
-  );
-}
+const customerOf = (r) => r.customerName || r.customer?.name || "Unknown";
+const moduleOf = (r) => r.moduleName || r.module?.moduleName || "Unknown";
+const valueOf = (r) => finiteNumber(r.initialPurchasePrice);
 
 export default function RenewalsPage() {
-  const [subscriptions, setSubscriptions] = useState([]);
-  const [renewals, setRenewals] = useState([]);
-  const [expired, setExpired] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    let mounted = true;
-    Promise.all([
-      fetchCustomerSubscriptions(),
-      fetchRenewals(),
-      fetchRenewals("expired"),
-    ])
-      .then(([subscriptionRows, renewalRows, expiredRows]) => {
-        if (!mounted) return;
-        setSubscriptions(subscriptionRows);
-        setRenewals(renewalRows);
-        setExpired(expiredRows);
-      })
-      .catch((requestError) => {
-        console.error("Failed to load renewal dashboard data", requestError);
-        if (mounted) setError("Unable to load renewal dashboard data.");
-      })
-      .finally(() => {
-        if (mounted) setLoading(false);
-      });
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  if (loading)
-    return (
-      <div className="dashboard-analytics-page">
-        Loading renewal analytics...
-      </div>
-    );
-  if (error) return <div className="dashboard-analytics-page">{error}</div>;
-
-  const colors = [cove.aqua, cove.yellow, cove.orange, cove.blue, cove.green];
-  const active = subscriptions.filter(
-    (row) => String(row.status || "").toLowerCase() === "active",
+  const { data, loading, error, updatedAt, reload } = useDashboardData(
+    loadAll,
+    "Unable to load renewal dashboard data.",
   );
-  const renewed = active.filter((row) => Number(row.currentYear || 1) > 1);
-  const renewalStatus = [
-    { name: "Renewed", value: renewed.length, color: cove.aqua },
-    { name: "Due soon", value: renewals.length, color: cove.yellow },
-    { name: "Expired", value: expired.length, color: cove.orange },
-  ].filter((item) => item.value > 0);
-  const monthOf = (value) => {
-    const date = new Date(value);
-    return Number.isNaN(date.getTime())
-      ? "Unknown"
-      : date.toLocaleString("en-US", { month: "short", year: "numeric" });
+
+  const source = data || { subscriptions: [], renewals: [], expired: [] };
+  const dueByMonth = React.useMemo(
+    () =>
+      groupMonthly(
+        source.renewals,
+        (r) => r.nextRenewalDate,
+        () => ({ due: 0 }),
+        (c) => {
+          c.due += 1;
+        },
+      ),
+    [source.renewals],
+  );
+  const dueTrend = React.useMemo(
+    () => monthlyTrend(dueByMonth, "due"),
+    [dueByMonth],
+  );
+  const active = React.useMemo(
+    () => source.subscriptions.filter((r) => lower(r.status) === "active"),
+    [source.subscriptions],
+  );
+  const renewed = React.useMemo(
+    () => active.filter((r) => finiteNumber(r.currentYear || 1) > 1),
+    [active],
+  );
+  const upcoming = React.useMemo(
+    () =>
+      source.renewals
+        .map((r) => ({ ...r, left: daysUntil(r.nextRenewalDate) }))
+        .sort((a, b) => (a.left ?? 9999) - (b.left ?? 9999)),
+    [source.renewals],
+  );
+  const renewalStatus = React.useMemo(
+    () =>
+      [
+        { name: "Renewed", value: renewed.length },
+        { name: "Due soon", value: source.renewals.length },
+        { name: "Expired", value: source.expired.length },
+      ]
+        .filter((item) => item.value > 0)
+        .map((item, index) => ({
+          ...item,
+          color: statusColor(item.name, index),
+        })),
+    [renewed.length, source.renewals.length, source.expired.length],
+  );
+  const completedTrend = React.useMemo(
+    () =>
+      groupMonthly(
+        renewed,
+        (r) => r.createdAt,
+        () => ({ count: 0 }),
+        (c) => {
+          c.count += 1;
+        },
+      ),
+    [renewed],
+  );
+  const valueByModule = React.useMemo(
+    () =>
+      topWithOther(
+        withColors(
+          groupBy(
+            source.subscriptions,
+            moduleOf,
+            () => ({ value: 0 }),
+            (c, r) => {
+              c.value += valueOf(r);
+            },
+          ).sort((a, b) => b.value - a.value),
+        ),
+      ),
+    [source.subscriptions],
+  );
+  const byOrg = React.useMemo(
+    () =>
+      topWithOther(
+        groupBy(
+          source.subscriptions,
+          customerOf,
+          () => ({ Active: 0, Expired: 0 }),
+          (c, r) => {
+            if (lower(r.status) === "active") c.Active += 1;
+            else c.Expired += 1;
+          },
+        ).sort((a, b) => b.Active + b.Expired - (a.Active + a.Expired)),
+      ),
+    [source.subscriptions],
+  );
+
+  if (loading && !data)
+    return <LoadingState text="Loading renewal analytics..." />;
+  if (error && !data) return <ErrorState message={error} onRetry={reload} />;
+
+  const { subscriptions, renewals, expired } = source;
+  const subscriptionValue = subscriptions.reduce((s, r) => s + valueOf(r), 0);
+  const decided = renewed.length + expired.length;
+  const renewalRate = pct(renewed.length, decided);
+
+  const dueIn30 = upcoming.filter(
+    (r) => r.left !== null && r.left <= 30,
+  ).length;
+
+  const moduleTotal = valueByModule.reduce((s, r) => s + r.value, 0);
+  const renewalStatusTotal = renewalStatus.reduce((s, r) => s + r.value, 0);
+  const activeExpiredColors = [
+    { name: "Active", color: statusColor("Active") },
+    { name: "Expired", color: statusColor("Expired") },
+  ];
+  const tooltipStyle = {
+    background: "var(--dash-surface)",
+    border: "1px solid var(--dash-border)",
+    borderRadius: 8,
+    fontSize: 12,
   };
-  const groupedMonths = (rows, field) => {
-    const grouped = new Map();
-    rows.forEach((row) => {
-      const month = monthOf(row[field]);
-      grouped.set(month, (grouped.get(month) || 0) + 1);
-    });
-    return [...grouped.entries()].map(([month, count]) => ({
-      month,
-      count,
-      due: count,
-    }));
-  };
-  const renewalsCompletedTrend = groupedMonths(
-    subscriptions.filter((row) => Number(row.currentYear || 1) > 1),
-    "createdAt",
-  );
-  const renewalsDueByMonth = groupedMonths(renewals, "nextRenewalDate");
-  const moduleGroups = new Map();
-  subscriptions.forEach((row) => {
-    const name = row.moduleName || row.module?.moduleName || "Unknown";
-    moduleGroups.set(
-      name,
-      (moduleGroups.get(name) || 0) + Number(row.initialPurchasePrice || 0),
-    );
-  });
-  const valueByModule = [...moduleGroups.entries()].map(
-    ([name, value], index) => ({
-      name,
-      value,
-      color: colors[index % colors.length],
-    }),
-  );
-  const orgGroups = new Map();
-  subscriptions.forEach((row) => {
-    const name = row.customerName || row.customer?.name || "Unknown";
-    const current = orgGroups.get(name) || { name, Active: 0, Expired: 0 };
-    if (String(row.status || "").toLowerCase() === "active")
-      current.Active += 1;
-    else current.Expired += 1;
-    orgGroups.set(name, current);
-  });
-  const activeVsExpiredByOrg = [...orgGroups.values()];
-  const subscriptionValue = subscriptions.reduce(
-    (sum, row) => sum + Number(row.initialPurchasePrice || 0),
-    0,
-  );
+
+  const next = upcoming[0];
+  const insight =
+    [
+      next && next.left !== null
+        ? `${plural(dueIn30, "renewal")} due in the next 30 days. Next is ${customerOf(next)} (${moduleOf(next)}) on ${fmtDate(next.nextRenewalDate)}.`
+        : renewals.length
+          ? `${plural(renewals.length, "renewal")} due soon.`
+          : "",
+      expired.length
+        ? `${plural(expired.length, "subscription")} ${expired.length === 1 ? "has" : "have"} expired and need follow-up.`
+        : "",
+      valueByModule[0]
+        ? `${valueByModule[0].name} carries the most subscription value (${pct(valueByModule[0].value, moduleTotal)}%).`
+        : "",
+    ]
+      .filter(Boolean)
+      .join(" ") || "No subscriptions or renewals found yet.";
+
   return (
     <div className="dashboard-analytics-page">
+      <PageIntro
+        description="Which subscriptions are renewing, at risk, or already lapsed, and what they are worth."
+        insight={insight}
+        updatedAt={updatedAt}
+        onRefresh={reload}
+        refreshing={loading}
+        error={error}
+        onRetry={reload}
+      />
+
       <MetricGrid
         cards={[
           {
             label: "Active subscriptions",
             value: active.length,
+            hint: `${renewed.length} already renewed at least once`,
+            tip: "Subscriptions whose status is Active",
             icon: (
               <img
                 src="/logo/sync.png"
@@ -226,6 +240,10 @@ export default function RenewalsPage() {
           {
             label: "Renewals due this month",
             value: renewals.length,
+            ...dueTrend,
+            badWhenUp: true,
+            hint: `${dueIn30} within 30 days`,
+            tip: "Subscriptions returned by the renewals list as due soon",
             icon: (
               <img
                 src="/logo/calendar.png"
@@ -238,6 +256,8 @@ export default function RenewalsPage() {
           {
             label: "Expired subscriptions",
             value: expired.length,
+            hint: expired.length ? "Need follow-up" : "None expired",
+            tip: "Subscriptions past their end date and not renewed",
             icon: (
               <img
                 src="/logo/warning.png"
@@ -249,7 +269,9 @@ export default function RenewalsPage() {
           },
           {
             label: "Subscription value",
-            value: `₹${subscriptionValue.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`,
+            value: inrShort(subscriptionValue),
+            hint: decided ? `Renewal rate ${renewalRate}%` : "",
+            tip: `Total initial purchase price of all subscriptions: ${inr(subscriptionValue)}`,
             icon: (
               <img
                 src="/logo/speedometer.png"
@@ -263,35 +285,75 @@ export default function RenewalsPage() {
       />
 
       <ChartGrid>
-        <ChartCard
-          ariaLabel="Pie chart of renewal status"
-          legendItems={[
-            ...renewalStatus.map((item) => ({
-              color: item.color,
-              label: item.name,
-            })),
+        <TableCard
+          title="Renewals due soon"
+          empty="No renewals are due."
+          rows={upcoming.slice(0, 8)}
+          totalRows={upcoming.length}
+          columns={[
+            { key: "c", label: "Customer", render: (r) => customerOf(r) },
+            { key: "m", label: "Module", render: (r) => moduleOf(r) },
+            {
+              key: "d",
+              label: "Renewal date",
+              render: (r) => fmtDate(r.nextRenewalDate),
+            },
+            {
+              key: "left",
+              label: "Days left",
+              align: "right",
+              render: (r) =>
+                r.left === null ? (
+                  "-"
+                ) : (
+                  <Chip tone={r.left < 0 ? "bad" : r.left <= 7 ? "warn" : "ok"}>
+                    {r.left < 0 ? `${-r.left} d late` : `${r.left} d`}
+                  </Chip>
+                ),
+            },
           ]}
+        />
+
+        <ChartCard
+          title="Renewal status"
+          ariaLabel="Donut chart of renewal status"
+          legendLayout="vertical"
+          height={150}
+          legendItems={renewalStatus.map((i) => ({
+            color: i.color,
+            label: i.name,
+            value: i.value,
+          }))}
+          isEmpty={!renewalStatus.length}
+          donutCenter={{ total: renewalStatusTotal, caption: "subscriptions" }}
         >
-          <PieChart>
-            <Tooltip />
+          <PieChart margin={{ top: 8, right: 12, bottom: 8, left: 12 }}>
+            <Tooltip contentStyle={tooltipStyle} />
             <Pie
               data={renewalStatus}
               dataKey="value"
               nameKey="name"
-              outerRadius="80%"
+              cx="50%"
+              cy="50%"
+              innerRadius="58%"
+              outerRadius="76%"
+              paddingAngle={2}
+              stroke="none"
             >
-              {renewalStatus.map((d, i) => (
-                <Cell key={i} fill={d.color} />
+              {renewalStatus.map((r, i) => (
+                <Cell key={i} fill={r.color} />
               ))}
             </Pie>
           </PieChart>
         </ChartCard>
 
         <ChartCard
-          ariaLabel="Line chart of renewals completed per month"
-          legendItems={[{ color: cove.blue, label: "Renewals completed" }]}
+          title="Renewals due by month"
+          ariaLabel="Bar chart of renewals due by month"
+          legendItems={[{ color: cove.orange, label: "Renewals due" }]}
+          isEmpty={!dueByMonth.length}
         >
-          <LineChart data={renewalsCompletedTrend}>
+          <BarChart data={dueByMonth}>
             <CartesianGrid
               strokeDasharray="3 3"
               stroke={gridStroke}
@@ -300,98 +362,149 @@ export default function RenewalsPage() {
             <XAxis
               dataKey="month"
               tick={axisTick}
-              axisLine={{ stroke: gridStroke }}
+              axisLine={false}
               tickLine={false}
             >
-              <Label value="Month" offset={-5} position="insideBottom" style={axisTick} />
+              <Label
+                value="Month"
+                offset={-5}
+                position="insideBottom"
+                style={axisTick}
+              />
             </XAxis>
             <YAxis
               tick={axisTick}
               axisLine={false}
               tickLine={false}
               allowDecimals={false}
+              tickCount={3}
             >
-              <Label value="Renewals completed" angle={-90} position="insideLeft" offset={0} dy={12} style={axisTick} />
+              <Label
+                value="Renewals due"
+                angle={-90}
+                position="insideLeft"
+                offset={0}
+                dy={12}
+                style={axisTick}
+              />
             </YAxis>
-            <Tooltip />
+            <Tooltip contentStyle={tooltipStyle} />
+            <Bar
+              dataKey="due"
+              name="Renewals due"
+              fill={cove.orange}
+              radius={[4, 4, 0, 0]}
+              maxBarSize={36}
+            >
+              {dueByMonth.length <= 12 && (
+                <LabelList
+                  dataKey="due"
+                  position="top"
+                  formatter={(value) => value.toLocaleString("en-IN")}
+                  style={{ fill: "var(--dash-text)", fontSize: 10 }}
+                />
+              )}
+            </Bar>
+          </BarChart>
+        </ChartCard>
+
+        <ChartCard
+          title="Renewals completed per month"
+          ariaLabel="Line chart of renewals completed per month"
+          legendItems={[{ color: cove.blue, label: "Renewals completed" }]}
+          isEmpty={!completedTrend.length}
+          emptyText="No subscription has been renewed yet."
+        >
+          <LineChart data={completedTrend}>
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke={gridStroke}
+              vertical={false}
+            />
+            <XAxis
+              dataKey="month"
+              tick={axisTick}
+              axisLine={false}
+              tickLine={false}
+            >
+              <Label
+                value="Month"
+                offset={-5}
+                position="insideBottom"
+                style={axisTick}
+              />
+            </XAxis>
+            <YAxis
+              tick={axisTick}
+              axisLine={false}
+              tickLine={false}
+              allowDecimals={false}
+              tickCount={3}
+            >
+              <Label
+                value="Renewals completed"
+                angle={-90}
+                position="insideLeft"
+                offset={0}
+                dy={12}
+                style={axisTick}
+              />
+            </YAxis>
+            <Tooltip contentStyle={tooltipStyle} />
             <Line
               type="monotone"
               dataKey="count"
+              name="Renewals"
               stroke={cove.blue}
-              strokeWidth={2}
-              dot={{ r: 4 }}
+              strokeWidth={2.5}
+              dot={{ r: 3 }}
             />
           </LineChart>
         </ChartCard>
 
         <ChartCard
-          ariaLabel="Bar chart of renewals due by month"
-          legendItems={[{ color: cove.orange, label: "Renewals due" }]}
+          title="Subscription value by module"
+          ariaLabel="Donut chart of subscription value by module"
+          legendLayout="vertical"
+          height={150}
+          legendItems={valueByModule.map((i) => ({
+            color: i.color,
+            label: `${i.name} (${pct(i.value, moduleTotal)}%)`,
+            value: i.value,
+          }))}
+          isEmpty={!valueByModule.length || moduleTotal === 0}
+          donutCenter={{ total: moduleTotal, caption: "value" }}
         >
-          <BarChart data={renewalsDueByMonth}>
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke={gridStroke}
-              vertical={false}
-            />
-            <XAxis
-              dataKey="month"
-              tick={axisTick}
-              axisLine={{ stroke: gridStroke }}
-              tickLine={false}
-            >
-              <Label value="Month" offset={-5} position="insideBottom" style={axisTick} />
-            </XAxis>
-            <YAxis
-              tick={axisTick}
-              axisLine={false}
-              tickLine={false}
-              allowDecimals={false}
-            >
-              <Label value="Renewals due" angle={-90} position="insideLeft" offset={0} dy={12} style={axisTick} />
-            </YAxis>
-            <Tooltip />
-            <Bar
-              dataKey="due"
-              fill={cove.orange}
-              radius={[4, 4, 0, 0]}
-              maxBarSize={28}
-            />
-          </BarChart>
-        </ChartCard>
-
-        <ChartCard
-          ariaLabel="Pie chart of subscription value by module"
-          legendItems={[
-            { color: cove.blue, label: "ERP 40%" },
-            { color: cove.orange, label: "CRM 25%" },
-            { color: cove.aqua, label: "HRMS 20%" },
-            { color: cove.yellow, label: "Finance 15%" },
-          ]}
-        >
-          <PieChart>
-            <Tooltip />
+          <PieChart margin={{ top: 8, right: 12, bottom: 8, left: 12 }}>
+            <Tooltip contentStyle={tooltipStyle} formatter={(v) => inr(v)} />
             <Pie
               data={valueByModule}
               dataKey="value"
               nameKey="name"
-              outerRadius="80%"
+              cx="50%"
+              cy="50%"
+              innerRadius="58%"
+              outerRadius="76%"
+              paddingAngle={2}
+              stroke="none"
             >
-              {valueByModule.map((d, i) => (
-                <Cell key={i} fill={d.color} />
+              {valueByModule.map((r, i) => (
+                <Cell key={i} fill={r.color} />
               ))}
             </Pie>
           </PieChart>
         </ChartCard>
 
         <ChartCard
+          title="Active vs expired by customer"
           ariaLabel="Bar chart of active versus expired subscriptions by organization"
           legendItems={[
-            { color: cove.aqua, label: "Active" },
-            { color: cove.orange, label: "Expired" },
+            { color: activeExpiredColors[0].color, label: "Active" },
+            { color: activeExpiredColors[1].color, label: "Expired" },
           ]}
+          isEmpty={!byOrg.length}
         >
-          <BarChart data={activeVsExpiredByOrg}>
+          <BarChart data={byOrg}>
             <CartesianGrid
               strokeDasharray="3 3"
               stroke={gridStroke}
@@ -399,11 +512,16 @@ export default function RenewalsPage() {
             />
             <XAxis
               dataKey="name"
-              tick={axisTick}
-              axisLine={{ stroke: gridStroke }}
+              tick={<TruncatedAxisTick maxLength={12} textAnchor="middle" dy={12} />}
+              axisLine={false}
               tickLine={false}
             >
-              <Label value="Organization" offset={-5} position="insideBottom" style={axisTick} />
+              <Label
+                value="Customer"
+                offset={-5}
+                position="insideBottom"
+                style={axisTick}
+              />
             </XAxis>
             <YAxis
               tick={axisTick}
@@ -411,24 +529,64 @@ export default function RenewalsPage() {
               tickLine={false}
               allowDecimals={false}
             >
-              <Label value="Subscription count" angle={-90} position="insideLeft" offset={0} dy={12} style={axisTick} />
+              <Label
+                value="Subscription count"
+                angle={-90}
+                position="insideLeft"
+                offset={0}
+                dy={12}
+                style={axisTick}
+              />
             </YAxis>
-            <Tooltip />
+            <Tooltip contentStyle={tooltipStyle} />
             <Bar
               dataKey="Active"
               stackId="a"
-              fill={cove.aqua}
-              radius={[4, 4, 0, 0]}
-              maxBarSize={28}
+              fill={activeExpiredColors[0].color}
+              maxBarSize={36}
             />
             <Bar
               dataKey="Expired"
               stackId="a"
-              fill={cove.orange}
-              maxBarSize={28}
+              fill={activeExpiredColors[1].color}
+              radius={[4, 4, 0, 0]}
+              maxBarSize={36}
             />
           </BarChart>
         </ChartCard>
+      </ChartGrid>
+
+      <ChartGrid>
+        <TargetsCard
+          items={[
+            {
+              label: "Renewal rate",
+              value: renewalRate,
+              target: DASHBOARD_TARGETS.renewalRatePercent,
+              format: (v) => `${v}%`,
+            },
+          ]}
+        />
+        <DefinitionsCard
+          items={[
+            [
+              "Renewed",
+              "Active subscriptions that are in their second year or later.",
+            ],
+            [
+              "Renewal rate",
+              "Renewed ÷ (renewed + expired). An estimate until renewal outcomes are stored.",
+            ],
+            [
+              "Due soon",
+              "Subscriptions returned by the renewals list for the coming period.",
+            ],
+            [
+              "Subscription value",
+              "Sum of the initial purchase price of every subscription.",
+            ],
+          ]}
+        />
       </ChartGrid>
     </div>
   );

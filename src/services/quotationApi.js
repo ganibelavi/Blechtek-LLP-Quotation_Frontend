@@ -98,6 +98,26 @@ export async function fetchQuotations(page = 1, pageSize = 50) {
   return data;
 }
 
+export async function fetchAllQuotations(pageSize = 500) {
+  if (!Number.isInteger(pageSize) || pageSize < 1) {
+    throw new RangeError("Quotation page size must be a positive integer.");
+  }
+
+  const quotations = [];
+  let page = 1;
+
+  while (true) {
+    const rows = await fetchQuotations(page, pageSize);
+    if (!Array.isArray(rows)) {
+      throw new Error("The quotation history response is not a list.");
+    }
+
+    quotations.push(...rows);
+    if (rows.length < pageSize) return quotations;
+    page += 1;
+  }
+}
+
 export async function fetchQuotationRevisions(quotationId) {
   const { data } = await client.get(`/api/quotation/${quotationId}/revisions`);
   return data;

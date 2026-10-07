@@ -1,347 +1,560 @@
-import React, { useEffect, useState } from 'react';
+// src/pages/Dashboard/UsersPage.jsx
+import React from "react";
 import {
-  BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
-  , Label
-} from 'recharts';
-import { fetchUsers } from '../../services/userApi';
-import { fetchInvoices, fetchPurchaseOrders, fetchQuotations, fetchRenewals } from '../../services/quotationApi';
-import DataCard from '../../components/DataCard';
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Label,
+  LabelList,
+} from "recharts";
+import { fetchUsers } from "../../services/userApi";
+import {
+  fetchAllQuotations,
+  fetchInvoices,
+  fetchPurchaseOrders,
+  fetchRenewals,
+} from "../../services/quotationApi";
+import {
+  cove,
+  gridStroke,
+  axisTick,
+  pct,
+  plural,
+  lower,
+  toRows,
+  titleCase,
+  fmtDateTime,
+  daysSince,
+  withColors,
+  topWithOther,
+  TruncatedAxisTick,
+  useDashboardData,
+  LoadingState,
+  ErrorState,
+  PageIntro,
+  MetricGrid,
+  ChartGrid,
+  ChartCard,
+  TableCard,
+  Chip,
+  DefinitionsCard,
+} from "./dashboardShared";
 
-// ---- shared design tokens (kept local so this file can be dropped in on its own) ----
-const cove = { blue: '#2a78d6', orange: '#eb6834', aqua: '#1baf7a', yellow: '#eda100', green: '#008300' };
-const gridStroke = 'rgba(137,135,129,0.2)';
-const axisTick = { fill: 'var(--text-muted)', fontSize: 11 };
+const loadAll = async () => {
+  const [users, quotations, orders, invoices, renewals] = await Promise.all([
+    fetchUsers(),
+    fetchAllQuotations(),
+    fetchPurchaseOrders(),
+    fetchInvoices(),
+    fetchRenewals(),
+  ]);
+  return {
+    users: Array.isArray(users) ? users : [],
+    quotations: toRows(quotations),
+    orders: toRows(orders),
+    invoices: toRows(invoices),
+    renewals: toRows(renewals),
+  };
+};
 
-function MetricGrid({ cards }) {
-  return (
-    <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-        gap: 24,
-        marginBottom: 32,
-      }}
-    >
-      {cards.map((card, index) => (
-        <DataCard key={index} {...card} borderRadius={2} />
-      ))}
-    </div>
-  );
-}
-
-function Legend({ items }) {
-  return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, marginBottom: 6, fontSize: 12, color: 'var(--text-secondary)' }}>
-      {items.map((it, i) => (
-        <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-          <span style={{ width: 9, height: 9, borderRadius: 2, background: it.color, display: 'inline-block' }} />
-          {it.label}
-        </span>
-      ))}
-    </div>
-  );
-}
-
-function ChartCard({ ariaLabel, legendItems, height = 240, children }) {
-  return (
-    <div className="dashboard-chart-card">
-      <Legend items={legendItems} />
-      <div style={{ position: 'relative', height }} role="img" aria-label={ariaLabel}>
-        <ResponsiveContainer width="100%" height="100%">
-          {children}
-        </ResponsiveContainer>
-      </div>
-    </div>
-  );
-}
-
-function ChartGrid({ children }) {
-  return (
-    <div className="dashboard-chart-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-      {children}
-    </div>
-  );
-}
-
-// function UserHealthCard({ users }) {
-//   const now = Date.now();
-//   const neverLoggedIn = users.filter((user) => !user.lastLoginAt);
-//   const staleLogins = users.filter((user) => {
-//     if (!user.lastLoginAt) return false;
-//     const loginTime = new Date(user.lastLoginAt).getTime();
-//     return Number.isFinite(loginTime) && now - loginTime > 30 * 24 * 60 * 60 * 1000;
-//   });
-//   const inactiveUsers = users.filter((user) => !user.isActive);
-//   const adminUsers = users.filter(
-//     (user) => String(user.role || "").toLowerCase() === "admin",
-//   );
-
-//   const items = [
-//     {
-//       label: "Never logged in",
-//       value: neverLoggedIn.length,
-//       detail: "Accounts that may need onboarding",
-//       color: "#eb6834",
-//     },
-//     {
-//       label: "No login in 30+ days",
-//       value: staleLogins.length,
-//       detail: "Review access and follow up",
-//       color: "#eda100",
-//     },
-//     {
-//       label: "Inactive accounts",
-//       value: inactiveUsers.length,
-//       detail: "Access is currently disabled",
-//       color: "#6b7280",
-//     },
-//     {
-//       label: "Administrators",
-//       value: adminUsers.length,
-//       detail: "Accounts with elevated access",
-//       color: "#2a78d6",
-//     },
-//   ];
-
-//   return (
-//     <div
-//       className="dashboard-chart-card"
-//       style={{ marginTop: 16, padding: 20 }}
-//       aria-label="User access and onboarding health"
-//     >
-//       <div style={{ marginBottom: 14 }}>
-//         <h2 style={{ margin: 0, fontSize: 18, color: "var(--text-primary)" }}>
-//           User access health
-//         </h2>
-//         <p
-//           style={{
-//             margin: "6px 0 0",
-//             color: "var(--text-secondary)",
-//             fontSize: 13,
-//           }}
-//         >
-//           A quick view of onboarding, account activity, and access risk.
-//         </p>
-//       </div>
-//       <div
-//         style={{
-//           display: "grid",
-//           gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
-//           gap: 12,
-//         }}
-//       >
-//         {items.map((item) => (
-//           <div
-//             key={item.label}
-//             style={{
-//               borderLeft: `4px solid ${item.color}`,
-//               background: "var(--surface-muted, rgba(0, 0, 0, 0.025))",
-//               borderRadius: 6,
-//               padding: "12px 14px",
-//             }}
-//           >
-//             <div style={{ color: "var(--text-secondary)", fontSize: 12 }}>
-//               {item.label}
-//             </div>
-//             <div
-//               style={{
-//                 color: "var(--text-primary)",
-//                 fontSize: 26,
-//                 fontWeight: 700,
-//                 lineHeight: 1.2,
-//                 margin: "4px 0",
-//               }}
-//             >
-//               {item.value}
-//             </div>
-//             <div style={{ color: "var(--text-muted)", fontSize: 11 }}>
-//               {item.detail}
-//             </div>
-//           </div>
-//         ))}
-//       </div>
-//     </div>
-//   );
-// }
+const displayName = (u) =>
+  `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.email;
+/* A record belongs to a user when one of its "owner" fields equals their name or email. */
+const owns = (row, fields, user) =>
+  fields.some((f) => {
+    const v = lower(row[f]);
+    return v && (v === lower(displayName(user)) || v === lower(user.email));
+  });
+const countFor = (rows, fields, user) =>
+  rows.filter((r) => owns(r, fields, user)).length;
 
 export default function UsersPage() {
-  const [users, setUsers] = useState([]);
-  const [records, setRecords] = useState({ quotations: [], orders: [], invoices: [], renewals: [] });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const { data, loading, error, updatedAt, reload } = useDashboardData(
+    loadAll,
+    "Unable to load users dashboard data.",
+  );
 
-  useEffect(() => {
-    let mounted = true;
-    Promise.all([fetchUsers(), fetchQuotations(1, 500), fetchPurchaseOrders(), fetchInvoices(), fetchRenewals()])
-      .then(([userRows, quotations, orders, invoices, renewals]) => {
-        if (!mounted) return;
-        const rows = (value) => Array.isArray(value)
-          ? value
-          : value?.items || value?.data || value?.rows || [];
-        setUsers(Array.isArray(userRows) ? userRows : []);
-        setRecords({ quotations: rows(quotations), orders: rows(orders), invoices: rows(invoices), renewals: rows(renewals) });
-      })
-      .catch((requestError) => {
-        console.error('Failed to load users dashboard data', requestError);
-        if (mounted) setError('Unable to load users dashboard data.');
-      })
-      .finally(() => {
-        if (mounted) setLoading(false);
-      });
-    return () => {
-      mounted = false;
-    };
-  }, []);
+  const { users, quotations, orders, invoices, renewals } = data || {
+    users: [],
+    quotations: [],
+    orders: [],
+    invoices: [],
+    renewals: [],
+  };
+  const totalOf = (r) =>
+    r.Quotations + r["Purchase orders"] + r.Invoices + r.Renewals;
+  const recordsPerUser = React.useMemo(
+    () =>
+      users.map((u) => ({
+        name: displayName(u),
+        Quotations: countFor(quotations, ["createdByUser", "referenceBy"], u),
+        "Purchase orders": countFor(orders, ["uploadedBy"], u),
+        Invoices: countFor(invoices, ["createdByUser", "createdBy"], u),
+        Renewals: countFor(renewals, ["createdByUser", "createdBy"], u),
+      })),
+    [users, quotations, orders, invoices, renewals],
+  );
+  const chartRecordsPerUser = React.useMemo(
+    () =>
+      topWithOther(
+        [...recordsPerUser].sort((a, b) => totalOf(b) - totalOf(a)),
+      ),
+    [recordsPerUser],
+  );
+  const roles = React.useMemo(
+    () =>
+      topWithOther(
+        withColors(
+          Object.entries(
+            users.reduce(
+              (counts, user) => ({
+                ...counts,
+                [user.role || "Unknown"]:
+                  (counts[user.role || "Unknown"] || 0) + 1,
+              }),
+              {},
+            ),
+          )
+            .map(([name, value]) => ({ name, value }))
+            .sort((a, b) => b.value - a.value),
+        ),
+      ),
+    [users],
+  );
+  const moduleUsage = React.useMemo(
+    () =>
+      withColors(
+        [
+          { name: "Quotations", value: quotations.length },
+          { name: "Purchase orders", value: orders.length },
+          { name: "Invoices", value: invoices.length },
+          { name: "Renewals", value: renewals.length },
+        ].filter((i) => i.value > 0),
+      ),
+    [quotations.length, orders.length, invoices.length, renewals.length],
+  );
+  const recency = React.useMemo(() => {
+    const buckets = [
+      { name: "Today", value: 0, color: cove.blue },
+      { name: "1-7 days", value: 0, color: cove.aqua },
+      { name: "8-30 days", value: 0, color: cove.yellow },
+      { name: "30+ days", value: 0, color: cove.orange },
+      { name: "Never", value: 0, color: cove.grey },
+    ];
+    users.forEach((user) => {
+      const days = user.lastLoginAt ? daysSince(user.lastLoginAt) : null;
+      const index =
+        days === null ? 4 : days < 1 ? 0 : days <= 7 ? 1 : days <= 30 ? 2 : 3;
+      buckets[index].value += 1;
+    });
+    return buckets;
+  }, [users]);
+  const recentSignIns = React.useMemo(
+    () =>
+      [...users]
+        .sort(
+          (a, b) =>
+            new Date(b.lastLoginAt || 0).getTime() -
+            new Date(a.lastLoginAt || 0).getTime(),
+        )
+        .slice(0, 8),
+    [users],
+  );
 
-  if (loading) return <div className="dashboard-analytics-page">Loading user analytics...</div>;
-  if (error) return <div className="dashboard-analytics-page">{error}</div>;
+  if (loading && !data)
+    return <LoadingState text="Loading user analytics..." />;
+  if (error && !data) return <ErrorState message={error} onRetry={reload} />;
 
-  const displayName = (user) => `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email;
-  const recordsPerUser = users.map((user) => {
-    const name = displayName(user);
-    const matches = (rows, fields) => rows.filter((row) => fields.some((field) => String(row[field] || '').toLowerCase() === name.toLowerCase() || String(row[field] || '').toLowerCase() === String(user.email || '').toLowerCase())).length;
-    return {
-      name,
-      Quotations: matches(records.quotations, ['createdByUser', 'referenceBy']),
-      'Purchase orders': matches(records.orders, ['uploadedBy']),
-      Invoices: 0,
-      Renewals: 0,
-    };
-  });
-  const roleGroups = new Map();
-  users.forEach((user) => roleGroups.set(user.role || 'Unknown', (roleGroups.get(user.role || 'Unknown') || 0) + 1));
-  const roleData = [...roleGroups.entries()].map(([name, value], index) => ({ name, value, color: [cove.blue, cove.aqua, cove.yellow, cove.orange][index % 4] }));
-  const allRecords = Object.values(records).reduce((sum, rows) => sum + rows.length, 0);
-  const activeUsers = users.filter((user) => user.isActive).length;
-  const moduleUsage = [
-    { name: 'Quotations', value: records.quotations.length, color: cove.blue },
-    { name: 'Purchase orders', value: records.orders.length, color: cove.orange },
-    { name: 'Invoices', value: records.invoices.length, color: cove.green },
-    { name: 'Renewals', value: records.renewals.length, color: cove.yellow },
-  ].filter((item) => item.value > 0);
-  const recordedActivity = recordsPerUser.map((row) => ({ name: row.name, actions: row.Quotations + row['Purchase orders'] + row.Invoices + row.Renewals }));
-  const activeUsersTrend = [{ month: 'Current', active: activeUsers }];
+  const allRecords =
+    quotations.length + orders.length + invoices.length + renewals.length;
+  const activeUsers = users.filter((u) => u.isActive).length;
+  const topUser = [...recordsPerUser].sort(
+    (a, b) => totalOf(b) - totalOf(a),
+  )[0];
+  const attributed = recordsPerUser.reduce((s, r) => s + totalOf(r), 0);
+
+  const inactive = users.filter((u) => !u.isActive).length;
+  const admins = users.filter((u) => lower(u.role) === "admin").length;
+  const moduleUsageTotal = moduleUsage.reduce((sum, item) => sum + item.value, 0);
+  const roleTotal = roles.reduce((sum, item) => sum + item.value, 0);
+  const tooltipStyle = {
+    background: "var(--dash-surface)",
+    border: "1px solid var(--dash-border)",
+    borderRadius: 8,
+    fontSize: 12,
+  };
+
+  const insight =
+    [
+      users.length
+        ? `${activeUsers} of ${plural(users.length, "user")} ${activeUsers === 1 ? "is" : "are"} active.`
+        : "",
+      topUser && totalOf(topUser) > 0
+        ? `${topUser.name} created ${pct(totalOf(topUser), attributed)}% of the records that can be traced to a user.`
+        : "",
+      recency[4].value + recency[3].value > 0
+        ? `${plural(recency[4].value + recency[3].value, "account")} ${recency[4].value + recency[3].value === 1 ? "has" : "have"} not signed in for 30+ days or never.`
+        : "",
+    ]
+      .filter(Boolean)
+      .join(" ") || "No users found.";
+
   return (
     <div className="dashboard-analytics-page">
+      <PageIntro
+        description="Who is using the system, how much they create, and which accounts need attention."
+        insight={insight}
+        updatedAt={updatedAt}
+        onRefresh={reload}
+        refreshing={loading}
+        error={error}
+        onRetry={reload}
+      />
+
       <MetricGrid
         cards={[
           {
-            label: 'Total users',
+            label: "Total users",
             value: users.length,
-            icon: <img src="/logo/users.png" alt="Total users" style={{ width: 28, height: 28 }} />,
-            color: 'primary',
+            hint: `${admins} administrator${admins === 1 ? "" : "s"}`,
+            tip: "All user accounts",
+            icon: (
+              <img
+                src="/logo/users.png"
+                alt="Total users"
+                style={{ width: 28, height: 28 }}
+              />
+            ),
+            color: "primary",
           },
           {
-            label: 'Active users',
+            label: "Active users",
             value: activeUsers,
-            icon: <img src="/logo/verification.png" alt="Active users" style={{ width: 28, height: 28 }} />,
-            color: 'primary',
+            hint: inactive ? `${inactive} inactive` : "No inactive accounts",
+            tip: "Accounts that are enabled",
+            icon: (
+              <img
+                src="/logo/verification.png"
+                alt="Active users"
+                style={{ width: 28, height: 28 }}
+              />
+            ),
+            color: "primary",
           },
           {
-            label: 'Records created (all users)',
+            label: "Records created (all users)",
             value: allRecords,
-            icon: <img src="/logo/report.png" alt="Records created" style={{ width: 28, height: 28 }} />,
-            color: 'primary',
+            hint: `${quotations.length} quotations · ${orders.length} POs · ${invoices.length} invoices`,
+            tip: "Quotations, purchase orders, invoices and renewals combined",
+            icon: (
+              <img
+                src="/logo/report.png"
+                alt="Records created"
+                style={{ width: 28, height: 28 }}
+              />
+            ),
+            color: "primary",
           },
           {
-            label: 'Avg. records / user',
-            value: users.length ? (allRecords / users.length).toFixed(1) : '0.0',
-            icon: <img src="/logo/speedometer.png" alt="Average records per user" style={{ width: 28, height: 28 }} />,
-            color: 'primary',
+            label: "Avg. records / user",
+            value: users.length
+              ? (allRecords / users.length).toFixed(1)
+              : "0.0",
+            hint: "Records divided by total users",
+            tip: "Total records divided by the number of users",
+            icon: (
+              <img
+                src="/logo/speedometer.png"
+                alt="Average records per user"
+                style={{ width: 28, height: 28 }}
+              />
+            ),
+            color: "primary",
           },
         ]}
       />
 
+      {/* <StatStrip
+        title="User access health"
+        items={[
+          {
+            label: "Never signed in",
+            value: recency[4].value,
+            detail: "Accounts that may need onboarding",
+            color: cove.orange,
+          },
+          {
+            label: "No sign-in in 30+ days",
+            value: recency[3].value,
+            detail: "Review access and follow up",
+            color: cove.yellow,
+          },
+          {
+            label: "Inactive accounts",
+            value: inactive,
+            detail: "Access is currently disabled",
+            color: cove.grey,
+          },
+          {
+            label: "Administrators",
+            value: admins,
+            detail: "Accounts with elevated access",
+            color: cove.blue,
+          },
+        ]}
+      /> */}
+
       <ChartGrid>
         <ChartCard
+          title="Records created per user"
           ariaLabel="Bar chart of records created per user"
           legendItems={[
-            { color: cove.blue, label: 'Quotations' },
-            { color: cove.orange, label: 'Purchase orders' },
-            { color: cove.green, label: 'Invoices' },
-            { color: cove.yellow, label: 'Renewals' },
+            { color: cove.blue, label: "Quotations" },
+            { color: cove.orange, label: "Purchase orders" },
+            { color: cove.green, label: "Invoices" },
+            { color: cove.yellow, label: "Renewals" },
           ]}
+          isEmpty={!recordsPerUser.length}
         >
-          <BarChart data={recordsPerUser}>
-            <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
-            <XAxis dataKey="name" tick={axisTick} axisLine={{ stroke: gridStroke }} tickLine={false}>
-              <Label value="User" offset={-5} position="insideBottom" style={axisTick} />
+          <BarChart data={chartRecordsPerUser}>
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke={gridStroke}
+              vertical={false}
+            />
+            <XAxis
+              dataKey="name"
+              tick={<TruncatedAxisTick maxLength={12} textAnchor="middle" dy={12} />}
+              axisLine={false}
+              tickLine={false}
+            >
+              <Label
+                value="User"
+                offset={-5}
+                position="insideBottom"
+                style={axisTick}
+              />
             </XAxis>
-            <YAxis tick={axisTick} axisLine={false} tickLine={false} allowDecimals={false}>
-              <Label value="Records created" angle={-90} position="insideLeft" offset={0} dy={12} style={axisTick} />
+            <YAxis
+              tick={axisTick}
+              axisLine={false}
+              tickLine={false}
+              allowDecimals={false}
+            >
+              <Label
+                value="Records created"
+                angle={-90}
+                position="insideLeft"
+                offset={0}
+                dy={12}
+                style={axisTick}
+              />
             </YAxis>
-            <Tooltip />
-            <Bar dataKey="Quotations" stackId="a" fill={cove.blue} radius={[4, 4, 0, 0]} maxBarSize={28} />
-            <Bar dataKey="Purchase orders" stackId="a" fill={cove.orange} maxBarSize={28} />
-            <Bar dataKey="Invoices" stackId="a" fill={cove.green} maxBarSize={28} />
-            <Bar dataKey="Renewals" stackId="a" fill={cove.yellow} maxBarSize={28} />
+            <Tooltip contentStyle={tooltipStyle} />
+            <Bar
+              dataKey="Quotations"
+              stackId="a"
+              fill={cove.blue}
+              maxBarSize={36}
+            />
+            <Bar
+              dataKey="Purchase orders"
+              stackId="a"
+              fill={cove.orange}
+              maxBarSize={36}
+            />
+            <Bar
+              dataKey="Invoices"
+              stackId="a"
+              fill={cove.green}
+              maxBarSize={36}
+            />
+            <Bar
+              dataKey="Renewals"
+              stackId="a"
+              fill={cove.yellow}
+              radius={[4, 4, 0, 0]}
+              maxBarSize={36}
+            />
           </BarChart>
         </ChartCard>
 
         <ChartCard
-          ariaLabel="Pie chart of user role distribution"
-          legendItems={[
-            ...roleData.map((item) => ({ color: item.color, label: item.name })),
-          ]}
+          title="Records by type"
+          ariaLabel="Donut chart of records by type"
+          legendLayout="vertical"
+          height={150}
+          legendItems={moduleUsage.map((i) => ({
+            color: i.color,
+            label: i.name,
+            value: i.value,
+          }))}
+          isEmpty={!moduleUsage.length}
+          donutCenter={{ total: moduleUsageTotal, caption: "records" }}
         >
-          <PieChart>
-            <Tooltip />
-            <Pie data={roleData} dataKey="value" nameKey="name" innerRadius={0} outerRadius="80%">
-              {roleData.map((d, i) => <Cell key={i} fill={d.color} />)}
+          <PieChart margin={{ top: 8, right: 12, bottom: 8, left: 12 }}>
+            <Tooltip contentStyle={tooltipStyle} />
+            <Pie
+              data={moduleUsage}
+              dataKey="value"
+              nameKey="name"
+              cx="50%"
+              cy="50%"
+              innerRadius="58%"
+              outerRadius="76%"
+              paddingAngle={2}
+              stroke="none"
+            >
+              {moduleUsage.map((r, i) => (
+                <Cell key={i} fill={r.color} />
+              ))}
             </Pie>
           </PieChart>
         </ChartCard>
 
         <ChartCard
-          ariaLabel="Line chart of active users per month"
-          legendItems={[{ color: cove.blue, label: 'Active users' }]}
+          title="When users last signed in"
+          ariaLabel="Bar chart of users by last sign-in"
+          legendItems={[{ color: cove.blue, label: "Users" }]}
+          isEmpty={!users.length}
         >
-          <LineChart data={activeUsersTrend}>
-            <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
-            <XAxis dataKey="month" tick={axisTick} axisLine={{ stroke: gridStroke }} tickLine={false}>
-              <Label value="Period" offset={-5} position="insideBottom" style={axisTick} />
-            </XAxis>
-            <YAxis tick={axisTick} axisLine={false} tickLine={false} allowDecimals={false}>
-              <Label value="Active users" angle={-90} position="insideLeft" offset={0} dy={12} style={axisTick} />
+          <BarChart data={recency}>
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke={gridStroke}
+              vertical={false}
+            />
+            <XAxis
+              dataKey="name"
+              tick={axisTick}
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis
+              tick={axisTick}
+              axisLine={false}
+              tickLine={false}
+              allowDecimals={false}
+              tickCount={3}
+            >
+              <Label
+                value="Users"
+                angle={-90}
+                position="insideLeft"
+                offset={0}
+                dy={12}
+                style={axisTick}
+              />
             </YAxis>
-            <Tooltip />
-            <Line type="monotone" dataKey="active" stroke={cove.blue} strokeWidth={2} dot={{ r: 4 }} />
-          </LineChart>
+            <Tooltip contentStyle={tooltipStyle} />
+            <Bar
+              dataKey="value"
+              name="Users"
+              radius={[4, 4, 0, 0]}
+              maxBarSize={36}
+            >
+              {recency.map((r, i) => (
+                <Cell key={i} fill={r.color} />
+              ))}
+              <LabelList
+                dataKey="value"
+                position="top"
+                formatter={(value) => value.toLocaleString("en-IN")}
+                style={{ fill: "var(--dash-text)", fontSize: 10 }}
+              />
+            </Bar>
+          </BarChart>
         </ChartCard>
 
         <ChartCard
-          ariaLabel="Pie chart of module usage by users"
-          legendItems={[
-            ...moduleUsage.map((item) => ({ color: item.color, label: item.name })),
-          ]}
+          title="Users by role"
+          ariaLabel="Donut chart of user role distribution"
+          legendLayout="vertical"
+          height={150}
+          legendItems={roles.map((i) => ({
+            color: i.color,
+            label: titleCase(i.name),
+            value: i.value,
+          }))}
+          isEmpty={!roles.length}
+          donutCenter={{ total: roleTotal, caption: "users" }}
         >
-          <PieChart>
-            <Tooltip />
-            <Pie data={moduleUsage} dataKey="value" nameKey="name" innerRadius={0} outerRadius="80%">
-              {moduleUsage.map((d, i) => <Cell key={i} fill={d.color} />)}
+          <PieChart margin={{ top: 8, right: 12, bottom: 8, left: 12 }}>
+            <Tooltip contentStyle={tooltipStyle} />
+            <Pie
+              data={roles}
+              dataKey="value"
+              nameKey="name"
+              cx="50%"
+              cy="50%"
+              innerRadius="58%"
+              outerRadius="76%"
+              paddingAngle={2}
+              stroke="none"
+            >
+              {roles.map((r, i) => (
+                <Cell key={i} fill={r.color} />
+              ))}
             </Pie>
           </PieChart>
         </ChartCard>
 
-        <ChartCard
-          ariaLabel="Bar chart of recorded actions per user"
-          legendItems={[{ color: cove.aqua, label: 'Recorded actions' }]}
-        >
-          <BarChart data={recordedActivity}>
-            <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
-            <XAxis dataKey="name" tick={axisTick} axisLine={{ stroke: gridStroke }} tickLine={false}>
-              <Label value="User" offset={-5} position="insideBottom" style={axisTick} />
-            </XAxis>
-            <YAxis tick={axisTick} axisLine={false} tickLine={false} allowDecimals={false}>
-              <Label value="Recorded actions" angle={-90} position="insideLeft" offset={0} dy={12} style={axisTick} />
-            </YAxis>
-            <Tooltip />
-            <Bar dataKey="actions" fill={cove.aqua} radius={[4, 4, 0, 0]} maxBarSize={32} />
-          </BarChart>
-        </ChartCard>
+        <TableCard
+          title="Recent sign-ins"
+          totalRows={users.length}
+          rows={recentSignIns}
+          highlightHeader
+          columns={[
+            { key: "n", label: "User", render: (u) => displayName(u) },
+            {
+              key: "r",
+              label: "Role",
+              render: (u) => titleCase(u.role) || "-",
+            },
+            {
+              key: "l",
+              label: "Last sign-in",
+              render: (u) => fmtDateTime(u.lastLoginAt),
+            },
+            {
+              key: "s",
+              label: "Status",
+              render: (u) => (
+                <Chip tone={u.isActive ? "ok" : "neutral"}>
+                  {u.isActive ? "Active" : "Inactive"}
+                </Chip>
+              ),
+            },
+          ]}
+        />
+
+        <DefinitionsCard
+          items={[
+            [
+              "Records created",
+              "Quotations, purchase orders, invoices and renewals, counted together.",
+            ],
+            [
+              "Per user",
+              "A record is credited to a user when its creator field matches their name or email.",
+            ],
+            [
+              "Active user",
+              "An account that is enabled (not disabled by an administrator).",
+            ],
+            [
+              "Last sign-in",
+              "Taken from the last login time stored on the user account.",
+            ],
+          ]}
+        />
       </ChartGrid>
-      {/* <UserHealthCard users={users} /> */}
     </div>
   );
 }

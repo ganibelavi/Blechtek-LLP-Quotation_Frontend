@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+// src/pages/Dashboard/InvoicesPage.jsx
+import React from "react";
 import {
   BarChart,
   Bar,
@@ -11,196 +12,236 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
   Label,
+  LabelList,
 } from "recharts";
 import { fetchInvoices } from "../../services/quotationApi";
-import DataCard from "../../components/DataCard";
+import {
+  cove,
+  gridStroke,
+  axisTick,
+  num,
+  finiteNumber,
+  inr,
+  inrShort,
+  pct,
+  plural,
+  lower,
+  toRows,
+  titleCase,
+  fmtDate,
+  daysSince,
+  groupMonthly,
+  monthlyTrend,
+  groupBy,
+  statusColor,
+  topWithOther,
+  TruncatedAxisTick,
+  useDashboardData,
+  DASHBOARD_TARGETS,
+  LoadingState,
+  ErrorState,
+  PageIntro,
+  MetricGrid,
+  ChartGrid,
+  ChartCard,
+  TableCard,
+  Chip,
+  TargetsCard,
+  DefinitionsCard,
+} from "./dashboardShared";
 
-const cove = {
-  blue: "#2a78d6",
-  orange: "#eb6834",
-  aqua: "#1baf7a",
-  yellow: "#eda100",
-  green: "#008300",
-};
-const gridStroke = "rgba(137,135,129,0.2)";
-const axisTick = { fill: "var(--text-muted)", fontSize: 11 };
+const amountOf = (i) =>
+  finiteNumber(i.totalAmount ?? i.totals?.grandTotal ?? i.amount ?? 0);
+const nameOf = (i) =>
+  i.invoice?.companyName ||
+  i.companyName ||
+  i.invoice?.receiverName ||
+  i.receiverName ||
+  "Unknown";
+const statusOf = (i) => i.invoice?.status || i.status || "Unknown";
+const issueDateOf = (i) =>
+  i.invoice?.dateOfIssue || i.dateOfIssue || i.createdAt;
+const dueDateOf = (i) => i.invoice?.dueDate || i.dueDate || null;
+const invoiceNoOf = (i) =>
+  i.invoice?.invoiceNumber ||
+  i.invoiceNumber ||
+  i.invoiceNo ||
+  `#${i.id ?? ""}`;
+const isPaid = (i) => lower(statusOf(i)) === "paid";
+const isCancelled = (i) =>
+  ["cancelled", "canceled"].includes(lower(statusOf(i)));
 
-function MetricGrid({ cards }) {
-  return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-        gap: 24,
-        marginBottom: 32,
-      }}
-    >
-      {cards.map((card, index) => (
-        <DataCard key={index} {...card} borderRadius={2} />
-      ))}
-    </div>
-  );
-}
-
-function Legend({ items }) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        flexWrap: "wrap",
-        gap: 14,
-        marginBottom: 6,
-        fontSize: 12,
-        color: "var(--text-secondary)",
-      }}
-    >
-      {items.map((it, i) => (
-        <span key={i} style={{ display: "flex", alignItems: "center", gap: 5 }}>
-          <span
-            style={{
-              width: 9,
-              height: 9,
-              borderRadius: 2,
-              background: it.color,
-              display: "inline-block",
-            }}
-          />
-          {it.label}
-        </span>
-      ))}
-    </div>
-  );
-}
-
-function ChartCard({ ariaLabel, legendItems, height = 240, children }) {
-  return (
-    <div className="dashboard-chart-card">
-      <Legend items={legendItems} />
-      <div
-        style={{ position: "relative", height }}
-        role="img"
-        aria-label={ariaLabel}
-      >
-        <ResponsiveContainer width="100%" height="100%">
-          {children}
-        </ResponsiveContainer>
-      </div>
-    </div>
-  );
-}
-
-function ChartGrid({ children }) {
-  return (
-    <div
-      className="dashboard-chart-grid"
-      style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}
-    >
-      {children}
-    </div>
-  );
-}
+/* Bucket by days past the due date (or past the issue date when no due date is stored). */
+const BUCKETS = [
+  { name: "Not due", color: cove.ok },
+  { name: "0-30 days", color: cove.warn },
+  { name: "31-60 days", color: cove.bad },
+  { name: "61-90 days", color: cove.bad },
+  { name: "90+ days", color: cove.bad },
+];
+const bucketIndex = (days) =>
+  days <= 0 ? 0 : days <= 30 ? 1 : days <= 60 ? 2 : days <= 90 ? 3 : 4;
 
 export default function InvoicesPage() {
-  const [invoices, setInvoices] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    let mounted = true;
-    fetchInvoices()
-      .then((data) => {
-        if (mounted) setInvoices(Array.isArray(data) ? data : []);
-      })
-      .catch((requestError) => {
-        console.error("Failed to load invoice dashboard data", requestError);
-        if (mounted) setError("Unable to load invoice dashboard data.");
-      })
-      .finally(() => {
-        if (mounted) setLoading(false);
-      });
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  if (loading)
-    return (
-      <div className="dashboard-analytics-page">
-        Loading invoice analytics...
-      </div>
-    );
-  if (error) return <div className="dashboard-analytics-page">{error}</div>;
-
-  const amountOf = (invoice) =>
-    Number(
-      invoice.totalAmount ?? invoice.totals?.grandTotal ?? invoice.amount ?? 0,
-    ) || 0;
-  const nameOf = (invoice) =>
-    invoice.invoice?.companyName ||
-    invoice.companyName ||
-    invoice.invoice?.receiverName ||
-    invoice.receiverName ||
-    "Unknown";
-  const statusOf = (invoice) =>
-    invoice.invoice?.status || invoice.status || "Unknown";
-  const monthOf = (value) => {
-    const date = new Date(value);
-    return Number.isNaN(date.getTime())
-      ? "Unknown"
-      : date.toLocaleString("en-US", { month: "short", year: "numeric" });
-  };
-  const monthly = new Map();
-  invoices.forEach((invoice) => {
-    const month = monthOf(
-      invoice.invoice?.dateOfIssue || invoice.dateOfIssue || invoice.createdAt,
-    );
-    const row = monthly.get(month) || { month, value: 0, count: 0 };
-    row.value += amountOf(invoice) / 1000;
-    row.count += 1;
-    monthly.set(month, row);
-  });
-  const invoiceValueByMonth = [...monthly.values()];
-  const invoiceCountTrend = invoiceValueByMonth;
-  const colors = [cove.orange, cove.aqua, cove.blue, cove.yellow, cove.green];
-  const grouped = (getName) => {
-    const groups = new Map();
-    invoices.forEach((invoice) => {
-      const name = getName(invoice);
-      const current = groups.get(name) || { name, value: 0, count: 0 };
-      current.value += amountOf(invoice);
-      current.count += 1;
-      groups.set(name, current);
-    });
-    return [...groups.values()].sort((a, b) => b.value - a.value);
-  };
-  const paymentStatus = grouped(statusOf).map((item, index) => ({
-    ...item,
-    color: colors[index % colors.length],
-  }));
-  const byOrg = grouped(nameOf).map((item) => ({
-    ...item,
-    value: item.value / 1000,
-  }));
-  const paymentMode = paymentStatus;
-  const totalValue = invoices.reduce(
-    (sum, invoice) => sum + amountOf(invoice),
-    0,
+  const { data, loading, error, updatedAt, reload } = useDashboardData(
+    fetchInvoices,
+    "Unable to load invoice dashboard data.",
   );
-  const pending = invoices.filter(
-    (invoice) => !["paid"].includes(String(statusOf(invoice)).toLowerCase()),
+
+  const invoices = React.useMemo(
+    () => toRows(data).filter((i) => !isCancelled(i)),
+    [data],
+  );
+  const monthly = React.useMemo(
+    () =>
+      groupMonthly(
+        invoices,
+        issueDateOf,
+        () => ({ count: 0, value: 0 }),
+        (c, i) => {
+          c.count += 1;
+          c.value += amountOf(i) / 1000;
+        },
+      ),
+    [invoices],
+  );
+  const valueTrend = React.useMemo(
+    () => monthlyTrend(monthly, "value"),
+    [monthly],
+  );
+  const unpaid = React.useMemo(
+    () =>
+      invoices
+        .filter((i) => !isPaid(i))
+        .map((i) => {
+          const base = dueDateOf(i) || issueDateOf(i);
+          const days = daysSince(base) ?? 0;
+          return {
+            ...i,
+            days,
+            overdue: dueDateOf(i) ? days > 0 : false,
+            amount: amountOf(i),
+          };
+        })
+        .sort((a, b) => b.days - a.days),
+    [invoices],
+  );
+  const status = React.useMemo(
+    () =>
+      topWithOther(
+        groupBy(
+          invoices,
+          (i) => titleCase(statusOf(i)),
+          () => ({ value: 0, count: 0 }),
+          (c, i) => {
+            c.value += amountOf(i);
+            c.count += 1;
+          },
+        )
+          .sort((a, b) => b.value - a.value)
+          .map((item, index) => ({
+            ...item,
+            color: statusColor(item.name, index),
+          })),
+      ),
+    [invoices],
+  );
+  const ageing = React.useMemo(() => {
+    const buckets = BUCKETS.map((bucket) => ({ ...bucket, value: 0, count: 0 }));
+    unpaid.forEach((invoice) => {
+      const bucket = buckets[bucketIndex(invoice.days)];
+      bucket.value += invoice.amount / 1000;
+      bucket.count += 1;
+    });
+    return buckets;
+  }, [unpaid]);
+  const byCustomer = React.useMemo(
+    () =>
+      topWithOther(
+        groupBy(
+          invoices,
+          nameOf,
+          () => ({ value: 0 }),
+          (c, i) => {
+            c.value += amountOf(i) / 1000;
+          },
+        ).sort((a, b) => b.value - a.value),
+      ),
+    [invoices],
+  );
+  const pendingByCustomer = React.useMemo(
+    () =>
+      topWithOther(
+        groupBy(
+          unpaid,
+          nameOf,
+          () => ({ value: 0 }),
+          (c, i) => {
+            c.value += i.amount / 1000;
+          },
+        ).sort((a, b) => b.value - a.value),
+      ),
+    [unpaid],
+  );
+
+  if (loading && !data)
+    return <LoadingState text="Loading invoice analytics..." />;
+  if (error && !data) return <ErrorState message={error} onRetry={reload} />;
+
+  const totalValue = invoices.reduce((s, i) => s + amountOf(i), 0);
+  const paidInvoices = invoices.filter(isPaid);
+  const paidValue = paidInvoices.reduce((s, i) => s + amountOf(i), 0);
+  const unpaidValue = unpaid.reduce((s, i) => s + i.amount, 0);
+  const advanceCount = invoices.filter(
+    (i) => lower(statusOf(i)) === "advance_received",
   ).length;
-  const advanceReceived = invoices.filter(
-    (invoice) => String(statusOf(invoice)).toLowerCase() === "advance_received",
-  ).length;
+  const overdueRows = unpaid.filter((i) => i.overdue);
+  const overdueValue = overdueRows.reduce((s, i) => s + i.amount, 0);
+
+  const insight =
+    [
+      invoices.length
+        ? `${inrShort(unpaidValue)} across ${plural(unpaid.length, "invoice")} is not yet marked paid (${pct(unpaidValue, totalValue)}% of billing).`
+        : "",
+      overdueRows.length
+        ? `${inrShort(overdueValue)} is past its due date, the oldest by ${overdueRows[0].days} days.`
+        : "",
+      pendingByCustomer[0]
+        ? `${pendingByCustomer[0].name} owes the most (${inrShort(pendingByCustomer[0].value * 1000)}).`
+        : "",
+    ]
+      .filter(Boolean)
+      .join(" ") || "No invoices have been raised yet.";
+
+  const toneForAge = (r) =>
+    r.overdue ? (r.days > 30 ? "bad" : "warn") : "neutral";
+  const tooltipStyle = {
+    background: "var(--dash-surface)",
+    border: "1px solid var(--dash-border)",
+    borderRadius: 8,
+    fontSize: 12,
+  };
+
   return (
     <div className="dashboard-analytics-page">
+      <PageIntro
+        description="How much has been billed, how much is still unpaid, and which customers owe it."
+        insight={insight}
+        updatedAt={updatedAt}
+        onRefresh={reload}
+        refreshing={loading}
+        error={error}
+        onRetry={reload}
+      />
+
       <MetricGrid
         cards={[
           {
             label: "Total invoices",
             value: invoices.length,
+            hint: `${paidInvoices.length} paid · ${unpaid.length} unpaid`,
+            tip: "All invoices excluding cancelled ones",
             icon: (
               <img
                 src="/logo/calculator.png"
@@ -212,7 +253,10 @@ export default function InvoicesPage() {
           },
           {
             label: "Invoice value",
-            value: `₹${totalValue.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`,
+            value: inrShort(totalValue),
+            ...valueTrend,
+            hint: `${inrShort(paidValue)} paid · ${inrShort(unpaidValue)} unpaid`,
+            tip: `Total billed: ${inr(totalValue)}`,
             icon: (
               <img
                 src="/logo/balance.png"
@@ -224,7 +268,11 @@ export default function InvoicesPage() {
           },
           {
             label: "Pending",
-            value: pending,
+            value: unpaid.length,
+            hint: overdueRows.length
+              ? `${overdueRows.length} past due date`
+              : "None past due date",
+            tip: "Invoices whose status is not Paid",
             icon: (
               <img
                 src="/logo/clock.png"
@@ -236,7 +284,9 @@ export default function InvoicesPage() {
           },
           {
             label: "Advance received",
-            value: advanceReceived,
+            value: advanceCount,
+            hint: "Invoices with an advance recorded",
+            tip: "Invoices whose status is Advance received",
             icon: (
               <img
                 src="/logo/check-circle.png"
@@ -250,110 +300,53 @@ export default function InvoicesPage() {
       />
 
       <ChartGrid>
-        <ChartCard
-          ariaLabel="Bar chart of invoice value by month"
-          legendItems={[
-            { color: cove.blue, label: "Invoice value (₹ thousands)" },
+        <TableCard
+          title="Oldest unpaid invoices"
+          empty="No unpaid invoices."
+          rows={unpaid.slice(0, 8)}
+          totalRows={unpaid.length}
+          highlightHeader
+          columns={[
+            { key: "no", label: "Invoice", render: (r) => invoiceNoOf(r) },
+            { key: "customer", label: "Customer", render: (r) => nameOf(r) },
+            {
+              key: "date",
+              label: dueDateOf(unpaid[0] || {}) ? "Due" : "Issued",
+              render: (r) => fmtDate(dueDateOf(r) || issueDateOf(r)),
+            },
+            {
+              key: "age",
+              label: "Age",
+              align: "right",
+              render: (r) => (
+                <Chip tone={toneForAge(r)}>
+                  {r.days > 0 ? `${r.days} d` : "Not due"}
+                </Chip>
+              ),
+            },
+            {
+              key: "amt",
+              label: "Amount",
+              align: "right",
+              render: (r) => inr(r.amount),
+            },
           ]}
-        >
-          <BarChart data={invoiceValueByMonth}>
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke={gridStroke}
-              vertical={false}
-            />
-            <XAxis
-              dataKey="month"
-              tick={axisTick}
-              axisLine={{ stroke: gridStroke }}
-              tickLine={false}
-            >
-              <Label value="Month" offset={-5} position="insideBottom" style={axisTick} />
-            </XAxis>
-            <YAxis tick={axisTick} axisLine={false} tickLine={false}>
-              <Label value="Invoice value (₹ thousands)" angle={-90} position="insideLeft" offset={0} dy={12} style={axisTick} />
-            </YAxis>
-            <Tooltip />
-            <Bar
-              dataKey="value"
-              fill={cove.blue}
-              radius={[4, 4, 0, 0]}
-              maxBarSize={28}
-            />
-          </BarChart>
-        </ChartCard>
+        />
 
         <ChartCard
-          ariaLabel="Pie chart of invoice payment status"
-          legendItems={[
-            ...paymentStatus.map((item) => ({
-              color: item.color,
-              label: item.name,
-            })),
-          ]}
-        >
-          <PieChart>
-            <Tooltip />
-            <Pie
-              data={paymentStatus}
-              dataKey="value"
-              nameKey="name"
-              outerRadius="80%"
-            >
-              {paymentStatus.map((d, i) => (
-                <Cell key={i} fill={d.color} />
-              ))}
-            </Pie>
-          </PieChart>
-        </ChartCard>
-
-        <ChartCard
-          ariaLabel="Line chart of invoice count trend"
-          legendItems={[{ color: cove.green, label: "Invoices raised" }]}
-        >
-          <LineChart data={invoiceCountTrend}>
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke={gridStroke}
-              vertical={false}
-            />
-            <XAxis
-              dataKey="month"
-              tick={axisTick}
-              axisLine={{ stroke: gridStroke }}
-              tickLine={false}
-            >
-              <Label value="Month" offset={-5} position="insideBottom" style={axisTick} />
-            </XAxis>
-            <YAxis
-              tick={axisTick}
-              axisLine={false}
-              tickLine={false}
-              allowDecimals={false}
-            >
-              <Label value="Invoice count" angle={-90} position="insideLeft" offset={0} dy={12} style={axisTick} />
-            </YAxis>
-            <Tooltip />
-            <Line
-              type="monotone"
-              dataKey="count"
-              stroke={cove.green}
-              strokeWidth={2}
-              dot={{ r: 4 }}
-            />
-          </LineChart>
-        </ChartCard>
-
-        <ChartCard
-          ariaLabel="Bar chart of invoice value by organization"
+          title="Unpaid invoices by age"
+          ariaLabel="Bar chart of unpaid invoice value by age"
           legendItems={[
             {
               color: cove.orange,
-              label: "Invoice value by customer (₹ thousands)",
+              label:
+                "Unpaid value (₹ thousands), days past due date or issue date",
             },
           ]}
+          isEmpty={!unpaid.length}
+          emptyText="Nothing unpaid."
         >
-          <BarChart data={byOrg}>
+          <BarChart data={ageing}>
             <CartesianGrid
               strokeDasharray="3 3"
               stroke={gridStroke}
@@ -361,48 +354,304 @@ export default function InvoicesPage() {
             />
             <XAxis
               dataKey="name"
-              tick={axisTick}
-              axisLine={{ stroke: gridStroke }}
+              tick={<TruncatedAxisTick maxLength={12} textAnchor="middle" dy={12} />}
+              axisLine={false}
               tickLine={false}
-            >
-              <Label value="Organization" offset={-5} position="insideBottom" style={axisTick} />
-            </XAxis>
-            <YAxis tick={axisTick} axisLine={false} tickLine={false}>
-              <Label value="Invoice value (₹ thousands)" angle={-90} position="insideLeft" offset={0} dy={12} style={axisTick} />
-            </YAxis>
-            <Tooltip />
-            <Bar
-              dataKey="value"
-              fill={cove.orange}
-              radius={[4, 4, 0, 0]}
-              maxBarSize={28}
             />
+            <YAxis tick={axisTick} axisLine={false} tickLine={false}>
+              <Label
+                value="Unpaid (₹ thousands)"
+                angle={-90}
+                position="insideLeft"
+                offset={0}
+                dy={30}
+                style={axisTick}
+              />
+            </YAxis>
+            <Tooltip contentStyle={tooltipStyle} formatter={(v) => [inr(v * 1000), "Unpaid"]} />
+            <Bar dataKey="value" radius={[4, 4, 0, 0]} maxBarSize={36}>
+              {ageing.map((b, i) => (
+                <Cell key={i} fill={b.color} />
+              ))}
+              {ageing.length <= 12 && (
+                <LabelList
+                  dataKey="value"
+                  position="top"
+                  formatter={(value) => num(value * 1000)}
+                  style={{ fill: "var(--dash-text)", fontSize: 10 }}
+                />
+              )}
+            </Bar>
           </BarChart>
         </ChartCard>
 
         <ChartCard
-          ariaLabel="Pie chart of invoice status split"
+          title="Invoice value per month"
+          ariaLabel="Bar chart of invoice value by month"
           legendItems={[
-            ...paymentMode.map((item) => ({
-              color: item.color,
-              label: item.name,
-            })),
+            { color: cove.blue, label: "Invoice value (₹ thousands)" },
           ]}
+          isEmpty={!monthly.length}
         >
-          <PieChart>
-            <Tooltip />
+          <BarChart data={monthly}>
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke={gridStroke}
+              vertical={false}
+            />
+            <XAxis
+              dataKey="month"
+              tick={axisTick}
+              axisLine={false}
+              tickLine={false}
+            >
+              <Label
+                value="Month"
+                offset={-5}
+                position="insideBottom"
+                style={axisTick}
+              />
+            </XAxis>
+            <YAxis tick={axisTick} axisLine={false} tickLine={false} tickCount={3}>
+              <Label
+                value="Invoice value (₹ thousands)"
+                angle={-90}
+                position="insideLeft"
+                offset={0}
+                dy={12}
+                style={axisTick}
+              />
+            </YAxis>
+            <Tooltip contentStyle={tooltipStyle} formatter={(v) => [inr(v * 1000), "Invoiced"]} />
+            <Bar
+              dataKey="value"
+              fill={cove.blue}
+              radius={[4, 4, 0, 0]}
+              maxBarSize={36}
+            >
+              {monthly.length <= 12 && (
+                <LabelList
+                  dataKey="value"
+                  position="top"
+                  formatter={(value) => num(value * 1000)}
+                  style={{ fill: "var(--dash-text)", fontSize: 10 }}
+                />
+              )}
+            </Bar>
+          </BarChart>
+        </ChartCard>
+
+        <ChartCard
+          title="Invoice status by value"
+          ariaLabel="Donut chart of invoice status by value"
+          legendLayout="vertical"
+          height={150}
+          legendItems={status.map((i) => ({
+            color: i.color,
+            label: `${i.name} (${pct(i.value, totalValue)}%)`,
+            value: i.value,
+          }))}
+          isEmpty={!status.length}
+          donutCenter={{ total: totalValue, caption: "invoices" }}
+        >
+          <PieChart margin={{ top: 8, right: 12, bottom: 8, left: 12 }}>
+            <Tooltip contentStyle={tooltipStyle} formatter={(v) => inr(v)} />
             <Pie
-              data={paymentMode}
+              data={status}
               dataKey="value"
               nameKey="name"
-              outerRadius="80%"
+              cx="50%"
+              cy="50%"
+              innerRadius="58%"
+              outerRadius="76%"
+              paddingAngle={2}
+              stroke="none"
             >
-              {paymentMode.map((d, i) => (
-                <Cell key={i} fill={d.color} />
+              {status.map((r, i) => (
+                <Cell key={i} fill={r.color} />
               ))}
             </Pie>
           </PieChart>
         </ChartCard>
+
+        <ChartCard
+          title="Invoices raised per month"
+          ariaLabel="Line chart of invoice count trend"
+          legendItems={[{ color: cove.green, label: "Invoices raised" }]}
+          isEmpty={!monthly.length}
+        >
+          <LineChart data={monthly}>
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke={gridStroke}
+              vertical={false}
+            />
+            <XAxis
+              dataKey="month"
+              tick={axisTick}
+              axisLine={false}
+              tickLine={false}
+            >
+              <Label
+                value="Month"
+                offset={-5}
+                position="insideBottom"
+                style={axisTick}
+              />
+            </XAxis>
+            <YAxis
+              tick={axisTick}
+              axisLine={false}
+              tickLine={false}
+              allowDecimals={false}
+            >
+              <Label
+                value="Invoice count"
+                angle={-90}
+                position="insideLeft"
+                offset={0}
+                dy={12}
+                style={axisTick}
+              />
+            </YAxis>
+            <Tooltip contentStyle={tooltipStyle} />
+            <Line
+              type="monotone"
+              dataKey="count"
+              name="Invoices"
+              stroke={cove.green}
+              strokeWidth={2.5}
+              dot={{ r: 3 }}
+            />
+          </LineChart>
+        </ChartCard>
+
+        <ChartCard
+          title="Top customers by invoice value"
+          ariaLabel="Bar chart of invoice value by customer"
+          legendItems={[
+            { color: cove.orange, label: "Invoice value (₹ thousands, top 8)" },
+          ]}
+          isEmpty={!byCustomer.length}
+        >
+          <BarChart data={byCustomer} layout="vertical" margin={{ left: 10 }}>
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke={gridStroke}
+              horizontal={false}
+            />
+            <XAxis
+              type="number"
+              tick={axisTick}
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis
+              type="category"
+              dataKey="name"
+              width={120}
+              tick={<TruncatedAxisTick maxLength={16} />}
+              axisLine={false}
+              tickLine={false}
+            />
+            <Tooltip contentStyle={tooltipStyle} formatter={(v) => [inr(v * 1000), "Invoiced"]} />
+            <Bar
+              dataKey="value"
+              fill={cove.orange}
+              radius={[0, 4, 4, 0]}
+              maxBarSize={12}
+            >
+              <LabelList
+                dataKey="value"
+                position="right"
+                formatter={(value) => num(value * 1000)}
+                style={{ fill: "var(--dash-text)", fontSize: 10 }}
+              />
+            </Bar>
+          </BarChart>
+        </ChartCard>
+
+        <DefinitionsCard
+          items={[
+            [
+              "Pending / unpaid",
+              "Invoices whose status is not Paid. Cancelled invoices are excluded everywhere.",
+            ],
+            [
+              "Past due date",
+              "Only shown when invoices store a due date; otherwise age counts from the issue date.",
+            ],
+            [
+              "Unpaid by age",
+              "Unpaid invoice value grouped by days past the due date (or issue date).",
+            ],
+            [
+              "Paid share",
+              "Value of invoices marked Paid divided by total invoice value.",
+            ],
+          ]}
+        />
+
+        <ChartCard
+          title="Unpaid value by customer"
+          ariaLabel="Bar chart of unpaid invoice value by customer"
+          legendItems={[
+            { color: cove.red, label: "Unpaid (₹ thousands, top 8)" },
+          ]}
+          isEmpty={!pendingByCustomer.length}
+          emptyText="Nothing unpaid."
+        >
+          <BarChart
+            data={pendingByCustomer}
+            layout="vertical"
+            margin={{ left: 10 }}
+          >
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke={gridStroke}
+              horizontal={false}
+            />
+            <XAxis
+              type="number"
+              tick={axisTick}
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis
+              type="category"
+              dataKey="name"
+              width={120}
+              tick={<TruncatedAxisTick maxLength={16} />}
+              axisLine={false}
+              tickLine={false}
+            />
+            <Tooltip contentStyle={tooltipStyle} formatter={(v) => [inr(v * 1000), "Unpaid"]} />
+            <Bar
+              dataKey="value"
+              fill={cove.red}
+              radius={[0, 4, 4, 0]}
+              maxBarSize={12}
+            >
+              <LabelList
+                dataKey="value"
+                position="right"
+                formatter={(value) => num(value * 1000)}
+                style={{ fill: "var(--dash-text)", fontSize: 10 }}
+              />
+            </Bar>
+          </BarChart>
+        </ChartCard>
+
+        <TargetsCard
+          items={[
+            {
+              label: "Invoice value paid",
+              value: pct(paidValue, totalValue),
+              target: DASHBOARD_TARGETS.invoiceCollectionPercent,
+              format: (v) => `${v}%`,
+            },
+          ]}
+        />
       </ChartGrid>
     </div>
   );

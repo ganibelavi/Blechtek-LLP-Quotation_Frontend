@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+// src/pages/Dashboard/QuotationsPage.jsx
+import React from "react";
 import {
   BarChart,
   Bar,
@@ -11,191 +12,159 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
   Label,
+  LabelList,
 } from "recharts";
 import { fetchDashboardData } from "../../services/quotationApi";
-import DataCard from "../../components/DataCard";
-
-const cove = {
-  blue: "#2a78d6",
-  orange: "#eb6834",
-  aqua: "#1baf7a",
-  yellow: "#eda100",
-  green: "#008300",
-};
-const gridStroke = "rgba(137,135,129,0.2)";
-const axisTick = { fill: "var(--text-muted)", fontSize: 11 };
-
-function MetricGrid({ cards }) {
-  return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-        gap: 24,
-        marginBottom: 32,
-      }}
-    >
-      {cards.map((card, index) => (
-        <DataCard key={index} {...card} borderRadius={2} />
-      ))}
-    </div>
-  );
-}
-
-function Legend({ items }) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        flexWrap: "wrap",
-        gap: 14,
-        marginBottom: 6,
-        fontSize: 12,
-        color: "var(--text-secondary)",
-      }}
-    >
-      {items.map((it, i) => (
-        <span key={i} style={{ display: "flex", alignItems: "center", gap: 5 }}>
-          <span
-            style={{
-              width: 9,
-              height: 9,
-              borderRadius: 2,
-              background: it.color,
-              display: "inline-block",
-            }}
-          />
-          {it.label}
-        </span>
-      ))}
-    </div>
-  );
-}
-
-function ChartCard({ ariaLabel, legendItems, height = 240, children }) {
-  return (
-    <div className="dashboard-chart-card">
-      <Legend items={legendItems} />
-      <div
-        style={{ position: "relative", height }}
-        role="img"
-        aria-label={ariaLabel}
-      >
-        <ResponsiveContainer width="100%" height="100%">
-          {children}
-        </ResponsiveContainer>
-      </div>
-    </div>
-  );
-}
-
-function ChartGrid({ children }) {
-  return (
-    <div
-      className="dashboard-chart-grid"
-      style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}
-    >
-      {children}
-    </div>
-  );
-}
+import {
+  cove,
+  gridStroke,
+  axisTick,
+  num,
+  finiteNumber,
+  inr,
+  inrShort,
+  pct,
+  plural,
+  sortMonthRows,
+  monthlyTrend,
+  topWithOther,
+  TruncatedAxisTick,
+  withColors,
+  statusColor,
+  useDashboardData,
+  DASHBOARD_TARGETS,
+  LoadingState,
+  ErrorState,
+  PageIntro,
+  MetricGrid,
+  ChartGrid,
+  ChartCard,
+  TargetsCard,
+  DefinitionsCard,
+} from "./dashboardShared";
 
 export default function QuotationsPage() {
-  const [dashboard, setDashboard] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    let isMounted = true;
-
-    fetchDashboardData()
-      .then((data) => {
-        if (isMounted) {
-          setDashboard(data);
-          setError("");
-        }
-      })
-      .catch((requestError) => {
-        console.error("Failed to load quotation dashboard data", requestError);
-        if (isMounted) {
-          setError("Unable to load quotation dashboard data.");
-        }
-      })
-      .finally(() => {
-        if (isMounted) setLoading(false);
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="dashboard-analytics-page">
-        Loading quotation analytics...
-      </div>
-    );
-  }
-
-  if (error) {
-    return <div className="dashboard-analytics-page">{error}</div>;
-  }
-
-  const quotationsByMonth = (dashboard?.monthlyQuotes || []).map((item) => ({
-    month: item.month || item.Month,
-    count: Number(item.count ?? item.Count ?? 0),
-  }));
-
-  const statusColors = [
-    cove.blue,
-    cove.aqua,
-    cove.orange,
-    cove.yellow,
-    cove.green,
-  ];
-  const statusData = (dashboard?.statusBreakdown || []).map((item, index) => ({
-    name: item.status || item.Status,
-    value: Number(item.count ?? item.Count ?? 0),
-    color: statusColors[index % statusColors.length],
-  }));
-
-  const valueTrend = (dashboard?.monthlyQuotes || []).map((item) => ({
-    month: item.month || item.Month,
-    value: Number(item.revenue ?? item.Revenue ?? 0) / 1000,
-  }));
-
-  const byOrg = (dashboard?.topOrganizations || []).map((item) => ({
-    name: item.organization || item.Organization,
-    count: Number(item.quoteCount ?? item.QuoteCount ?? 0),
-  }));
-
-  const moduleRows = (dashboard?.moduleDistribution || []).map(
-    (item, index) => ({
-      name: item.module || item.Module,
-      value: Number(item.count ?? item.Count ?? 0),
-      color: statusColors[index % statusColors.length],
-    }),
+  const { data, loading, error, updatedAt, reload } = useDashboardData(
+    fetchDashboardData,
+    "Unable to load quotation dashboard data.",
   );
 
-  const totalModuleUsage = moduleRows.reduce(
-    (sum, item) => sum + item.value,
-    0,
+  const d = data || {};
+  const monthly = React.useMemo(
+    () =>
+      sortMonthRows(
+        (d.monthlyQuotes || []).map((i) => ({
+          month: i.month || i.Month,
+          count: finiteNumber(i.count ?? i.Count),
+          value: finiteNumber(i.revenue ?? i.Revenue) / 1000,
+        })),
+      ),
+    [d.monthlyQuotes],
   );
-  const moduleLegendItems = moduleRows.map((item) => ({
-    color: item.color,
-    label: `${item.name} ${totalModuleUsage ? Math.round((item.value / totalModuleUsage) * 100) : 0}%`,
-  }));
+  const quoteTrend = React.useMemo(
+    () => monthlyTrend(monthly, "count"),
+    [monthly],
+  );
+
+  const statusData = React.useMemo(
+    () =>
+      topWithOther(
+        (d.statusBreakdown || [])
+          .map((i, index) => {
+            const name = i.status || i.Status;
+            return {
+              name,
+              value: finiteNumber(i.count ?? i.Count),
+              color: statusColor(name, index),
+            };
+          })
+          .sort((a, b) => b.value - a.value),
+      ),
+    [d.statusBreakdown],
+  );
+  const byOrg = React.useMemo(
+    () =>
+      (d.topOrganizations || [])
+        .map((i) => ({
+          name: i.organization || i.Organization,
+          count: finiteNumber(i.quoteCount ?? i.QuoteCount),
+        }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 8),
+    [d.topOrganizations],
+  );
+  const moduleRows = React.useMemo(
+    () =>
+      withColors(
+        (d.moduleDistribution || [])
+          .map((i) => ({
+            name: i.module || i.Module,
+            value: finiteNumber(i.count ?? i.Count),
+          }))
+          .sort((a, b) => b.value - a.value),
+      ),
+    [d.moduleDistribution],
+  );
+
+  if (loading && !data)
+    return <LoadingState text="Loading quotation analytics..." />;
+  if (error && !data) return <ErrorState message={error} onRetry={reload} />;
+
+  const total = finiteNumber(d.totalQuotations);
+  const totalAmount = finiteNumber(d.totalQuotedAmount);
+  const latest = monthly[monthly.length - 1];
+  const prev = monthly[monthly.length - 2];
+  const change =
+    latest && prev && prev.count > 0
+      ? Math.round(((latest.count - prev.count) / prev.count) * 100)
+      : null;
+  const moduleTotal = moduleRows.reduce((s, r) => s + r.value, 0);
+  const statusTotal = statusData.reduce((s, r) => s + r.value, 0);
+  const tooltipStyle = {
+    background: "var(--dash-surface)",
+    border: "1px solid var(--dash-border)",
+    borderRadius: 8,
+    fontSize: 12,
+  };
+
+  const insight =
+    [
+      latest &&
+        `${latest.month} had ${plural(latest.count, "quotation")}${
+          change === null
+            ? ""
+            : `, ${change >= 0 ? "up" : "down"} ${Math.abs(change)}% on ${prev.month}`
+        }.`,
+      byOrg[0] &&
+        `${byOrg[0].name} has the most quotations (${pct(byOrg[0].count, total)}% of all).`,
+      moduleRows[0] && `${moduleRows[0].name} is the most quoted module.`,
+    ]
+      .filter(Boolean)
+      .join(" ") || "No quotations have been created yet.";
 
   return (
     <div className="dashboard-analytics-page">
+      <PageIntro
+        description="How many quotations are being created, for whom, and for which modules."
+        insight={insight}
+        updatedAt={updatedAt}
+        onRefresh={reload}
+        refreshing={loading}
+        error={error}
+        onRetry={reload}
+      />
+
       <MetricGrid
         cards={[
           {
             label: "Total quotations",
-            value: dashboard?.totalQuotations ?? 0,
+            value: total,
+            ...quoteTrend,
+            hint: latest
+              ? `${latest.month}: ${latest.count}${change === null ? "" : ` (${change >= 0 ? "+" : ""}${change}%)`}`
+              : "",
+            tip: "All quotations created in the system",
             icon: (
               <img
                 src="/logo/report.png"
@@ -207,7 +176,9 @@ export default function QuotationsPage() {
           },
           {
             label: "Organizations",
-            value: dashboard?.totalOrganizations ?? 0,
+            value: d.totalOrganizations ?? 0,
+            hint: byOrg[0] ? `Top: ${byOrg[0].name}` : "",
+            tip: "Distinct customers that have received a quotation",
             icon: (
               <img
                 src="/logo/industry.png"
@@ -219,7 +190,9 @@ export default function QuotationsPage() {
           },
           {
             label: "Modules",
-            value: dashboard?.totalModules ?? 0,
+            value: d.totalModules ?? 0,
+            hint: moduleRows[0] ? `Most quoted: ${moduleRows[0].name}` : "",
+            tip: "Distinct modules that appear in quotations",
             icon: (
               <img
                 src="/logo/layers.png"
@@ -231,7 +204,11 @@ export default function QuotationsPage() {
           },
           {
             label: "Quotation value",
-            value: `₹${Number(dashboard?.totalQuotedAmount ?? 0).toLocaleString("en-IN", { maximumFractionDigits: 0 })}`,
+            value: inrShort(totalAmount),
+            hint: total
+              ? `Average ${inrShort(totalAmount / total)} per quotation`
+              : "",
+            tip: `Total quoted amount: ${inr(totalAmount)}`,
             icon: (
               <img
                 src="/logo/speedometer.png"
@@ -246,10 +223,12 @@ export default function QuotationsPage() {
 
       <ChartGrid>
         <ChartCard
+          title="Quotations created per month"
           ariaLabel="Bar chart of quotations by month"
           legendItems={[{ color: cove.blue, label: "Quotations" }]}
+          isEmpty={!monthly.length}
         >
-          <BarChart data={quotationsByMonth}>
+          <BarChart data={monthly}>
             <CartesianGrid
               strokeDasharray="3 3"
               stroke={gridStroke}
@@ -258,7 +237,7 @@ export default function QuotationsPage() {
             <XAxis
               dataKey="month"
               tick={axisTick}
-              axisLine={{ stroke: gridStroke }}
+              axisLine={false}
               tickLine={false}
             >
               <Label
@@ -273,6 +252,7 @@ export default function QuotationsPage() {
               axisLine={false}
               tickLine={false}
               allowDecimals={false}
+              tickCount={3}
             >
               <Label
                 value="Quotation count"
@@ -283,45 +263,66 @@ export default function QuotationsPage() {
                 style={axisTick}
               />
             </YAxis>
-            <Tooltip />
+            <Tooltip contentStyle={tooltipStyle} />
             <Bar
               dataKey="count"
+              name="Quotations"
               fill={cove.blue}
               radius={[4, 4, 0, 0]}
-              maxBarSize={28}
-            />
+              maxBarSize={36}
+            >
+              {monthly.length <= 12 && (
+                <LabelList
+                  dataKey="count"
+                  position="top"
+                  formatter={num}
+                  style={{ fill: "var(--dash-text)", fontSize: 10 }}
+                />
+              )}
+            </Bar>
           </BarChart>
         </ChartCard>
 
         <ChartCard
-          ariaLabel="Pie chart of quotation status"
-          legendItems={[
-            ...statusData.map((item) => ({
-              color: item.color,
-              label: item.name,
-            })),
-          ]}
+          title="Quotation status"
+          ariaLabel="Donut chart of quotation status"
+          legendLayout="vertical"
+          height={150}
+          legendItems={statusData.map((i) => ({
+            color: i.color,
+            label: i.name,
+            value: i.value,
+          }))}
+          isEmpty={!statusData.length}
+          donutCenter={{ total: statusTotal, caption: "quotations" }}
         >
-          <PieChart>
-            <Tooltip />
+          <PieChart margin={{ top: 8, right: 12, bottom: 8, left: 12 }}>
+            <Tooltip contentStyle={tooltipStyle} />
             <Pie
               data={statusData}
               dataKey="value"
               nameKey="name"
-              outerRadius="80%"
+              cx="50%"
+              cy="50%"
+              innerRadius="58%"
+              outerRadius="76%"
+              paddingAngle={2}
+              stroke="none"
             >
-              {statusData.map((d, i) => (
-                <Cell key={i} fill={d.color} />
+              {statusData.map((r, i) => (
+                <Cell key={i} fill={r.color} />
               ))}
             </Pie>
           </PieChart>
         </ChartCard>
 
         <ChartCard
+          title="Quoted value per month"
           ariaLabel="Line chart of quotation value trend"
           legendItems={[{ color: cove.orange, label: "Value (₹ thousands)" }]}
+          isEmpty={!monthly.length}
         >
-          <LineChart data={valueTrend}>
+          <LineChart data={monthly}>
             <CartesianGrid
               strokeDasharray="3 3"
               stroke={gridStroke}
@@ -330,7 +331,7 @@ export default function QuotationsPage() {
             <XAxis
               dataKey="month"
               tick={axisTick}
-              axisLine={{ stroke: gridStroke }}
+              axisLine={false}
               tickLine={false}
             >
               <Label
@@ -340,7 +341,7 @@ export default function QuotationsPage() {
                 style={axisTick}
               />
             </XAxis>
-            <YAxis tick={axisTick} axisLine={false} tickLine={false}>
+            <YAxis tick={axisTick} axisLine={false} tickLine={false} tickCount={3}>
               <Label
                 value="Value (₹ thousands)"
                 angle={-90}
@@ -350,84 +351,126 @@ export default function QuotationsPage() {
                 style={axisTick}
               />
             </YAxis>
-            <Tooltip />
+            <Tooltip
+              contentStyle={tooltipStyle}
+              formatter={(v) => [inr(v * 1000), "Quoted value"]}
+            />
             <Line
               type="monotone"
               dataKey="value"
               stroke={cove.orange}
-              strokeWidth={2}
-              dot={{ r: 4 }}
+              strokeWidth={2.5}
+              dot={{ r: 3 }}
             />
           </LineChart>
         </ChartCard>
 
         <ChartCard
+          title="Top organizations"
           ariaLabel="Bar chart of quotations by organization"
-          legendItems={[{ color: cove.green, label: "Top organizations" }]}
+          legendItems={[
+            { color: cove.green, label: "Quotations per organization (top 8)" },
+          ]}
+          isEmpty={!byOrg.length}
         >
-          <BarChart data={byOrg}>
+          <BarChart data={byOrg} layout="vertical" margin={{ left: 10 }}>
             <CartesianGrid
               strokeDasharray="3 3"
               stroke={gridStroke}
-              vertical={false}
+              horizontal={false}
             />
             <XAxis
-              dataKey="name"
-              tick={axisTick}
-              axisLine={{ stroke: gridStroke }}
-              tickLine={false}
-            >
-              <Label
-                value="Organization"
-                offset={-5}
-                position="insideBottom"
-                style={axisTick}
-              />
-            </XAxis>
-            <YAxis
+              type="number"
               tick={axisTick}
               axisLine={false}
               tickLine={false}
               allowDecimals={false}
-            >
-              <Label
-                value="Quotation count"
-                angle={-90}
-                position="insideLeft"
-                offset={0}
-                dy={12}
-                style={axisTick}
-              />
-            </YAxis>
-            <Tooltip />
+            />
+            <YAxis
+              type="category"
+              dataKey="name"
+              width={120}
+              tick={<TruncatedAxisTick maxLength={16} />}
+              axisLine={false}
+              tickLine={false}
+            />
+            <Tooltip contentStyle={tooltipStyle} />
             <Bar
               dataKey="count"
+              name="Quotations"
               fill={cove.green}
-              radius={[4, 4, 0, 0]}
-              maxBarSize={28}
-            />
+              radius={[0, 4, 4, 0]}
+              maxBarSize={12}
+            >
+              <LabelList
+                dataKey="count"
+                position="right"
+                formatter={num}
+                style={{ fill: "var(--dash-text)", fontSize: 10 }}
+              />
+            </Bar>
           </BarChart>
         </ChartCard>
 
         <ChartCard
-          ariaLabel="Pie chart of quotations by module"
-          legendItems={moduleLegendItems}
+          title="Quotations by module"
+          ariaLabel="Donut chart of quotations by module"
+          legendLayout="vertical"
+          height={150}
+          legendItems={moduleRows.map((i) => ({
+            color: i.color,
+            label: i.name,
+            value: i.value,
+          }))}
+          isEmpty={!moduleRows.length}
+          donutCenter={{ total: moduleTotal, caption: "quotations" }}
         >
-          <PieChart>
-            <Tooltip />
+          <PieChart margin={{ top: 8, right: 12, bottom: 8, left: 12 }}>
+            <Tooltip
+              contentStyle={tooltipStyle}
+              formatter={(value, name) => [num(value), name]}
+            />
             <Pie
               data={moduleRows}
               dataKey="value"
               nameKey="name"
-              outerRadius="80%"
+              cx="50%"
+              cy="50%"
+              innerRadius="58%"
+              outerRadius="76%"
+              paddingAngle={2}
+              stroke="none"
             >
-              {moduleRows.map((d, i) => (
-                <Cell key={i} fill={d.color} />
+              {moduleRows.map((r, i) => (
+                <Cell key={i} fill={r.color} />
               ))}
             </Pie>
           </PieChart>
         </ChartCard>
+
+        <DefinitionsCard
+          items={[
+            [
+              "Total quotations",
+              "Every quotation created, regardless of status.",
+            ],
+            ["Quotation value", "Sum of the quoted amounts of all quotations."],
+            ["Organizations", "Distinct customers that have been quoted."],
+            ["Per month", "Counted by the month the quotation was created."],
+          ]}
+        />
+
+        <TargetsCard
+          items={[
+            {
+              label: `Quotations in ${latest?.month || "latest month"}`,
+              value: latest?.count || 0,
+              target: DASHBOARD_TARGETS.quotationsPerMonth,
+            },
+          ]}
+        />
       </ChartGrid>
+
     </div>
   );
 }

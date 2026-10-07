@@ -24,7 +24,6 @@ import UserQuotationBar from "../components/UserQuotationBar";
 import StatusPie from "../components/StatusPie";
 import ModuleBar from "../components/ModuleBar";
 import TopOrganizationsBar from "../components/TopOrganizationsBar";
-import MachineUtilChart from "../components/MachineUtilChart";
 import EntityTable, { StatusText } from "../components/EntityTable";
 import UsersDashboardPage from "./Dashboards/UsersPage";
 import RenewalsDashboardPage from "./Dashboards/RenewalsPage";
@@ -155,9 +154,9 @@ export default function DashboardPage({ onNavigate }) {
         fetchDashboardData(),
         fetchPurchaseOrders(),
         fetchInvoices(),
-        fetchCustomerSubscriptions().catch(() => []),
-        fetchRenewals("dueThisMonth").catch(() => []),
-        fetchRenewals("expired").catch(() => []),
+        fetchCustomerSubscriptions(),
+        fetchRenewals("dueThisMonth"),
+        fetchRenewals("expired"),
       ]);
       setData(dashboardResult);
       setPurchaseOrders(Array.isArray(poRows) ? poRows : []);
@@ -1015,14 +1014,6 @@ export default function DashboardPage({ onNavigate }) {
           </Box>
         </Paper>
 
-        <Paper {...chartContainerStyle}>
-          <Typography variant="h6" fontWeight={700} gutterBottom sx={{ mb: 2 }}>
-            Machine Utilization
-          </Typography>
-          <Box sx={{ flex: 1, minHeight: 300 }}>
-            <MachineUtilChart data={data.machineUtilization ?? []} />
-          </Box>
-        </Paper>
       </Box>
 
       <Stack spacing={1.5} sx={{ mt: 2 }}>

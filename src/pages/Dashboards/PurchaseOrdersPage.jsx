@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+// src/pages/Dashboard/PurchaseOrdersPage.jsx
+import React from "react";
 import {
   BarChart,
   Bar,
@@ -11,195 +12,195 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
   Label,
+  LabelList,
 } from "recharts";
 import { fetchPurchaseOrders } from "../../services/quotationApi";
-import DataCard from "../../components/DataCard";
+import {
+  cove,
+  gridStroke,
+  axisTick,
+  num,
+  finiteNumber,
+  inr,
+  inrShort,
+  pct,
+  plural,
+  lower,
+  toRows,
+  titleCase,
+  fmtDate,
+  daysSince,
+  groupMonthly,
+  monthlyTrend,
+  groupBy,
+  withColors,
+  topWithOther,
+  TruncatedAxisTick,
+  statusColor,
+  useDashboardData,
+  DASHBOARD_TARGETS,
+  LoadingState,
+  ErrorState,
+  PageIntro,
+  MetricGrid,
+  ChartGrid,
+  ChartCard,
+  TableCard,
+  Chip,
+  TargetsCard,
+  DefinitionsCard,
+} from "./dashboardShared";
 
-const cove = {
-  blue: "#2a78d6",
-  orange: "#eb6834",
-  aqua: "#1baf7a",
-  yellow: "#eda100",
-  green: "#008300",
-};
-const gridStroke = "rgba(137,135,129,0.2)";
-const axisTick = { fill: "var(--text-muted)", fontSize: 11 };
-
-function MetricGrid({ cards }) {
-  return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-        gap: 24,
-        marginBottom: 32,
-      }}
-    >
-      {cards.map((card, index) => (
-        <DataCard key={index} {...card} borderRadius={2} />
-      ))}
-    </div>
-  );
-}
-
-function Legend({ items }) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        flexWrap: "wrap",
-        gap: 14,
-        marginBottom: 6,
-        fontSize: 12,
-        color: "var(--text-secondary)",
-      }}
-    >
-      {items.map((it, i) => (
-        <span key={i} style={{ display: "flex", alignItems: "center", gap: 5 }}>
-          <span
-            style={{
-              width: 9,
-              height: 9,
-              borderRadius: 2,
-              background: it.color,
-              display: "inline-block",
-            }}
-          />
-          {it.label}
-        </span>
-      ))}
-    </div>
-  );
-}
-
-function ChartCard({ ariaLabel, legendItems, height = 240, children }) {
-  return (
-    <div className="dashboard-chart-card">
-      <Legend items={legendItems} />
-      <div
-        style={{ position: "relative", height }}
-        role="img"
-        aria-label={ariaLabel}
-      >
-        <ResponsiveContainer width="100%" height="100%">
-          {children}
-        </ResponsiveContainer>
-      </div>
-    </div>
-  );
-}
-
-function ChartGrid({ children }) {
-  return (
-    <div
-      className="dashboard-chart-grid"
-      style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}
-    >
-      {children}
-    </div>
-  );
-}
+const amountOf = (o) =>
+  finiteNumber(o.totalAmount ?? o.totals?.grandTotal ?? o.amount ?? 0);
+const dateOf = (o) => o.poDate || o.createdAt;
+const poNoOf = (o) =>
+  o.poNumber || o.poNo || o.purchaseOrderNumber || `#${o.id ?? ""}`;
+const isVerifiedOrDecided = (o) =>
+  ["verified", "approved", "rejected"].includes(lower(o.verificationStatus));
+const isClosed = (o) => lower(o.status) === "closed";
 
 export default function PurchaseOrdersPage() {
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    let mounted = true;
-    fetchPurchaseOrders()
-      .then((data) => {
-        if (mounted) setOrders(Array.isArray(data) ? data : []);
-      })
-      .catch((requestError) => {
-        console.error(
-          "Failed to load purchase order dashboard data",
-          requestError,
-        );
-        if (mounted) setError("Unable to load purchase order dashboard data.");
-      })
-      .finally(() => {
-        if (mounted) setLoading(false);
-      });
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  if (loading)
-    return (
-      <div className="dashboard-analytics-page">
-        Loading purchase order analytics...
-      </div>
-    );
-  if (error) return <div className="dashboard-analytics-page">{error}</div>;
-
-  const amountOf = (order) =>
-    Number(
-      order.totalAmount ?? order.totals?.grandTotal ?? order.amount ?? 0,
-    ) || 0;
-  const monthOf = (value) => {
-    const date = new Date(value);
-    return Number.isNaN(date.getTime())
-      ? "Unknown"
-      : date.toLocaleString("en-US", { month: "short", year: "numeric" });
-  };
-  const groupedByMonth = orders.reduce((groups, order) => {
-    const month = monthOf(order.poDate || order.createdAt);
-    const current = groups.get(month) || {
-      month,
-      Quotes: 0,
-      Revenue: 0,
-      value: 0,
-    };
-    current.Quotes += 1;
-    current.Revenue += amountOf(order) / 100000;
-    current.value += amountOf(order) / 1000;
-    groups.set(month, current);
-    return groups;
-  }, new Map());
-  const monthlyRows = [...groupedByMonth.values()];
-  const colors = [cove.blue, cove.orange, cove.aqua, cove.yellow, cove.green];
-  const groupCounts = (key, fallback = "Unknown") => {
-    const groups = new Map();
-    orders.forEach((order) => {
-      const name = String(order[key] || fallback);
-      groups.set(name, (groups.get(name) || 0) + 1);
-    });
-    return [...groups.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .map(([name, value], index) => ({
-        name,
-        value,
-        count: value,
-        color: colors[index % colors.length],
-      }));
-  };
-  const approvalStatus = groupCounts("verificationStatus").map((item) => ({
-    ...item,
-    name: item.name === "verified" ? "Verified" : item.name,
-  }));
-  const byOrg = groupCounts("companyName").map(({ name, count }) => ({
-    name,
-    count,
-  }));
-  const byCategory = groupCounts("poDirection").map(
-    ({ name, value, color }) => ({ name, value, color }),
+  const { data, loading, error, updatedAt, reload } = useDashboardData(
+    fetchPurchaseOrders,
+    "Unable to load purchase order dashboard data.",
   );
-  const totalValue = orders.reduce((sum, order) => sum + amountOf(order), 0);
-  const openOrders = orders.filter(
-    (order) => String(order.status || "").toLowerCase() !== "closed",
-  ).length;
-  const closedOrders = orders.length - openOrders;
+
+  const orders = React.useMemo(() => toRows(data), [data]);
+  const monthly = React.useMemo(
+    () =>
+      groupMonthly(
+        orders,
+        dateOf,
+        () => ({ count: 0, value: 0 }),
+        (c, o) => {
+          c.count += 1;
+          c.value += amountOf(o) / 1000;
+        },
+      ),
+    [orders],
+  );
+  const countTrend = React.useMemo(
+    () => monthlyTrend(monthly, "count"),
+    [monthly],
+  );
+  const valueTrend = React.useMemo(
+    () => monthlyTrend(monthly, "value"),
+    [monthly],
+  );
+  const verification = React.useMemo(
+    () =>
+      topWithOther(
+        groupBy(
+          orders,
+          (o) => titleCase(o.verificationStatus) || "Pending",
+          () => ({ value: 0 }),
+          (c) => {
+            c.value += 1;
+          },
+        )
+          .sort((a, b) => b.value - a.value)
+          .map((item, index) => ({
+            ...item,
+            color: statusColor(item.name, index),
+          })),
+      ),
+    [orders],
+  );
+  const byOrg = React.useMemo(
+    () =>
+      groupBy(
+        orders,
+        (o) => o.companyName,
+        () => ({ count: 0, value: 0 }),
+        (c, o) => {
+          c.count += 1;
+          c.value += amountOf(o);
+        },
+      ).sort((a, b) => b.count - a.count),
+    [orders],
+  );
+  const chartOrganizations = React.useMemo(() => topWithOther(byOrg), [byOrg]);
+  const direction = React.useMemo(
+    () =>
+      topWithOther(
+        withColors(
+          groupBy(
+            orders,
+            (o) => titleCase(o.poDirection) || "Unknown",
+            () => ({ value: 0 }),
+            (c) => {
+              c.value += 1;
+            },
+          ).sort((a, b) => b.value - a.value),
+        ),
+      ),
+    [orders],
+  );
+
+  if (loading && !data)
+    return <LoadingState text="Loading purchase order analytics..." />;
+  if (error && !data) return <ErrorState message={error} onRetry={reload} />;
+
+  const totalValue = orders.reduce((s, o) => s + amountOf(o), 0);
+  const awaiting = orders
+    .filter((o) => !isVerifiedOrDecided(o))
+    .map((o) => ({ ...o, age: daysSince(dateOf(o)) ?? 0 }))
+    .sort((a, b) => b.age - a.age);
+  const openOrders = orders.filter((o) => !isClosed(o)).length;
+
+  const latest = monthly[monthly.length - 1];
+
+  const verificationTotal = verification.reduce(
+    (sum, item) => sum + item.value,
+    0,
+  );
+  const directionTotal = direction.reduce((sum, item) => sum + item.value, 0);
+  const tooltipStyle = {
+    background: "var(--dash-surface)",
+    border: "1px solid var(--dash-border)",
+    borderRadius: 8,
+    fontSize: 12,
+  };
+
+  const insight =
+    [
+      awaiting.length
+        ? `${plural(awaiting.length, "PO")} ${awaiting.length === 1 ? "is" : "are"} awaiting verification; the oldest has waited ${awaiting[0].age} day${awaiting[0].age === 1 ? "" : "s"}.`
+        : orders.length
+          ? "Every purchase order has been verified."
+          : "",
+      orders.length
+        ? `${plural(openOrders, "order")} ${openOrders === 1 ? "is" : "are"} still open.`
+        : "",
+      chartOrganizations[0]
+        ? `${chartOrganizations[0].name} has the most POs (${pct(chartOrganizations[0].count, orders.length)}%).`
+        : "",
+    ]
+      .filter(Boolean)
+      .join(" ") || "No purchase orders have been received yet.";
+
   return (
     <div className="dashboard-analytics-page">
+      <PageIntro
+        description="Which customer POs have arrived, which still need verification, and how much they are worth."
+        insight={insight}
+        updatedAt={updatedAt}
+        onRefresh={reload}
+        refreshing={loading}
+        error={error}
+        onRetry={reload}
+      />
+
       <MetricGrid
         cards={[
           {
             label: "Total purchase orders",
             value: orders.length,
+            ...countTrend,
+            hint: latest ? `${latest.month}: ${latest.count}` : "",
+            tip: "All customer purchase orders received",
             icon: (
               <img
                 src="/logo/boxes.png"
@@ -211,7 +212,12 @@ export default function PurchaseOrdersPage() {
           },
           {
             label: "Purchase order value",
-            value: `₹${totalValue.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`,
+            value: inrShort(totalValue),
+            ...valueTrend,
+            hint: orders.length
+              ? `Average ${inrShort(totalValue / orders.length)} per PO`
+              : "",
+            tip: `Total value of all purchase orders: ${inr(totalValue)}`,
             icon: (
               <img
                 src="/logo/speedometer.png"
@@ -222,8 +228,26 @@ export default function PurchaseOrdersPage() {
             color: "primary",
           },
           {
+            label: "Awaiting verification",
+            value: awaiting.length,
+            hint: awaiting.length
+              ? `Oldest: ${awaiting[0].age} days`
+              : "All verified",
+            tip: "POs that are not yet verified, approved or rejected",
+            icon: (
+              <img
+                src="/logo/clock.png"
+                alt="Awaiting verification"
+                style={{ width: 28, height: 28 }}
+              />
+            ),
+            color: "primary",
+          },
+          {
             label: "Open orders",
             value: openOrders,
+            hint: `${orders.length - openOrders} closed`,
+            tip: "Orders whose status is not Closed",
             icon: (
               <img
                 src="/logo/clipboard-list-check.png"
@@ -233,169 +257,100 @@ export default function PurchaseOrdersPage() {
             ),
             color: "primary",
           },
-          {
-            label: "Closed orders",
-            value: closedOrders,
-            icon: (
-              <img
-                src="/logo/check-circle.png"
-                alt="Closed orders"
-                style={{ width: 28, height: 28 }}
-              />
-            ),
-            color: "primary",
-          },
         ]}
       />
 
       <ChartGrid>
-        <ChartCard
-          ariaLabel="Line chart of purchase order quotes and revenue trend"
-          legendItems={[
-            { color: cove.blue, label: "Quotes" },
-            { color: cove.orange, label: "Revenue (lakhs)" },
+        <TableCard
+          title="Awaiting verification"
+          empty="Every PO has been verified."
+          rows={awaiting.slice(0, 8)}
+          highlightHeader
+          columns={[
+            { key: "po", label: "PO No.", render: (o) => poNoOf(o) },
+            {
+              key: "customer",
+              label: "Customer",
+              render: (o) => o.companyName || "-",
+            },
+            {
+              key: "date",
+              label: "Received",
+              render: (o) => fmtDate(dateOf(o)),
+            },
+            {
+              key: "age",
+              label: "Waiting",
+              align: "right",
+              render: (o) => (
+                <Chip tone={o.age > 7 ? "bad" : o.age > 3 ? "warn" : "ok"}>
+                  {o.age} d
+                </Chip>
+              ),
+            },
+            {
+              key: "value",
+              label: "Value",
+              align: "right",
+              render: (o) => inr(amountOf(o)),
+            },
           ]}
-        >
-          <LineChart data={monthlyRows}>
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke={gridStroke}
-              vertical={false}
-            />
-            <XAxis
-              dataKey="month"
-              tick={axisTick}
-              axisLine={{ stroke: gridStroke }}
-              tickLine={false}
-            >
-              <Label
-                value="Month"
-                offset={-5}
-                position="insideBottom"
-                style={axisTick}
-              />
-            </XAxis>
-            <YAxis
-              tick={axisTick}
-              axisLine={false}
-              tickLine={false}
-              allowDecimals={false}
-            >
-              <Label
-                value="Quotes and revenue"
-                angle={-90}
-                position="insideLeft"
-                offset={0}
-                dy={20}
-                style={axisTick}
-              />
-            </YAxis>
-            <Tooltip />
-            <Line
-              type="monotone"
-              dataKey="Quotes"
-              stroke={cove.blue}
-              strokeWidth={2}
-              dot={{ r: 4 }}
-            />
-            <Line
-              type="monotone"
-              dataKey="Revenue"
-              stroke={cove.orange}
-              strokeWidth={2}
-              strokeDasharray="6 3"
-              dot={{ r: 4 }}
-            />
-          </LineChart>
-        </ChartCard>
+          totalRows={awaiting.length}
+        />
 
         <ChartCard
-          ariaLabel="Bar chart of purchase order value by month"
-          legendItems={[{ color: cove.green, label: "PO value (₹ thousands)" }]}
+          title="Verification status"
+          ariaLabel="Donut chart of purchase order approval status"
+          legendLayout="vertical"
+          height={150}
+          legendItems={verification.map((i) => ({
+            color: i.color,
+            label: i.name,
+            value: i.value,
+          }))}
+          isEmpty={!verification.length}
+          donutCenter={{ total: verificationTotal, caption: "orders" }}
         >
-          <BarChart data={monthlyRows}>
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke={gridStroke}
-              vertical={false}
-            />
-            <XAxis
-              dataKey="month"
-              tick={axisTick}
-              axisLine={{ stroke: gridStroke }}
-              tickLine={false}
-            >
-              <Label
-                value="Month"
-                offset={-5}
-                position="insideBottom"
-                style={axisTick}
-              />
-            </XAxis>
-            <YAxis tick={axisTick} axisLine={false} tickLine={false}>
-              <Label
-                value="Order value (₹ thousands)"
-                angle={-90}
-                position="insideLeft"
-                offset={0}
-                dy={50}
-                style={axisTick}
-              />
-            </YAxis>
-            <Tooltip />
-            <Bar
-              dataKey="value"
-              fill={cove.green}
-              radius={[4, 4, 0, 0]}
-              maxBarSize={28}
-            />
-          </BarChart>
-        </ChartCard>
-
-        <ChartCard
-          ariaLabel="Pie chart of purchase order approval status"
-          legendItems={[
-            ...approvalStatus.map((item) => ({
-              color: item.color,
-              label: item.name,
-            })),
-          ]}
-        >
-          <PieChart>
-            <Tooltip />
+          <PieChart margin={{ top: 8, right: 12, bottom: 8, left: 12 }}>
+            <Tooltip contentStyle={tooltipStyle} />
             <Pie
-              data={approvalStatus}
+              data={verification}
               dataKey="value"
               nameKey="name"
-              outerRadius="80%"
+              cx="50%"
+              cy="50%"
+              innerRadius="58%"
+              outerRadius="76%"
+              paddingAngle={2}
+              stroke="none"
             >
-              {approvalStatus.map((d, i) => (
-                <Cell key={i} fill={d.color} />
+              {verification.map((r, i) => (
+                <Cell key={i} fill={r.color} />
               ))}
             </Pie>
           </PieChart>
         </ChartCard>
 
         <ChartCard
-          ariaLabel="Bar chart of purchase orders by organization"
-          legendItems={[
-            { color: cove.aqua, label: "Purchase orders by organization" },
-          ]}
+          title="POs received per month"
+          ariaLabel="Bar chart of purchase orders per month"
+          legendItems={[{ color: cove.blue, label: "Purchase orders" }]}
+          isEmpty={!monthly.length}
         >
-          <BarChart data={byOrg}>
+          <BarChart data={monthly}>
             <CartesianGrid
               strokeDasharray="3 3"
               stroke={gridStroke}
               vertical={false}
             />
             <XAxis
-              dataKey="name"
+              dataKey="month"
               tick={axisTick}
-              axisLine={{ stroke: gridStroke }}
+              axisLine={false}
               tickLine={false}
             >
               <Label
-                value="Organization"
+                value="Month"
                 offset={-5}
                 position="insideBottom"
                 style={axisTick}
@@ -406,6 +361,7 @@ export default function PurchaseOrdersPage() {
               axisLine={false}
               tickLine={false}
               allowDecimals={false}
+              tickCount={3}
             >
               <Label
                 value="Order count"
@@ -416,37 +372,196 @@ export default function PurchaseOrdersPage() {
                 style={axisTick}
               />
             </YAxis>
-            <Tooltip />
+            <Tooltip contentStyle={tooltipStyle} />
             <Bar
               dataKey="count"
-              fill={cove.aqua}
+              name="Purchase orders"
+              fill={cove.blue}
               radius={[4, 4, 0, 0]}
-              maxBarSize={28}
-            />
+              maxBarSize={36}
+            >
+              {monthly.length <= 12 && (
+                <LabelList
+                  dataKey="count"
+                  position="top"
+                  formatter={num}
+                  style={{ fill: "var(--dash-text)", fontSize: 10 }}
+                />
+              )}
+            </Bar>
           </BarChart>
         </ChartCard>
 
         <ChartCard
-          ariaLabel="Pie chart of purchase orders by direction"
-          legendItems={byCategory.map((item) => ({
-            color: item.color,
-            label: item.name,
-          }))}
+          title="PO value per month"
+          ariaLabel="Line chart of purchase order value per month"
+          legendItems={[
+            { color: cove.orange, label: "PO value (₹ thousands)" },
+          ]}
+          isEmpty={!monthly.length}
         >
-          <PieChart>
-            <Tooltip />
+          <LineChart data={monthly}>
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke={gridStroke}
+              vertical={false}
+            />
+            <XAxis
+              dataKey="month"
+              tick={axisTick}
+              axisLine={false}
+              tickLine={false}
+            >
+              <Label
+                value="Month"
+                offset={-5}
+                position="insideBottom"
+                style={axisTick}
+              />
+            </XAxis>
+            <YAxis
+              tick={axisTick}
+              axisLine={false}
+              tickLine={false}
+              tickCount={3}
+            >
+              <Label
+                value="Order value (₹ thousands)"
+                angle={-90}
+                position="insideLeft"
+                offset={0}
+                dy={50}
+                style={axisTick}
+              />
+            </YAxis>
+            <Tooltip
+              contentStyle={tooltipStyle}
+              formatter={(v) => [inr(v * 1000), "PO value"]}
+            />
+            <Line
+              type="monotone"
+              dataKey="value"
+              stroke={cove.orange}
+              strokeWidth={2.5}
+              dot={{ r: 3 }}
+            />
+          </LineChart>
+        </ChartCard>
+
+        <ChartCard
+          title="Top customers by number of POs"
+          ariaLabel="Bar chart of purchase orders by organization"
+          legendItems={[{ color: cove.aqua, label: "Purchase orders (top 8)" }]}
+          isEmpty={!byOrg.length}
+        >
+          <BarChart
+            data={chartOrganizations}
+            layout="vertical"
+            margin={{ left: 10 }}
+          >
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke={gridStroke}
+              horizontal={false}
+            />
+            <XAxis
+              type="number"
+              tick={axisTick}
+              axisLine={false}
+              tickLine={false}
+              allowDecimals={false}
+            />
+            <YAxis
+              type="category"
+              dataKey="name"
+              width={120}
+              tick={<TruncatedAxisTick maxLength={16} />}
+              axisLine={false}
+              tickLine={false}
+            />
+            <Tooltip contentStyle={tooltipStyle} />
+            <Bar
+              dataKey="count"
+              name="Purchase orders"
+              fill={cove.aqua}
+              radius={[0, 4, 4, 0]}
+              maxBarSize={12}
+            >
+              <LabelList
+                dataKey="count"
+                position="right"
+                formatter={num}
+                style={{ fill: "var(--dash-text)", fontSize: 10 }}
+              />
+            </Bar>
+          </BarChart>
+        </ChartCard>
+
+        <ChartCard
+          title="Purchase orders by direction"
+          ariaLabel="Donut chart of purchase orders by direction"
+          legendLayout="vertical"
+          height={150}
+          legendItems={direction.map((i) => ({
+            color: i.color,
+            label: i.name,
+            value: i.value,
+          }))}
+          isEmpty={!direction.length}
+          donutCenter={{ total: directionTotal, caption: "orders" }}
+        >
+          <PieChart margin={{ top: 8, right: 12, bottom: 8, left: 12 }}>
+            <Tooltip contentStyle={tooltipStyle} />
             <Pie
-              data={byCategory}
+              data={direction}
               dataKey="value"
               nameKey="name"
-              outerRadius="80%"
+              cx="50%"
+              cy="50%"
+              innerRadius="58%"
+              outerRadius="76%"
+              paddingAngle={2}
+              stroke="none"
             >
-              {byCategory.map((d, i) => (
-                <Cell key={i} fill={d.color} />
+              {direction.map((r, i) => (
+                <Cell key={i} fill={r.color} />
               ))}
             </Pie>
           </PieChart>
         </ChartCard>
+      </ChartGrid>
+
+      <ChartGrid>
+        <TargetsCard
+          items={[
+            {
+              label: `PO value in ${latest?.month || "latest month"}`,
+              value: (latest?.value || 0) * 1000,
+              target: DASHBOARD_TARGETS.poValuePerMonth,
+              format: inrShort,
+            },
+          ]}
+        />
+        <DefinitionsCard
+          items={[
+            [
+              "Awaiting verification",
+              "PO whose verification status is not Verified, Approved or Rejected.",
+            ],
+            [
+              "Waiting (days)",
+              "Days since the PO date. Over 3 days is amber, over 7 days is red.",
+            ],
+            [
+              "Open orders",
+              "Orders whose status is anything other than Closed.",
+            ],
+            [
+              "Direction",
+              "Whether the PO is incoming or outgoing, as recorded on the PO.",
+            ],
+          ]}
+        />
       </ChartGrid>
     </div>
   );
